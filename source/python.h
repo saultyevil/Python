@@ -1109,7 +1109,9 @@ typedef struct photon
     P_ADIABATIC = 9,            //records that a photon created a kpkt which was destroyed by adiabatic cooling
     P_ERROR_MATOM = 10,         //Some kind of error in processing of a photon which excited a macroattom
     P_LOFREQ_FF = 11,           //records a photon that had too low a frequency
-    P_REPOSITION_ERROR = 12     //A photon passed through the disk due to dfudge pushing it through incorrectly
+    P_REPOSITION_ERROR = 12,    //A photon passed through the disk due to dfudge pushing it through incorrectly
+    P_PS_SPLIT = 13,
+    P_RR_KILLED = 14
   } istat;                      /*status of photon. */
 
   int nscat;                    /*number of scatterings */
@@ -1528,3 +1530,26 @@ typedef struct rdpar_choices
 } dummy_choices, *ChoicePtr;
 
 struct rdpar_choices zz_spec;
+
+
+// TODO: move to somewhere more appropriate
+
+struct
+{
+  int ps_nsplit;
+  double rr_pkill;
+  PhotPtr ps_photstore;
+
+  enum pas_enum
+  {
+    NO_PAS = 0,
+    FIXED_PAS = 1,
+    VARIABLE_PAS = 2
+  } pas_types;
+
+  int pas_type;
+  double fix_pas_alpha;
+  double (*random_tau_scat) (struct photon * photon);
+  double ps_tau_scat;
+
+} vr_configuration ;

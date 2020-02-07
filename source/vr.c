@@ -14,12 +14,14 @@
  *
  * ************************************************************************** */
 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 
 #include "atomic.h"
 #include "python.h"
+
 
 /* ************************************************************************** */
 /**
@@ -34,8 +36,8 @@
 void
 clean_up_vr (void)
 {
-  if (vr_conf.ps_photstore != NULL)
-    free (vr_conf.ps_photstore);
+  if (vr_configuration.ps_photstore != NULL)
+    free (vr_configuration.ps_photstore);
 }
 
 /* ************************************************************************** */
@@ -57,7 +59,7 @@ clean_up_vr (void)
  *  etc as the high weight photon. The only difference is in the fact that each
  *  low weight photon has an identical lower weight than the high weight photon.
  *
- *  Photons are stored in a PhotPtr array located in the vr_conf structure. The
+ *  Photons are stored in a PhotPtr array located in the vr_configuration structure. The
  *  first time this function is called, memory will be allocated for the array.
  *  To free this memory, the function clean_up_vr () should be called as this
  *  is basically a wrapper for cleaning up any mess left behind by the VR
@@ -77,28 +79,28 @@ split_photon_packet (struct photon *pin, double tau_scat)
   size_t memory_requirement;
 
   // TODO: remove debug
-  nlw_phot += vr_conf.ps_nsplit;
+  nlw_phot += vr_configuration.ps_nsplit;
 
-  if (vr_conf.ps_photstore == NULL)
+  if (vr_configuration.ps_photstore == NULL)
   {
-    memory_requirement = vr_conf.ps_nsplit * sizeof (p_dummy);
-    if (!(vr_conf.ps_photstore = calloc (sizeof (p_dummy), vr_conf.ps_nsplit)))
+    memory_requirement = vr_configuration.ps_nsplit * sizeof (p_dummy);
+    if (!(vr_configuration.ps_photstore = calloc (sizeof (p_dummy), vr_configuration.ps_nsplit)))
     {
       Error ("%s:%s:%i: could not allocate %d bytes for packet splitting photon store\n", __FILE__, __func__, __LINE__, memory_requirement);
       Exit (1);
     }
 
-    Log_silent ("%d bytes allocated for %i low weight photons\n", memory_requirement, vr_conf.ps_nsplit);
+    Log_silent ("%d bytes allocated for %i low weight photons\n", memory_requirement, vr_configuration.ps_nsplit);
   }
 
-  low_weight = pin->w / vr_conf.ps_nsplit;
-  vr_conf.ps_tau_scat = tau_scat;
+  low_weight = pin->w / vr_configuration.ps_nsplit;
+  vr_configuration.ps_tau_scat = tau_scat;
 
-  for (iphot = 0; iphot < vr_conf.ps_nsplit; iphot++)
+  for (iphot = 0; iphot < vr_configuration.ps_nsplit; iphot++)
   {
-    stuff_phot (pin, &vr_conf.ps_photstore[iphot]);
-    vr_conf.ps_photstore[iphot].w = vr_conf.ps_photstore[iphot].w_orig = low_weight;
-    scatter (&vr_conf.ps_photstore[iphot], &vr_conf.ps_photstore[iphot].nres, &vr_conf.ps_photstore[iphot].nnscat);
+    stuff_phot (pin, &vr_configuration.ps_photstore[iphot]);
+    vr_configuration.ps_photstore[iphot].w = vr_configuration.ps_photstore[iphot].w_orig = low_weight;
+    scatter (&vr_configuration.ps_photstore[iphot], &vr_configuration.ps_photstore[iphot].nres, &vr_configuration.ps_photstore[iphot].nnscat);
   }
 
   pin->istat = P_PS_SPLIT;
@@ -177,6 +179,7 @@ play_russian_roulette (struct photon *pin, double p_kill)
  *
  * ************************************************************************** */
 
+/*
 double
 generate_tau_scat (struct photon *pdummy)
 {
@@ -185,6 +188,7 @@ generate_tau_scat (struct photon *pdummy)
   tau_scat = -log (1.0 - random_number (0.0, 1.0));
   return tau_scat;
 }
+*/
 
 /* ************************************************************************** */
 /**
@@ -213,16 +217,18 @@ generate_tau_scat (struct photon *pdummy)
  *
  * ************************************************************************** */
 
+/*
 void
 reweight_biased_photon (struct photon *pin, double tau_scat, double alpha)
 {
   pin->w *= exp (tau_scat * (alpha - 1.0)) / alpha;
 }
+*/
 
 /* ************************************************************************** */
 /**
  *  @brief      Generate a value for the optical depth to the next interaction
- *              event from a biased distriution
+ *              event from a biased distribution
  *
  *  @param[in,out]  struct photon *pin    The photon packet to generate tau_scat
  *
@@ -248,6 +254,7 @@ reweight_biased_photon (struct photon *pin, double tau_scat, double alpha)
  *
  * ************************************************************************** */
 
+/*
 double
 generate_biased_tau_scat (struct photon *pin)
 {
@@ -261,13 +268,14 @@ generate_biased_tau_scat (struct photon *pin)
   reweight_biased_photon (pin, tau_scat, alpha);
 
   if (pin->w < EPSILON * in_weight)
-    play_russian_roulette (pin, vr_conf.rr_pkill);
+    play_russian_roulette (pin, vr_configuration.rr_pkill);
 
   if (pin->w > in_weight / EPSILON)     // TODO: should this value be smaller?
-    split_photon_packet (pin, vr_conf.ps_nsplit);
+    split_photon_packet (pin, vr_configuration.ps_nsplit);
 
   return tau_scat;
 }
+*/
 
 /* ************************************************************************** */
 /**
