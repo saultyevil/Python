@@ -115,7 +115,7 @@ add_executable(python
         source/setup_line_transfer.c
         source/cv.c
         source/wind_util.c
-        )
+        source/vr.c)
 
 add_executable(py_wind
         source/bb.c
