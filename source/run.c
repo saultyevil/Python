@@ -102,6 +102,8 @@ calculate_ionization (restart_stat)
   //and allows routines to act accordinaly.
 
 
+  init_vr ();
+
 /* BEGINNING OF CYCLE TO CALCULATE THE IONIZATION OF THE WIND */
 
   if (geo.wcycle == geo.wcycles)
@@ -411,6 +413,10 @@ calculate_ionization (restart_stat)
   {
     wind_paths_evaluate (w, rank_global);
   }
+
+  clean_up_vr();
+
+  vr_debug_function ();
 
   return (0);
 }

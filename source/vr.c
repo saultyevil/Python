@@ -25,6 +25,55 @@
 
 /* ************************************************************************** */
 /**
+ *  @brief      Initialise the variance reduction variables and structure.
+ *
+ *  @details
+ *
+ *  Simply takes in parameters from the user, as well as allocates memory for
+ *  the photon store structure.
+ *
+ * ************************************************************************** */
+
+
+void
+init_vr (void)
+{
+  size_t memory_requirement;
+
+  /*
+   * Set the default values for the number of photons which are created with
+   * packet splitting, as well as the kill probability for Russian Roulette.
+   * These are parameters which are also set by the user.
+   */
+
+  vr_configuration.ps_nsplit = 10;
+  vr_configuration.rr_pkill = 0.25;
+  rdint ("VR.packet_splitting_nsplit", &vr_configuration.ps_nsplit);
+  rddoub ("VR.russian_roulette_pkill", &vr_configuration.rr_pkill);
+
+  /*
+   * If the photon store structure is NULL, then we need to allocate memory for
+   * it. We will be re-using this structure over and over again, so we shouldn't
+   * need to re-allocate as we limit the number of low weight photons which
+   * can be produced by ps_nsplit.
+   */
+
+  if (vr_configuration.ps_photstore == NULL)
+  {
+    memory_requirement = vr_configuration.ps_nsplit * sizeof (p_dummy);
+    if (!(vr_configuration.ps_photstore = calloc (sizeof (p_dummy), vr_configuration.ps_nsplit)))
+    {
+      Error ("%s : %i : could not allocate %d bytes for packet splitting photon store\n", __FILE__, __LINE__, memory_requirement);
+      Exit (1);
+    }
+
+    Log_silent ("%d bytes allocated for %i low weight photons\n", memory_requirement, vr_configuration.ps_nsplit);
+  }
+}
+
+
+/* ************************************************************************** */
+/**
  *  @brief      Cleans up any mess left behind by variance reduction functions.
  *
  *  @details
@@ -55,46 +104,27 @@ clean_up_vr (void)
  *  @details
  *
  *  Any high weight photon given to this function will be split into multiple
- *  low weight photons pointing in the same direction, with the same frequency,
- *  etc as the high weight photon. The only difference is in the fact that each
- *  low weight photon has an identical lower weight than the high weight photon.
+ *  low weight photons pointing in different directions, with the same
+ *  frequency, etc. as the high weight photon. The only difference is in the
+ *  fact that each low weight photon has an identical lower weight than the high
+ *  weight photon.
  *
- *  Photons are stored in a PhotPtr array located in the vr_configuration structure. The
- *  first time this function is called, memory will be allocated for the array.
- *  To free this memory, the function clean_up_vr () should be called as this
- *  is basically a wrapper for cleaning up any mess left behind by the VR
- *  techniques.
+ *  Photons are stored in a PhotPtr array located in the vr_configuration
+ *  structure. To free this memory, the function clean_up_vr () should be called
+ *  as this is basically a wrapper for cleaning up any mess left behind by the
+ *  VR techniques.
  *
  *  TODO: ability to track child photons
  *
  * ************************************************************************** */
 
-int nlw_phot = 0;
-
 void
-split_photon_packet (struct photon *pin, double tau_scat)
+split_photon_packet (struct photon *pin)
 {
   int iphot;
   double low_weight;
-  size_t memory_requirement;
-
-  // TODO: remove debug
-  nlw_phot += vr_configuration.ps_nsplit;
-
-  if (vr_configuration.ps_photstore == NULL)
-  {
-    memory_requirement = vr_configuration.ps_nsplit * sizeof (p_dummy);
-    if (!(vr_configuration.ps_photstore = calloc (sizeof (p_dummy), vr_configuration.ps_nsplit)))
-    {
-      Error ("%s:%s:%i: could not allocate %d bytes for packet splitting photon store\n", __FILE__, __func__, __LINE__, memory_requirement);
-      Exit (1);
-    }
-
-    Log_silent ("%d bytes allocated for %i low weight photons\n", memory_requirement, vr_configuration.ps_nsplit);
-  }
 
   low_weight = pin->w / vr_configuration.ps_nsplit;
-  vr_configuration.ps_tau_scat = tau_scat;
 
   for (iphot = 0; iphot < vr_configuration.ps_nsplit; iphot++)
   {
@@ -129,8 +159,6 @@ split_photon_packet (struct photon *pin, double tau_scat)
  *
  * ************************************************************************** */
 
-int nkill = 0;
-
 void
 play_russian_roulette (struct photon *pin, double p_kill)
 {
@@ -140,15 +168,81 @@ play_russian_roulette (struct photon *pin, double p_kill)
 
   if (xi < p_kill)
   {
-    // TODO: remove debug
-    nkill++;
-
     pin->istat = P_RR_KILLED;
     pin->w = 0;
     return;
   }
 
   pin->w *= 1.0 / (1.0 - p_kill);
+}
+
+/* ************************************************************************** */
+/**
+ *  @brief
+ *
+ *  @details
+ *
+ *  TODO: debug code to be removed
+ *
+ * ************************************************************************** */
+
+void
+vr_debug_function (void)
+{
+  int i;
+  char fname1[LINELENGTH];
+  FILE *f1;
+  struct photon p;
+  double tot_weight = 0;
+  double tot_orig_weight = 0;
+
+  if (rank_global != 0)
+    return;
+
+  sprintf (fname1, "%s_%i_photon_w.txt", files.root, rank_global);
+  f1 = fopen (fname1, "w");
+  if (!f1)
+  {
+    Error ("Unable to open file to print photon weights\n");
+    Exit (1);
+  }
+
+  fprintf (f1, "n np w w0 istat\n");
+
+  int icount = 0;
+  for (i = 0; i < NPHOT; i++)
+  {
+    p = photmain[i];
+    fprintf (f1, "%i %i %e %e ", icount, p.np, p.w, p.w_orig);
+    if (p.istat == P_ESCAPE)
+    {
+      fprintf (f1, "P_ESCAPE\n");
+      icount++;
+      tot_weight += p.w;
+      tot_orig_weight += p.w_orig;
+    }
+    else if (p.istat == P_ABSORB)
+    {
+      fprintf (f1, "P_ABSORB\n");
+      icount++;
+    }
+    else if (p.istat == P_HIT_STAR)
+    {
+      fprintf (f1, "P_HIT_STAR\n");
+      icount++;
+    }
+    else
+    {
+      fprintf (f1, "OTHER\n");
+      icount++;
+    }
+  }
+
+  fclose (f1);
+
+  Log ("Total weight escaped %e\n", tot_weight);
+  Log ("Total original weight of escaped photons %e\n", tot_orig_weight);
+  Log ("tot_orig_weight - tot_weight =  %e\n", tot_orig_weight - tot_weight);
 }
 
 /* ************************************************************************** */
@@ -270,80 +364,9 @@ generate_biased_tau_scat (struct photon *pin)
   if (pin->w < EPSILON * in_weight)
     play_russian_roulette (pin, vr_configuration.rr_pkill);
 
-  if (pin->w > in_weight / EPSILON)     // TODO: should this value be smaller?
+  if (pin->w > in_weight / EPSILON)
     split_photon_packet (pin, vr_configuration.ps_nsplit);
 
   return tau_scat;
 }
 */
-
-/* ************************************************************************** */
-/**
- *  @brief
- *
- *  @details
- *
- *  TODO: debug code to be removed
- *
- * ************************************************************************** */
-
-void
-write_photon_weights_to_file (void)
-{
-  int i;
-  char fname1[LINELENGTH];
-  FILE *f1;
-  struct photon p;
-  double tot_weight = 0;
-  double tot_orig_weight = 0;
-
-  if (rank_global != 0)
-    return;
-
-  sprintf (fname1, "%s_%i_photon_w.txt", files.root, rank_global);
-  f1 = fopen (fname1, "w");
-  if (!f1)
-  {
-    Error ("Unable to open file to print photon weights\n");
-    Exit (1);
-  }
-
-  fprintf (f1, "n np w w0 istat\n");
-
-  int icount = 0;
-  for (i = 0; i < NPHOT; i++)
-  {
-    p = photmain[i];
-    fprintf (f1, "%i %i %e %e ", icount, p.np, p.w, p.w_orig);
-    if (p.istat == P_ESCAPE)
-    {
-      fprintf (f1, "P_ESCAPE\n");
-      icount++;
-      tot_weight += p.w;
-      tot_orig_weight += p.w_orig;
-    }
-    else if (p.istat == P_ABSORB)
-    {
-      fprintf (f1, "P_ABSORB\n");
-      icount++;
-    }
-    else if (p.istat == P_HIT_STAR)
-    {
-      fprintf (f1, "P_HIT_STAR\n");
-      icount++;
-    }
-    else
-    {
-      fprintf (f1, "OTHER\n");
-      icount++;
-    }
-  }
-
-  fclose (f1);
-
-  Log ("Number of photons killed %i\n", nkill);
-  Log ("Number of low weight photons created %i\n", nlw_phot);
-  Log ("Total weight escaped %e\n", tot_weight);
-  Log ("Total original weight of escaped photons %e\n", tot_orig_weight);
-  Log ("tot_orig_weight - tot_weight =  %e\n", tot_orig_weight - tot_weight);
-}
