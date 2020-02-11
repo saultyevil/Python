@@ -140,6 +140,13 @@ calculate_ionization (restart_stat)
 
     wind_rad_init ();           /*Zero the parameters pertaining to the radiation field */
 
+    /*
+     * Update the importance map for the grid if packet splitting and russian
+     * roulette are enabled
+     */
+
+    if (vr_configuration.on)
+      update_importance_map ();
 
     geo.n_ioniz = 0.0;
     geo.cool_tot_ioniz = 0.0;
@@ -414,9 +421,9 @@ calculate_ionization (restart_stat)
     wind_paths_evaluate (w, rank_global);
   }
 
-  clean_up_vr();
+  clean_up_vr ();
 
-  vr_debug_function ();
+  vr_debug_print_weights ();
 
   return (0);
 }
@@ -478,6 +485,13 @@ make_spectra (restart_stat)
      unnecessary during spectrum cycles.  */
 
   geo.ioniz_or_extract = 0;
+
+  /*
+   * For the spectral cycles, we don't want to use variance reduction methods
+   * to try to increase the speed
+   */
+
+  vr_configuration.on = FALSE;
 
 /* Next steps to speed up extraction stage */
   if (!modes.keep_photoabs)

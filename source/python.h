@@ -1114,7 +1114,7 @@ typedef struct photon
     P_PS_SPLIT = 13,
     P_RR_KILLED = 14,
     P_RR_PLAY = 15
-  } istat;                      /*status of photon. */
+  } istat, istat_previous;                      /*status of photon. */
 
   int nscat;                    /*number of scatterings */
   int nres;                     /*For line scattering, indicates the actual transition; 
@@ -1158,6 +1158,8 @@ typedef struct photon
   double ds;                    // EP 11/19 - the distance of the path the photon previously moved
   int previous_cell;
   int current_cell;
+  int daughter;
+  double pkill;
 }
 p_dummy, *PhotPtr;
 

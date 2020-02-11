@@ -15,9 +15,9 @@
  * ************************************************************************** */
 
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
 
 #include "atomic.h"
 #include "python.h"
@@ -34,11 +34,14 @@
  *
  * ************************************************************************** */
 
-
 void
 init_vr (void)
 {
+  char default_usage[LINELENGTH];
   size_t memory_requirement;
+
+  strcpy (default_usage, "no");
+  vr_configuration.on = rdchoice ("VR.use_packet_split_russian_roulette(yes,no)", "1,0", default_usage);
 
   /*
    * Set the default values for the number of photons which are created with
@@ -85,8 +88,7 @@ init_vr (void)
 void
 clean_up_vr (void)
 {
-  if (vr_configuration.ps_photstore != NULL)
-    free (vr_configuration.ps_photstore);
+  free (vr_configuration.ps_photstore);
 }
 
 /* ************************************************************************** */
@@ -122,15 +124,17 @@ void
 split_photon_packet (struct photon *pin)
 {
   int iphot;
-  double low_weight;
+  double new_weight;
 
-  low_weight = pin->w / vr_configuration.ps_nsplit;
+  new_weight = pin->w / vr_configuration.ps_nsplit;
 
   for (iphot = 0; iphot < vr_configuration.ps_nsplit; iphot++)
   {
     stuff_phot (pin, &vr_configuration.ps_photstore[iphot]);
-    vr_configuration.ps_photstore[iphot].w = vr_configuration.ps_photstore[iphot].w_orig = low_weight;
-    scatter (&vr_configuration.ps_photstore[iphot], &vr_configuration.ps_photstore[iphot].nres, &vr_configuration.ps_photstore[iphot].nnscat);
+    vr_configuration.ps_photstore[iphot].w = vr_configuration.ps_photstore[iphot].w_orig = new_weight;
+    vr_configuration.ps_photstore[iphot].daughter += 1;
+    scatter (&vr_configuration.ps_photstore[iphot], &vr_configuration.ps_photstore[iphot].nres,
+             &vr_configuration.ps_photstore[iphot].nnscat);
   }
 
   pin->istat = P_PS_SPLIT;
@@ -146,7 +150,7 @@ split_photon_packet (struct photon *pin)
  *  @param[in]       double p_kill        The kill probability of Russian
  *                                        Roulette
  *
- *  @return          void
+ *  @return          istat                The status of the photon
  *
  *  @details
  *
@@ -159,7 +163,7 @@ split_photon_packet (struct photon *pin)
  *
  * ************************************************************************** */
 
-void
+int
 play_russian_roulette (struct photon *pin, double p_kill)
 {
   double xi;
@@ -168,13 +172,39 @@ play_russian_roulette (struct photon *pin, double p_kill)
 
   if (xi < p_kill)
   {
-    pin->istat = P_RR_KILLED;
     pin->w = 0;
-    return;
+    pin->istat = P_RR_KILLED;
+  }
+  else
+  {
+    pin->w *= 1.0 / (1.0 - p_kill);
   }
 
-  pin->w *= 1.0 / (1.0 - p_kill);
+  return pin->istat;
 }
+
+/* ************************************************************************** */
+/**
+ *  @brief      Assign the importance value for plasma grid cells.
+ *
+ *  @details
+ *
+ *
+ * ************************************************************************** */
+
+void
+update_importance_map (void)
+{
+  int iplasma;
+  PlasmaPtr pcell;
+
+  for (iplasma = 0; iplasma < NPLASMA; iplasma++)
+  {
+    pcell = &plasmamain[iplasma];
+    pcell->importance = 1;
+  }
+}
+
 
 /* ************************************************************************** */
 /**
@@ -187,7 +217,7 @@ play_russian_roulette (struct photon *pin, double p_kill)
  * ************************************************************************** */
 
 void
-vr_debug_function (void)
+vr_debug_print_weights (void)
 {
   int i;
   char fname1[LINELENGTH];

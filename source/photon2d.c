@@ -87,15 +87,13 @@ translate (w, pp, tau_scat, tau, nres)
   int istat;
   int ndomain;
 
-
-
   if (where_in_wind (pp->x, &ndomain) < 0)      //If the return is negative, this means we are outside the wind
   {
     istat = translate_in_space (pp);    //And so we should translate in space
-
   }
   else if ((pp->grid = where_in_grid (ndomain, pp->x)) >= 0)
   {
+    pp->previous_cell = pp->grid;
     istat = translate_in_wind (w, pp, tau_scat, tau, nres);
   }
   else
@@ -453,16 +451,8 @@ translate_in_wind (w, p, tau_scat, tau, nres)
 return and record an error */
 
   if ((p->grid = n = where_in_grid (wmain[p->grid].ndom, p->x)) < 0)
-  {
-//OLD    if (translate_in_wind_failure < 1000)
-//OLD    {
-//OLD     if (modes.save_photons)
-//OLD       {
-//OLD         save_photons (p, "NotInGrid_translate_in_wind");
-//OLD       }
-//OLD    }
     return (n);                 /* Photon was not in grid */
-  }
+
 /* Assign the pointers for the cell containing the photon */
 
   one = &wmain[n];              /* one is the grid cell where the photon is */
@@ -471,16 +461,14 @@ return and record an error */
   ndom = one->ndom;
   inwind = one->inwind;
 
-
-
 /* Calculate the maximum distance the photon can travel in the cell */
 
   if ((smax = ds_in_cell (ndom, p)) < 0)
   {
     return ((int) smax);
   }
-  if (one->inwind == W_PART_INWIND)
-  {                             /* The cell is partially in the wind */
+  if (one->inwind == W_PART_INWIND)     /* The cell is partially in the wind */
+  {
     s = ds_to_wind (p, &ndom_current);  /* smax is set to be the distance to edge of the wind */
     if (s < smax)
       smax = s;
@@ -495,16 +483,14 @@ return and record an error */
     return (p->istat);
 
   }
-  else if (one->inwind == W_NOT_INWIND)
-  {                             /* The cell is not in the wind at all */
-
+  else if (one->inwind == W_NOT_INWIND) /* The cell is not in the wind at all */
+  {
     Error ("translate_in_wind: Grid cell %d of photon is not in wind, moving photon %.2e\n", n, smax);
     Error ("translate_in_wind: photon %d position: x %g y %g z %g\n", p->np, p->x[0], p->x[1], p->x[2]);
     move_phot (p, smax);
     return (p->istat);
 
   }
-
 
 /* At this point we now know how far the photon can travel in it's current grid cell */
 
@@ -846,6 +832,40 @@ walls (p, pold, normal)
 
   if (fabs (p->x[2]) > geo.rmax)
     return (p->istat = P_ESCAPE);
+
+  /*
+   * At this point, the photon hasn't hit a boundary or escaped from the system.
+   * We can now check to see if we should split or play russian roulette with
+   * the photon
+   */
+
+  if (vr_configuration.on)
+  {
+    int ndom;
+
+    if (where_in_wind (p->x, &ndom) > 0)
+      p->current_cell = where_in_grid (ndom, p->x);
+
+    if (p->previous_cell != p->current_cell)
+    {
+      double importance_previous_cell = wmain[p->previous_cell].plasma_cell->importance;
+      double importance_current_cell = wmain[p->current_cell].plasma_cell->importance;
+      double relative_importance = importance_current_cell / importance_previous_cell;
+      p->istat_previous = p->istat;
+
+      if (relative_importance < 1)
+      {
+        vr_configuration.rr_pkill = relative_importance;
+        p->pkill = relative_importance;
+        return (p->istat);
+      }
+      else if (relative_importance > 1)
+      {
+        vr_configuration.ps_nsplit = (int) relative_importance;
+        return (p->istat = P_PS_SPLIT);
+      }
+    }
+  }
 
   return (p->istat);            /* The photon is still in the wind */
 }
