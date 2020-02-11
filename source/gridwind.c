@@ -100,6 +100,7 @@ create_maps ()
     {
       wmain[i].nplasma = NPLASMA;
     }
+    wmain[i].plasma_cell = &plasmamain[wmain[i].nplasma];  // TODO EP: adding pointer to plasma cell
   }
   if (j != NPLASMA)
   {

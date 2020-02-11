@@ -680,96 +680,6 @@ struct blmodel
 }
 blmod;
 
-
-/*
- * The next structure is associated with reverberation mappping.
-    SWN 6-2-15
-    Wind paths is defined per cell and contains a binned array holding the spectrum of paths. Layers are
-    For each frequency:
-      For each path bin:
-        What's the total fluxback of all these photons entering the cell?
-*/
-typedef struct wind_paths
-{
-  double *ad_path_flux;         //Array[by frequency, then path] of total flux of photons with the given v&p
-  double *ad_path_flux_disk;
-  double *ad_path_flux_wind;
-  double *ad_path_flux_cent;    // As above, by source
-  int *ai_path_num;             //Array [by frequency, then path] of the number of photons in this bin
-  int *ai_path_num_disk;
-  int *ai_path_num_wind;
-  int *ai_path_num_cent;        // As above, by source
-  double d_flux, d_path;        //Total flux, average path
-  int i_num;                    //Number of photons hitting this cell
-} wind_paths_dummy, *Wind_Paths_Ptr;
-
-/* 	This structure defines the wind.  The structure w is allocated in the main
-	routine.  The total size of the structure will be NDIM x MDIM, and the two
-	dimenssions do not need to be the same.  The order of the
-	cells in the structure is such that the as you increse the cell number by one
-	z increases the fastest.
-
-57+ -- The wind structure was reduced to contain just information about the geometry.  
-Variables for wind cells that actually have volume in the wind are now in plasmamain, 
-or macromain.  The wind structure still contains a volume element, which is the volume
-of that cell in the wind, This is used in some cases to determine whether the cell
-has any portion in the wind.  
-
-Note that most of the macro atom information is in a separate structure.  This was
-done to make it easier to control the size of the entire structure   06jul-ksl
-
- */
-#define NIONIZ	5               /*The number of ions (normally H and He) for which one separately tracks ionization 
-                                   and recombinations */
-
-
-/* 061104 -- 58b -- ksl -- Added definitions to characterize whether a cell is in the wind. */
-/* 110810 -- ksl - these are assigned to w->inwind, and are used to help determine how photons 
-that go through a cell are treated.  Most of the assignments are based on whether the
-volume in the wind is zero, which is determined in cylind_volumes for the cylindrical wind
-and in correpsonding reoutines elsewehere.  These routines are called from the routine define_wind.
-W_IGNORE is currently set in define_wind itself.  The values of these variables are used
-in translate_in_wind.
-
-Note that where_in_wind has been modified to use some of the same returns.  In general, the idea
-is that if a new component is to be added, it should be added with by with two varialles ALL in whatever
-and PART in whatever, as n and n+1
-*/
-
-typedef struct wind
-{
-  int ndom;                     /*The domain associated with this element of the wind */
-  int nwind;                    /*A self-reference to this cell in the wind structure */
-  int nplasma;                  /*A cross refrence to the corresponding cell in the plasma structure */
-  double x[3];                  /*position of inner vertex of cell */
-  double xcen[3];               /*position of the "center" of a cell */
-  double r, rcen;               /*radial location of cell (Used for spherical, spherical polar
-                                   coordinates. */
-  double theta, thetacen;       /*Angle of coordinate from z axis in degrees  */
-  double dtheta, dr;            /* widths of bins, used in hydro import mode */
-  struct cone wcone;            /* cone structure that defines the bottom edge of the cell in 
-                                   CYLVAR coordinates */
-  double v[3];                  /*velocity at inner vertex of cell.  For 2d coordinate systems this
-                                   is defined in the xz plane */
-  double v_grad[3][3];          /*velocity gradient tensor  at the inner vertex of the cell NEW */
-  double div_v;                 /*Divergence of v at center of cell */
-  double dvds_ave;              /* Average value of dvds */
-  double dvds_max, lmn[3];      /*The maximum value of dvds, and the direction in a cell in cylindrical coords */
-  double vol;                   /* valid volume of this cell (that is the volume of the cell that is considered
-                                   to be in the wind.  This differs from the volume in the Plasma structure
-                                   where the volume is the volume that is actually filled with material. */
-  double dfudge;                /* A number which defines a push through distance for this cell, which replaces the
-                                   global variable DFUDGE in many instances */
-  enum inwind_enum
-  { W_IN_DISK = -5, W_IN_STAR = -4, W_IGNORE = -2, W_NOT_INWIND = -1,
-    W_ALL_INWIND = 0, W_PART_INWIND = 1, W_NOT_ASSIGNED = -999
-  } inwind;
-  Wind_Paths_Ptr paths, *line_paths;    // SWM 6-2-15 Path data struct for each cell
-}
-wind_dummy, *WindPtr;
-
-WindPtr wmain;
-
 /* Plasma is a structure that contains information about the properties of the
 plasma in regions of the geometry that are actually included n the wind */
 
@@ -951,9 +861,100 @@ typedef struct plasma
   double exp_w[NXBANDS];        /*NSH 120817 - The prefactor of an exponential representation of the radiation field in a cell */
   double ip;                    /*NSH 111004 Ionization parameter calculated as number of photons over the lyman limit entering a cell, divided by the number density of hydrogen for the cell */
   double xi;                    /*NSH 151109 Ionization parameter as defined by Tartar et al 1969 and described in Hazy. Its the ionizing flux over the number of hydrogen atoms */
+  double importance;
 } plasma_dummy, *PlasmaPtr;
 
 PlasmaPtr plasmamain;
+
+/*
+ * The next structure is associated with reverberation mappping.
+    SWN 6-2-15
+    Wind paths is defined per cell and contains a binned array holding the spectrum of paths. Layers are
+    For each frequency:
+      For each path bin:
+        What's the total fluxback of all these photons entering the cell?
+*/
+typedef struct wind_paths
+{
+  double *ad_path_flux;         //Array[by frequency, then path] of total flux of photons with the given v&p
+  double *ad_path_flux_disk;
+  double *ad_path_flux_wind;
+  double *ad_path_flux_cent;    // As above, by source
+  int *ai_path_num;             //Array [by frequency, then path] of the number of photons in this bin
+  int *ai_path_num_disk;
+  int *ai_path_num_wind;
+  int *ai_path_num_cent;        // As above, by source
+  double d_flux, d_path;        //Total flux, average path
+  int i_num;                    //Number of photons hitting this cell
+} wind_paths_dummy, *Wind_Paths_Ptr;
+
+/* 	This structure defines the wind.  The structure w is allocated in the main
+	routine.  The total size of the structure will be NDIM x MDIM, and the two
+	dimenssions do not need to be the same.  The order of the
+	cells in the structure is such that the as you increse the cell number by one
+	z increases the fastest.
+
+57+ -- The wind structure was reduced to contain just information about the geometry.
+Variables for wind cells that actually have volume in the wind are now in plasmamain,
+or macromain.  The wind structure still contains a volume element, which is the volume
+of that cell in the wind, This is used in some cases to determine whether the cell
+has any portion in the wind.
+
+Note that most of the macro atom information is in a separate structure.  This was
+done to make it easier to control the size of the entire structure   06jul-ksl
+
+ */
+#define NIONIZ	5               /*The number of ions (normally H and He) for which one separately tracks ionization
+                                   and recombinations */
+
+
+/* 061104 -- 58b -- ksl -- Added definitions to characterize whether a cell is in the wind. */
+/* 110810 -- ksl - these are assigned to w->inwind, and are used to help determine how photons
+that go through a cell are treated.  Most of the assignments are based on whether the
+volume in the wind is zero, which is determined in cylind_volumes for the cylindrical wind
+and in correpsonding reoutines elsewehere.  These routines are called from the routine define_wind.
+W_IGNORE is currently set in define_wind itself.  The values of these variables are used
+in translate_in_wind.
+
+Note that where_in_wind has been modified to use some of the same returns.  In general, the idea
+is that if a new component is to be added, it should be added with by with two varialles ALL in whatever
+and PART in whatever, as n and n+1
+*/
+
+typedef struct wind
+{
+  int ndom;                     /*The domain associated with this element of the wind */
+  int nwind;                    /*A self-reference to this cell in the wind structure */
+  int nplasma;                  /*A cross refrence to the corresponding cell in the plasma structure */
+  double x[3];                  /*position of inner vertex of cell */
+  double xcen[3];               /*position of the "center" of a cell */
+  double r, rcen;               /*radial location of cell (Used for spherical, spherical polar
+                                   coordinates. */
+  double theta, thetacen;       /*Angle of coordinate from z axis in degrees  */
+  double dtheta, dr;            /* widths of bins, used in hydro import mode */
+  struct cone wcone;            /* cone structure that defines the bottom edge of the cell in
+                                   CYLVAR coordinates */
+  double v[3];                  /*velocity at inner vertex of cell.  For 2d coordinate systems this
+                                   is defined in the xz plane */
+  double v_grad[3][3];          /*velocity gradient tensor  at the inner vertex of the cell NEW */
+  double div_v;                 /*Divergence of v at center of cell */
+  double dvds_ave;              /* Average value of dvds */
+  double dvds_max, lmn[3];      /*The maximum value of dvds, and the direction in a cell in cylindrical coords */
+  double vol;                   /* valid volume of this cell (that is the volume of the cell that is considered
+                                   to be in the wind.  This differs from the volume in the Plasma structure
+                                   where the volume is the volume that is actually filled with material. */
+  double dfudge;                /* A number which defines a push through distance for this cell, which replaces the
+                                   global variable DFUDGE in many instances */
+  enum inwind_enum
+  { W_IN_DISK = -5, W_IN_STAR = -4, W_IGNORE = -2, W_NOT_INWIND = -1,
+    W_ALL_INWIND = 0, W_PART_INWIND = 1, W_NOT_ASSIGNED = -999
+  } inwind;
+  Wind_Paths_Ptr paths, *line_paths;    // SWM 6-2-15 Path data struct for each cell
+  PlasmaPtr plasma_cell;
+}
+  wind_dummy, *WindPtr;
+
+WindPtr wmain;
 
 /* A storage area for photons.  The idea is that it is sometimes time-consuming to create the
 cumulative distribution function for a process, but trivial to create more than one photon 
@@ -1111,7 +1112,8 @@ typedef struct photon
     P_LOFREQ_FF = 11,           //records a photon that had too low a frequency
     P_REPOSITION_ERROR = 12,    //A photon passed through the disk due to dfudge pushing it through incorrectly
     P_PS_SPLIT = 13,
-    P_RR_KILLED = 14
+    P_RR_KILLED = 14,
+    P_RR_PLAY = 15
   } istat;                      /*status of photon. */
 
   int nscat;                    /*number of scatterings */
@@ -1154,6 +1156,8 @@ typedef struct photon
                                    so we can write out details of where the photon goes */
   double path;                  /* SWM - Photon path length */
   double ds;                    // EP 11/19 - the distance of the path the photon previously moved
+  int previous_cell;
+  int current_cell;
 }
 p_dummy, *PhotPtr;
 
@@ -1536,6 +1540,7 @@ struct rdpar_choices zz_spec;
 
 struct
 {
+  int on;
   int ps_nsplit;
   double rr_pkill;
   PhotPtr ps_photstore;
