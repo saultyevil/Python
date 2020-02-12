@@ -851,7 +851,6 @@ walls (p, pold, normal)
       double importance_previous_cell = wmain[p->previous_cell].plasma_cell->importance;
       double importance_current_cell = wmain[p->current_cell].plasma_cell->importance;
       double relative_importance = importance_current_cell / importance_previous_cell;
-      p->istat_previous = p->istat;
 
       if (relative_importance < 1)
       {
