@@ -93,7 +93,6 @@ translate (w, pp, tau_scat, tau, nres)
   }
   else if ((pp->grid = where_in_grid (ndomain, pp->x)) >= 0)
   {
-    pp->previous_cell = pp->grid;
     istat = translate_in_wind (w, pp, tau_scat, tau, nres);
   }
   else
@@ -447,13 +446,14 @@ translate_in_wind (w, p, tau_scat, tau, nres)
   PlasmaPtr xplasma;
 
 
-/* First verify that the photon is in the grid, and if not
-return and record an error */
+  /* First verify that the photon is in the grid, and if not
+   * return and record an error
+   */
 
   if ((p->grid = n = where_in_grid (wmain[p->grid].ndom, p->x)) < 0)
     return (n);                 /* Photon was not in grid */
 
-/* Assign the pointers for the cell containing the photon */
+  /* Assign the pointers for the cell containing the photon */
 
   one = &wmain[n];              /* one is the grid cell where the photon is */
   nplasma = one->nplasma;
@@ -461,7 +461,7 @@ return and record an error */
   ndom = one->ndom;
   inwind = one->inwind;
 
-/* Calculate the maximum distance the photon can travel in the cell */
+  /* Calculate the maximum distance the photon can travel in the cell */
 
   if ((smax = ds_in_cell (ndom, p)) < 0)
   {
@@ -492,15 +492,15 @@ return and record an error */
 
   }
 
-/* At this point we now know how far the photon can travel in it's current grid cell */
+  /* At this point we now know how far the photon can travel in it's current grid cell */
 
   smax += one->dfudge;          /* dfudge is to force the photon through the cell boundaries. */
 
-/* Set limits the distance a photon can travel.  There are
-a good many photons which travel more than this distance without this
-limitation, at least in the standard 30 x 30 instantiation.  It does
-make small differences in the structure of lines in some cases.
-The choice of SMAX_FRAC can affect execution time.*/
+  /* Set limits the distance a photon can travel.  There are
+     a good many photons which travel more than this distance without this
+     limitation, at least in the standard 30 x 30 instantiation.  It does
+     make small differences in the structure of lines in some cases.
+     The choice of SMAX_FRAC can affect execution time. */
 
   if (smax > SMAX_FRAC * length (p->x))
   {
@@ -512,21 +512,24 @@ The choice of SMAX_FRAC can affect execution time.*/
      current position of the photon and the position of the photon at the far edge of the
      shell.  It needs a "trial photon at the maximum distance however */
 
-
-/* Note that ds_current does not alter p in any way */
+  /* Note that calculate_ds does not alter p in any way */
 
   ds_current = calculate_ds (w, p, tau_scat, tau, nres, smax, &istat);
+
+  if (p->istat == P_RR_KILLED)
+  {
+    p->nres = *nres;
+    return p->istat;
+  }
 
   if (p->nres < 0)
     xplasma->nscat_es++;
   if (p->nres > 0)
     xplasma->nscat_res++;
 
-
-
-/* OK now we increment the radiation field in the cell, translate the photon and wrap
-   things up If the photon is going to scatter in this cell, radiation also reduces
-   the weight of the photon due to continuum absorption, e.g. free free */
+  /* OK now we increment the radiation field in the cell, translate the photon and wrap
+     things up If the photon is going to scatter in this cell, radiation also reduces
+     the weight of the photon due to continuum absorption, e.g. free free */
 
   if (geo.rt_mode == RT_MODE_MACRO)
   {                             // Macro-method
@@ -564,8 +567,6 @@ The choice of SMAX_FRAC can affect execution time.*/
   p->nres = (*nres);
 
   return (p->istat = istat);
-
-
 }
 
 
@@ -832,39 +833,6 @@ walls (p, pold, normal)
 
   if (fabs (p->x[2]) > geo.rmax)
     return (p->istat = P_ESCAPE);
-
-  /*
-   * At this point, the photon hasn't hit a boundary or escaped from the system.
-   * We can now check to see if we should split or play russian roulette with
-   * the photon
-   */
-
-  if (vr_configuration.on)
-  {
-    int ndom;
-
-    if (where_in_wind (p->x, &ndom) > 0)
-      p->current_cell = where_in_grid (ndom, p->x);
-
-    if (p->previous_cell != p->current_cell)
-    {
-      double importance_previous_cell = wmain[p->previous_cell].plasma_cell->importance;
-      double importance_current_cell = wmain[p->current_cell].plasma_cell->importance;
-      double relative_importance = importance_current_cell / importance_previous_cell;
-
-      if (relative_importance < 1)
-      {
-        vr_configuration.rr_pkill = relative_importance;
-        p->pkill = relative_importance;
-        return (p->istat);
-      }
-      else if (relative_importance > 1)
-      {
-        vr_configuration.ps_nsplit = (int) relative_importance;
-        return (p->istat = P_PS_SPLIT);
-      }
-    }
-  }
 
   return (p->istat);            /* The photon is still in the wind */
 }

@@ -89,7 +89,7 @@ trans_phot (WindPtr w, PhotPtr p, int iextract)
   int nreport;
   struct timeval timer_t0;
 
-  nreport = 100000;
+  nreport = NPHOT / 10;
   if (nreport < NPHOT / 100)
   {
     nreport = NPHOT / 100;
@@ -180,18 +180,10 @@ trans_phot (WindPtr w, PhotPtr p, int iextract)
       }
     }                           /* End of extract loop */
 
-    p[nphot].np = nphot;
+    p[nphot].np = nphot;        // TODO: pretty sure we initialise np elsewhere in define_phot
 
     /* Transport a single photon */
     int istat = trans_phot_single (w, &p[nphot], iextract);
-
-    if (istat == P_PS_SPLIT)
-    {
-      split_photon_packet (&p[nphot]);
-      int iphot;
-      for (iphot = 0; iphot < vr_configuration.ps_nsplit; iphot++)
-        trans_phot_single (w, &vr_configuration.ps_photstore[iphot], FALSE);
-    }
   }
 
   /* This is the end of the loop over all of the photons; after this the routine returns */
@@ -303,12 +295,17 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
        which case it reach the inner edge and was reabsorbed. If the photon escapes then we leave the photon at the position
        of it's last scatter.  In most other cases though we store the final position of the photon. */
 
-    pp.pkill = 0;
     pp.ds = 0;                  // EP 11-19: reinitialise for safety
     istat = translate (w, &pp, tau_scat, &tau, &current_nres);
 
     /* nres is the resonance at which the photon was stopped.  At present the same value is also stored in pp->nres, but I have
        not yet eliminated it from translate. ?? 02jan ksl */
+
+    if (istat == P_RR_KILLED)
+    {
+      stuff_phot (&pp, p);
+      break;
+    }
 
     icell++;
     istat = walls (&pp, p, normal);
@@ -407,8 +404,7 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
       {
         Error ("trans_phot: Trying to scatter a photon which is not in the wind\n"
                "trans_phot: %d grid %3d x %8.2e %8.2e %8.2e\n"
-               "trans_phot: This photon is effectively lost!\n",
-               pp.np, pp.grid, pp.x[0], pp.x[1], pp.x[2]);
+               "trans_phot: This photon is effectively lost!\n", pp.np, pp.grid, pp.x[0], pp.x[1], pp.x[2]);
         istat = pp.istat = p->istat = P_ERROR;
         stuff_phot (&pp, p);
         break;
@@ -420,8 +416,7 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
       {
         Error ("trans_phot: Trying to scatter a photon which is not in a cell in the plasma structure\n"
                "trans_phot: %d grid %3d x %8.2e %8.2e %8.2e\n"
-               "trans_phot: This photon is effectively lost!\n",
-               pp.np, pp.grid, pp.x[0], pp.x[1], pp.x[2]);
+               "trans_phot: This photon is effectively lost!\n", pp.np, pp.grid, pp.x[0], pp.x[1], pp.x[2]);
         istat = pp.istat = p->istat = P_ERROR;
         stuff_phot (&pp, p);
         break;
@@ -433,8 +428,7 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
         Error ("trans_phot: Trying to scatter a photon in a cell with no wind volume\n"
                "trans_phot: %d grid %3d x %8.2e %8.2e %8.2e\n"
                "trans_phot: istat %d\n"
-               "trans_phot: This photon is effectively lost!\n",
-               pp.np, pp.grid, pp.x[0], pp.x[1], pp.x[2], pp.istat);
+               "trans_phot: This photon is effectively lost!\n", pp.np, pp.grid, pp.x[0], pp.x[1], pp.x[2], pp.istat);
         istat = pp.istat = p->istat = P_ERROR;
         stuff_phot (&pp, p);
         break;
@@ -612,15 +606,6 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
       stuff_phot (&pp, p);
       icell = 0;
     }
-
-    /*
-     * TODO:
-     * The photon will play Russian Roulette if it has a non-zero kill
-     * probability...
-     */
-
-    if (pp.pkill > 0)
-      istat = play_russian_roulette (&pp, vr_configuration.rr_pkill);
 
     /* This completes the portion of the code that handles the scattering of a photon.
      * What follows is a simple check to see if

@@ -559,11 +559,9 @@ double diskrad(double m1, double m2, double period);
 double roche2(double q, double a);
 double logg(double mass, double rwd);
 /* vr.c */
-void init_vr(void);
-void clean_up_vr(void);
-void split_photon_packet(struct photon *pin);
-int play_russian_roulette (struct photon *pin, double p_kill);
-void update_importance_map (void);
+void init_russian_roulette(void);
+int play_russian_roulette(struct photon *pin, double p_kill);
+void record_photon(PhotPtr p);
 void vr_debug_print_weights(void);
 /* py_wind_sub.c */
 int zoom(int direction);

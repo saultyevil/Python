@@ -74,7 +74,6 @@ double cds_v2_old, cds_dvds2_old;
  * distance.  nres is now -99 if there was no scatter, instead of
  * -1
  *
- *
  **********************************************************/
 double
 calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
@@ -124,10 +123,9 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     Error ("calculate_ds:  odd tau  %8.2e at %g entering calculate_ds\n", ttau, p->freq);
   }
 
-
-/* Note that comp_phot compares the position and
- * direction of two photons.  If they are the same, then
- * it just takes v1 from the old value.  */
+  /* Note that comp_phot compares the position and
+   * direction of two photons.  If they are the same, then
+   * it just takes v1 from the old value.  */
 
   if (comp_phot (&cds_phot_old, p))
   {
@@ -151,10 +149,10 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   v2 = dot (phot.lmn, v_outer);
 
   /* Check to see that the velocity is monotonic across the cell
-   * by calculating the velocity at the midpoint of the path
-   *
-   * If it is not monitocinc, then reduce smax
+   * by calculating the velocity at the midpoint of the path.
+   * If it is not monotonic, then reduce smax.
    */
+
   vc = VLIGHT;
   while (vc > VCHECK && smax > DFUDGE)
   {
@@ -173,41 +171,41 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     }
   }
 
-
-/* This Doppler shift shifts the photon from the global to the local
- * frame of rest. Therefore multiply. See doppler notes for a discussion
- * The sign is  correct.  If the photon is moving in the same
- * direction as v, then in the rest frame of the ions,
- * then the photon frequency will be less. */
-
+  /* This Doppler shift shifts the photon from the global to the local
+   * frame of rest. Therefore multiply. See doppler notes for a discussion
+   * The sign is  correct.  If the photon is moving in the same
+   * direction as v, then in the rest frame of the ions,
+   * then the photon frequency will be less. */
 
   freq_inner = p->freq * (1. - v1 / VLIGHT);
   freq_outer = phot.freq * (1. - v2 / VLIGHT);
   dfreq = freq_outer - freq_inner;
 
+  /* We use the doppler shifted frequency to compute the Klein-Nishina cross
+   * section, if the frequency is high enough, otherwise we just use the
+   * Thompson cross section.  For the time being, use the average frequency.
+   * If we want true fidelity, perhaps we could compute the cross section
+   * for every little path section between resonances */
 
-/* We use the doppler shifted frequency to compute the Klein-Nishina cross
- * section, if the frequency is high enough, otherwise we just use the
- * Thompson cross section.  For the time being, use the average frequency.
- * If we want true fidelity, perhaps we could compute the cross section
- * for every little path section between resonances */
+  mean_freq = 0.5 * (freq_inner + freq_outer);
 
-  mean_freq = 0.5* (freq_inner + freq_outer);
-
-
-
-/* The next section checks to see if the frequency difference on
- * the two sides is very small and if not limits the resonances
- * one has to worry about
- */
+  /*
+   * The next section checks to see if the frequency difference on
+   * the two sides is very small and if not limits the resonances
+   * one has to worry about
+   */
 
   if (fabs (dfreq) < EPSILON)
   {
     Error ("calculate_ds: v same at both sides of cell %d\n", one->nwind);
-    x = -1;
     return (smax);              // This is not really the best thing to do, but it avoids disaster below
-
   }
+
+  /*
+   * nline_min, nline_max, and nline_delt are found in atomic.h and
+   * are set by limit_lines()
+   */
+
   else if (dfreq > 0)
   {
     limit_lines (freq_inner, freq_outer);
@@ -221,39 +219,30 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     ndelt = (-1);
   }
 
-/*nline_min, nline_max, and nline_delt are found in atomic.h and
- * are set by limit_lines()
- */
-
-  /*Compute the angle averaged electron scattering cross section.  Note the es is always
-   treated as a scattering event. */
+  /* Compute the angle averaged electron scattering cross section. Note this is
+   * always treated as a scattering event.
+   */
 
   kap_es = klein_nishina (mean_freq) * xplasma->ne * zdom[ndom].fill;
 
-/* If in macro-atom mode, calculate the bf and ff opacities, becuase in macro-atom mode
- * everthing including bf is calculated as a scattering process.  The routine
- * kappa_bound stores the individual opacities as well as the total, because when
- * there is more than one opacity contributin to the total, these are needed to choose
- * which particular bound-free transition to activate.  
- * For the two level approximation, none of this needed. 
- */
+  /* If in macro-atom mode, calculate the bf and ff opacities, becuase in macro-atom mode
+   * everthing including bf is calculated as a scattering process.  The routine
+   * kappa_bound stores the individual opacities as well as the total, because when
+   * there is more than one opacity contributin to the total, these are needed to choose
+   * which particular bound-free transition to activate.
+   * For the two level approximation, none of this needed.
+   */
 
   kap_bf_tot = 0;
   kap_ff = 0;
 
-
   if (geo.rt_mode == RT_MODE_MACRO)
   {
-
-    freq_av = freq_inner;       
-    
+    freq_av = freq_inner;
     //(freq_inner + freq_outer) * 0.5;  //need to do better than this perhaps but okay for star - comoving frequency (SS)
-
 
     kap_bf_tot = kappa_bf (xplasma, freq_av, 0);
     kap_ff = kappa_ff (xplasma, freq_av);
-
-    /* Okay the bound free contribution to the opacity is now sorted out (SS) */
   }
 
   if (one->vol == 0)
@@ -262,15 +251,30 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     Error_silent ("ds_calculate vol = 0: cell %d position %g %g %g\n", p->grid, p->x[0], p->x[1], p->x[2]);
   }
 
+  kap_cont = kap_es + kap_bf_tot + kap_ff;      // total continuum opacity
 
+  double cell_tau = kap_cont * smax;
+  if (cell_tau > vr_configuration.rr_tau_crit)
+  {
+    p->w_rr_orig = p->w;
 
+    if (vr_configuration.debug_messages)
+    {
+      Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
+      Log ("%s : %i : cell_tau = %f\n", __FILE__, __LINE__, cell_tau);
+      Log ("%s : %i : ds_current = %e\n\n", __FILE__, __LINE__, ds_current);
+    }
 
-  kap_cont = kap_es + kap_bf_tot + kap_ff;      //total continuum opacity
+    play_russian_roulette (p, vr_configuration.rr_pkill);
+    record_photon (p);
 
+    if (p->istat == P_RR_KILLED)
+      return ds_current;
+  }
 
-/* Finally begin the loop over the resonances that can interact
- * with the photon in the cell
- */
+  /* Finally begin the loop over the resonances that can interact
+   * with the photon in the cell
+   */
 
   for (n = 0; n < nline_delt; n++)
   {
@@ -282,16 +286,17 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     {                           /* this particular line is in resonance */
       ds = x * smax;
 
+      /* Before checking for a resonant scatter, need to check for scattering
+       * due to a continuum
+       * process.
+       */
 
-/* Before checking for a resonant scatter, need to check for scattering
- * due to a continuum
- * process.
- */
       if (ttau + (kap_cont) * (ds - ds_current) > tau_scat)
       {
-/* then the photon was scattered by the continuum before reaching the
- * resonance.  Need to randomly select the continumm process which caused
- * the photon to scatter.  The variable threshold is used for this. */
+
+        /* then the photon was scattered by the continuum before reaching the
+         * resonance.  Need to randomly select the continumm process which caused
+         * the photon to scatter.  The variable threshold is used for this. */
 
         *nres = select_continuum_scattering_process (kap_cont, kap_es, kap_ff, xplasma);
         *istat = P_SCAT;        //flag as scattering
@@ -303,7 +308,8 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
       else
       {
 
-/* increment tau by the continuum optical depth to this point */
+        /* increment tau by the continuum optical depth to this point */
+
         ttau += kap_cont * (ds - ds_current);
 
 
@@ -311,20 +317,20 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
         kkk = lin_ptr[nn]->nion;
 
 
-/* The density is calculated in the wind array at the center of a cell.
- * We use that as the first estimate of the density.  */
+        /* The density is calculated in the wind array at the center of a cell.
+         * We use that as the first estimate of the density.  */
+
         stuff_phot (p, &p_now);
         move_phot (&p_now, ds_current); // So p_now contains the current position of the photon
-
-
 
         dd = get_ion_density (ndom, p_now.x, kkk);
 
         if (dd > LDEN_MIN)
         {
-/* If we have reached this point then we have to initalize dvds1 and dvds2.
- * Otherwise there is no need to do this, especially as dvwind_ds is an
- * expensive calculation time wise */
+
+          /* If we have reached this point then we have to initalize dvds1 and dvds2.
+           * Otherwise there is no need to do this, especially as dvwind_ds is an
+           * expensive calculation time wise */
 
           if (init_dvds == 0)
           {
@@ -334,24 +340,22 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
           }
 
           dvds = (1. - x) * dvds1 + x * dvds2;
-
-
-
           tau_sobolev = sobolev (one, p->x, dd, lin_ptr[nn], dvds);
 
-/* tau_sobolev now stores the optical depth. This is fed into the next statement for the bb estimator calculation. SS March 2004 */
+          /* tau_sobolev now stores the optical depth. This is fed into the next statement for the bb estimator calculation.
+           * SS March 2004
+           */
 
           ttau += tau_sobolev;
-
 
           if (geo.rt_mode == RT_MODE_MACRO)     //Macro Atom case (SS)
           {
 
-/* Because push through distance may take us out of the cell we want,
- * need to make sure that the cell is correct before incrementing the
- * heating rate/estimators. So 1st check if it's still in the wind and
- * second get a pointer to the grid cell where the resonance really happens.
- */
+            /* Because push through distance may take us out of the cell we want,
+             * need to make sure that the cell is correct before incrementing the
+             * heating rate/estimators. So 1st check if it's still in the wind and
+             * second get a pointer to the grid cell where the resonance really happens.
+             */
 
             check_in_grid = walls (&p_now, p, normal);
 
@@ -362,7 +366,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
 
               if (lin_ptr[nn]->macro_info == 1 && geo.macro_simple == 0)
               {
-/* The line is part of a macro atom so increment the estimator if desired */
+                /* The line is part of a macro atom so increment the estimator if desired */
                 if (geo.ioniz_or_extract == 1)
                 {
                   bb_estimators_increment (two, p, tau_sobolev, dvds, nn);
@@ -378,7 +382,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
               }
               else
               {
-/* The line is from a simple ion. Record the heating contribution and move on. */
+                /* The line is from a simple ion. Record the heating contribution and move on. */
                 xplasma2 = &plasmamain[two->nplasma];
 
                 bb_simple_heat (xplasma2, p, tau_sobolev, dvds, nn);
@@ -405,11 +409,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
             p_now.nres = nn;
             phot_hist (&p_now, 1);
           }
-
-
         }
-
-
 
         /* Check to see whether the photon should scatter at this point */
         if (ttau > tau_scat)
@@ -417,9 +417,6 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
           *istat = P_SCAT;
           *nres = nn;
           *tau = ttau;
-
-
-
 
           return (ds_current);
         }
@@ -430,17 +427,15 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     }
   }
 
-
-
-/* If the photon reaches this point it was not scattered by resonances.
- * ds_current is either 0 if there were no resonances or the position of the
- * "last" resonance if there were resonances.  But we need to check one
- * last time to see if it was scattered by continuum process.
- * Note: ksl -- It is generally a bad policy to have a bunch of repeated code
- * like this.  We should probably rewrite some of this in terms of subroutines
- * for clarity, especially the bit that calculates where the continuum
- * scattering event occurred.  04 apr
- */
+  /* If the photon reaches this point it was not scattered by resonances.
+   * ds_current is either 0 if there were no resonances or the position of the
+   * "last" resonance if there were resonances.  But we need to check one
+   * last time to see if it was scattered by continuum process.
+   * Note: ksl -- It is generally a bad policy to have a bunch of repeated code
+   * like this.  We should probably rewrite some of this in terms of subroutines
+   * for clarity, especially the bit that calculates where the continuum
+   * scattering event occurred.  04 apr
+   */
 
   if (ttau + kap_cont * (smax - ds_current) > tau_scat)
   {
@@ -1273,7 +1268,7 @@ scatter (p, nres, nnscat)
   if (*nres == -1)              //Its an electron scatter
   {
     p->freq = freq_comoving;    // The photon frequency in the electron rest frame 
-    compton_dir (p);   // Get a new direction using the KN formula
+    compton_dir (p);            // Get a new direction using the KN formula
     v_dop = dot (p->lmn, v);    // Find the dot product of the new direction with the wind velocity 
     p->freq = p->freq / (1. - v_dop / VLIGHT);  //Transform back to the observer frame
 

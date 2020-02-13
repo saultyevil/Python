@@ -1155,10 +1155,7 @@ typedef struct photon
                                    so we can write out details of where the photon goes */
   double path;                  /* SWM - Photon path length */
   double ds;                    // EP 11/19 - the distance of the path the photon previously moved
-  int previous_cell;
-  int current_cell;
-  int daughter;
-  double pkill;
+  double w_rr_orig; // TODO debug remove
 }
 p_dummy, *PhotPtr;
 
@@ -1537,25 +1534,12 @@ typedef struct rdpar_choices
 struct rdpar_choices zz_spec;
 
 
-// TODO: move to somewhere more appropriate
+// TODO: move to somewhere more appropriate - do we need this if we only care about RR? Likely not.
 
 struct
 {
-  int on;
-  int ps_nsplit;
   double rr_pkill;
-  PhotPtr ps_photstore;
-
-  enum pas_enum
-  {
-    NO_PAS = 0,
-    FIXED_PAS = 1,
-    VARIABLE_PAS = 2
-  } pas_types;
-
-  int pas_type;
-  double fix_pas_alpha;
-  double (*random_tau_scat) (struct photon * photon);
-  double ps_tau_scat;
-
+  double rr_tau_crit;
+  int use_russian_roulette;
+  int debug_messages;
 } vr_configuration ;

@@ -101,10 +101,7 @@ calculate_ionization (restart_stat)
   //1 simply implies we are in the ionization section of the code
   //and allows routines to act accordinaly.
 
-
-  init_vr ();
-
-/* BEGINNING OF CYCLE TO CALCULATE THE IONIZATION OF THE WIND */
+  /* BEGINNING OF CYCLE TO CALCULATE THE IONIZATION OF THE WIND */
 
   if (geo.wcycle == geo.wcycles)
     xsignal (files.root, "%-20s No ionization needed: wcycles(%d)==wcyeles(%d)\n", "COMMENT", geo.wcycle, geo.wcycles);
@@ -139,14 +136,6 @@ calculate_ionization (restart_stat)
                    geo.scat_select, geo.top_bot_select, geo.select_extract, geo.rho_select, geo.z_select, geo.az_select, geo.r_select);
 
     wind_rad_init ();           /*Zero the parameters pertaining to the radiation field */
-
-    /*
-     * Update the importance map for the grid if packet splitting and russian
-     * roulette are enabled
-     */
-
-    if (vr_configuration.on)
-      update_importance_map ();
 
     geo.n_ioniz = 0.0;
     geo.cool_tot_ioniz = 0.0;
@@ -421,8 +410,6 @@ calculate_ionization (restart_stat)
     wind_paths_evaluate (w, rank_global);
   }
 
-  clean_up_vr ();
-
   vr_debug_print_weights ();
 
   return (0);
@@ -491,7 +478,7 @@ make_spectra (restart_stat)
    * to try to increase the speed
    */
 
-  vr_configuration.on = FALSE;
+  vr_configuration.use_russian_roulette = FALSE;
 
 /* Next steps to speed up extraction stage */
   if (!modes.keep_photoabs)
