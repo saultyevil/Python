@@ -262,13 +262,12 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
 
     if (vr_configuration.debug_messages)
     {
-      int static ngames = 0;
-
       Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
       Log ("%s : %i : cell_tau = %f\n", __FILE__, __LINE__, cell_tau);
       Log ("%s : %i : current_cell = %i\n", __FILE__, __LINE__, p->grid);
       Log ("%s : %i : ds_current = %e\n", __FILE__, __LINE__, ds_current);
 
+      int static ngames = 0;
       int current_photon = p->np;
       int static previous_photon = 0;
       if (previous_photon != current_photon)
