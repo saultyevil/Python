@@ -95,7 +95,6 @@ trans_phot (WindPtr w, PhotPtr p, int iextract)
     nreport = NPHOT / 100;
   }
 
-
   Log ("\n");
 
   timer_t0 = init_timer_t0 ();

@@ -258,15 +258,38 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   {
     p->w_rr_orig = p->w;
 
+    int static ngames = 0;
+
     if (vr_configuration.debug_messages)
     {
       Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
       Log ("%s : %i : cell_tau = %f\n", __FILE__, __LINE__, cell_tau);
-      Log ("%s : %i : ds_current = %e\n\n", __FILE__, __LINE__, ds_current);
+      Log ("%s : %i : current_cell = %i\n", __FILE__, __LINE__, p->grid);
+      Log ("%s : %i : ds_current = %e\n", __FILE__, __LINE__, ds_current);
+
+      int current_photon = p->np;
+      int static previous_photon = 0;
+      if (previous_photon != current_photon)
+      {
+        previous_photon = current_photon;
+        ngames = 1;
+      }
+      else
+      {
+        ngames++;
+      }
     }
 
     play_russian_roulette (p, vr_configuration.rr_pkill);
     record_photon (p);
+
+    if (vr_configuration.debug_messages)
+    {
+      if (p->istat == P_RR_KILLED)
+        Log ("%s : %i : Photon %i was killed after %i games\n\n", __FILE__, __LINE__, p->np, ngames);
+      else
+        Log ("%s : %i : Photon %i survived\n\n", __FILE__, __LINE__, p->np);
+    }
 
     if (p->istat == P_RR_KILLED)
       return ds_current;
