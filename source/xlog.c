@@ -108,7 +108,8 @@
 int my_rank = 0;                // rank of mpi process, set to zero
 int n_mpi_procs = 0;            // the number of mpi processes
 
-int log_print_max = 100;        // Maximum number of times a single error will be reported.  
+// TODO: revert back to 100
+int log_print_max = 1;          // Maximum number of times a single error will be reported.
                                 // Note that it will still be counted.
 int max_errors = 100000;        // Maximum number of times an error can occur before giving up
 

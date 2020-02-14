@@ -83,7 +83,7 @@ double DENSITY_PHOT_MIN;        /* This constant is a minimum density for the pu
 #define BETA  				1.0
 #define KAPPA_CONT 			4.
 #define EPSILON  			1.e-6   /* A general purpose fairly small number */
-#define NSTAT 				10      // JM increased this to ten to allow for adiabatic
+#define NSTAT 				15      // JM increased this to ten to allow for adiabatic  TODO: why do we need this?
 #define VMAX                		1.e9
 #define TAU_MAX				20.     /* Sets an upper limit in extract on when
                                                    a photon can be assumed to be completely absorbed */
@@ -101,7 +101,7 @@ int NPHOT_MAX;                  /* The maximum number of photon bundles created 
 int NPHOT;                      /* The number of photon bundles created, defined in setup.c */
 
 #define NWAVE  			  10000 //This is the number of wavelength bins in spectra that are produced
-#define MAXSCAT 			2000
+#define MAXSCAT 			50000  // TODO: reduce back down to 2k
 
 /* Define the structures */
 
@@ -1111,8 +1111,7 @@ typedef struct photon
     P_ERROR_MATOM = 10,         //Some kind of error in processing of a photon which excited a macroattom
     P_LOFREQ_FF = 11,           //records a photon that had too low a frequency
     P_REPOSITION_ERROR = 12,    //A photon passed through the disk due to dfudge pushing it through incorrectly
-    P_PS_SPLIT = 13,
-    P_RR_KILLED = 14,
+    P_RR_KILLED = 13,
   } istat;                      /*status of photon. */
 
   int nscat;                    /*number of scatterings */

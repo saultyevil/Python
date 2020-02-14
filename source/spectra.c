@@ -548,12 +548,19 @@ spectrum_create (p, f1, f2, nangle, select_extract)
 
   Log ("\nNo. of photons which have scattered n times.     The max number of scatters seen was %d\n", max_scat);
 
-  for (i = 0; i <= max_scat; i++)
-  {
-    Log ("%6d", nscat[i]);
-    if ((i % 10) == 9)
-      Log ("\n");
-  }
+  /*
+     TODO: ignore electron scatters for now
+
+     Log ("\nNo. of photons which have scattered n times.     The max number of scatters seen was %d\n", max_scat);
+
+     for (i = 0; i <= max_scat; i++)
+     {
+     Log ("%6d", nscat[i]);
+     if ((i % 10) == 9)
+     Log ("\n");
+     }
+
+   */
 
   Log ("\nNumber of photons resonantly scattering n times.  The max number of scatters seen was %d\n", max_res);
   for (i = 0; i <= max_res; i++)
@@ -563,7 +570,8 @@ spectrum_create (p, f1, f2, nangle, select_extract)
       Log ("\n");
   }
   Log ("\nNo of photons and their fates\n!!PhotFate: ");
-  for (i = 0; i < NSTAT; i++)
+  // TODO change back to NSTAT lol
+  for (i = 0; i < 10; i++)
   {
     Log ("%6d", nstat[i]);
     if ((i % 10) == 9)
@@ -588,7 +596,8 @@ spectrum_create (p, f1, f2, nangle, select_extract)
   Log ("Inwind   Scat    Esc     Star    >nscat    err    Absorb   Disk    sec    Adiab(matom)\n");
   for (n = 0; n < nspectra; n++)
   {
-    for (i = 0; i < NSTAT; i++)
+    // TODO change back to NSTAT lol
+    for (i = 0; i < 10; i++)
       Log (" %7d", xxspec[n].nphot[i]);
     Log ("\n");
 

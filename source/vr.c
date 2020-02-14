@@ -143,11 +143,11 @@ record_photon (PhotPtr p)
       Error ("Couldn't open RR diag log file???\n");
       Exit (1);
     }
-    fprintf (f, "np w_i w\n");
+    fprintf (f, "np w_i w istat\n");
     init++;
   }
 
-  fprintf (f, "%i %e %e\n", p->np, p->w, p->w_rr_orig);
+  fprintf (f, "%i %e %e %i\n", p->np, p->w_rr_orig, p->w, p->istat);
 }
 
 
@@ -184,38 +184,37 @@ vr_debug_print_weights (void)
 
   fprintf (f1, "n np w w0 istat\n");
 
-  int icount = 0;
   for (i = 0; i < NPHOT; i++)
   {
     p = photmain[i];
-    fprintf (f1, "%i %i %e %e ", icount, p.np, p.w, p.w_orig);
+    fprintf (f1, "%i %i %e %e ", i, p.np, p.w, p.w_orig);
     if (p.istat == P_ESCAPE)
     {
       fprintf (f1, "P_ESCAPE\n");
-      icount++;
       tot_weight += p.w;
       tot_orig_weight += p.w_orig;
     }
     else if (p.istat == P_ABSORB)
     {
       fprintf (f1, "P_ABSORB\n");
-      icount++;
     }
     else if (p.istat == P_HIT_STAR)
     {
       fprintf (f1, "P_HIT_STAR\n");
-      icount++;
+    }
+    else if (p.istat == P_RR_KILLED)
+    {
+      fprintf (f1, "P_RR_KILLED\n");
     }
     else
     {
       fprintf (f1, "OTHER\n");
-      icount++;
     }
   }
 
   fclose (f1);
 
-  Log ("Total weight escaped %e\n", tot_weight);
-  Log ("Total original weight of escaped photons %e\n", tot_orig_weight);
+  Log ("Total weight of escaped photons             %e\n", tot_weight);
+  Log ("Total original weight of escaped photons    %e\n", tot_orig_weight);
   Log ("tot_orig_weight - tot_weight =  %e\n", tot_orig_weight - tot_weight);
 }

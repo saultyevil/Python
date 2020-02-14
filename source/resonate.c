@@ -254,7 +254,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   kap_cont = kap_es + kap_bf_tot + kap_ff;      // total continuum opacity
 
   double cell_tau = kap_cont * smax;
-  if (cell_tau > vr_configuration.rr_tau_crit)
+  if (vr_configuration.use_russian_roulette && cell_tau > vr_configuration.rr_tau_crit)
   {
     p->w_rr_orig = p->w;
 
@@ -282,21 +282,23 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
                                    the grid cell, we go up in the array, otherwise down */
     x = (lin_ptr[nn]->freq - freq_inner) / dfreq;
 
-    if (0. < x && x < 1.)
+    if (0.0 < x && x < 1.0)
     {                           /* this particular line is in resonance */
       ds = x * smax;
 
-      /* Before checking for a resonant scatter, need to check for scattering
-       * due to a continuum
-       * process.
+      /*
+       * Before checking for a resonant scatter, need to check for scattering
+       * due to a continuum process.
        */
 
       if (ttau + (kap_cont) * (ds - ds_current) > tau_scat)
       {
 
         /* then the photon was scattered by the continuum before reaching the
-         * resonance.  Need to randomly select the continumm process which caused
-         * the photon to scatter.  The variable threshold is used for this. */
+         * resonance.  Need to randomly select the continuum process which
+         * caused the photon to scatter. The variable threshold is used for
+         * this.
+         */
 
         *nres = select_continuum_scattering_process (kap_cont, kap_es, kap_ff, xplasma);
         *istat = P_SCAT;        //flag as scattering
@@ -311,7 +313,6 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
         /* increment tau by the continuum optical depth to this point */
 
         ttau += kap_cont * (ds - ds_current);
-
 
         ds_current = ds;        /* At this point ds_current is exactly the position of the resonance */
         kkk = lin_ptr[nn]->nion;
