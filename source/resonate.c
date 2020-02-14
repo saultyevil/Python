@@ -257,11 +257,13 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   if (vr_configuration.use_russian_roulette && cell_tau > vr_configuration.rr_tau_crit)
   {
     p->w_rr_orig = p->w;
-
-    int static ngames = 0;
+    play_russian_roulette (p, vr_configuration.rr_pkill);
+    record_photon (p);          // TODO remove debug
 
     if (vr_configuration.debug_messages)
     {
+      int static ngames = 0;
+
       Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
       Log ("%s : %i : cell_tau = %f\n", __FILE__, __LINE__, cell_tau);
       Log ("%s : %i : current_cell = %i\n", __FILE__, __LINE__, p->grid);
@@ -278,13 +280,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
       {
         ngames++;
       }
-    }
 
-    play_russian_roulette (p, vr_configuration.rr_pkill);
-    record_photon (p);
-
-    if (vr_configuration.debug_messages)
-    {
       if (p->istat == P_RR_KILLED)
         Log ("%s : %i : Photon %i was killed after %i games\n\n", __FILE__, __LINE__, p->np, ngames);
       else
