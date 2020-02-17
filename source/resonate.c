@@ -254,13 +254,16 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   kap_cont = kap_es + kap_bf_tot + kap_ff;      // total continuum opacity
 
   double cell_tau = kap_cont * smax;
-  if (vr_configuration.use_russian_roulette && cell_tau > vr_configuration.rr_tau_crit)
+  if (RussianRoulette.enabled && cell_tau > RussianRoulette.critcal_tau && p->w < RussianRoulette.weight_limit * p->w_orig)
   {
-    p->w_rr_orig = p->w;
-    play_russian_roulette (p, vr_configuration.rr_pkill);
-    record_photon (p);          // TODO remove debug
+    play_russian_roulette (p, RussianRoulette.kill_probability);
 
-    if (vr_configuration.debug_messages)
+    // TODO: extra debug to remove
+    p->w_rr_orig = p->w;
+    record_photon (p);
+
+    // TODO: remove debug when implemented
+    if (RussianRoulette.debug_messages)
     {
       Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
       Log ("%s : %i : cell_tau = %f\n", __FILE__, __LINE__, cell_tau);

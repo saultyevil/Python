@@ -1537,8 +1537,9 @@ struct rdpar_choices zz_spec;
 
 struct
 {
-  double rr_pkill;
-  double rr_tau_crit;
-  int use_russian_roulette;
+  double weight_limit;
+  double kill_probability;
+  double critcal_tau;
+  int enabled;
   int debug_messages;
-} vr_configuration ;
+} RussianRoulette ;

@@ -478,7 +478,7 @@ make_spectra (restart_stat)
    * to try to increase the speed
    */
 
-  vr_configuration.use_russian_roulette = FALSE;
+  RussianRoulette.enabled = FALSE;
 
 /* Next steps to speed up extraction stage */
   if (!modes.keep_photoabs)

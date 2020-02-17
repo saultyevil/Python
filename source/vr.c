@@ -40,17 +40,25 @@ init_russian_roulette (void)
   char default_usage[LINELENGTH];
 
   strcpy (default_usage, "no");
-  vr_configuration.use_russian_roulette = rdchoice ("VR.use_russian_roulette(yes,no)", "1,0", default_usage);
+  RussianRoulette.enabled = rdchoice ("RR.enable(yes,no)", "1,0", default_usage);
 
-  if (vr_configuration.use_russian_roulette)
+  if (RussianRoulette.enabled)
   {
     /*
      * TODO
      * kill probability for russian roulette
      */
 
-    vr_configuration.rr_pkill = 0.1;
-    rddoub ("VR.russian_roulette_pkill", &vr_configuration.rr_pkill);
+    RussianRoulette.kill_probability = 0.1;
+    rddoub ("RR.kill_probability", &RussianRoulette.kill_probability);
+
+    /*
+     * TODO
+     * If p->w > weight_limit * p_w_orig, then don't play rr
+     */
+
+    RussianRoulette.weight_limit = 1e6;
+    rddoub ("RR.weight_limit(original_photon_weight)", &RussianRoulette.weight_limit);
 
     /*
      * TODO
@@ -58,16 +66,16 @@ init_russian_roulette (void)
      * an advanced diag probably
      */
 
-    vr_configuration.rr_tau_crit = 20;
-    rddoub ("VR.russian_roulette_tau_crit", &vr_configuration.rr_tau_crit);
+    RussianRoulette.critcal_tau = 20;
+    rddoub ("RR.critical_optical_depth", &RussianRoulette.critcal_tau);
 
     /*
      * TODO
-     * Don't really need this
+     * Don't really need this when fully implemented
      */
 
     strcpy (default_usage, "no");
-    vr_configuration.debug_messages = rdchoice ("VR.debug_messages(yes,no)", "1,0", default_usage);
+    RussianRoulette.debug_messages = rdchoice ("RR.debug_messages(yes,no)", "1,0", default_usage);
   }
 }
 
