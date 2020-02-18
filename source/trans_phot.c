@@ -182,7 +182,7 @@ trans_phot (WindPtr w, PhotPtr p, int iextract)
     p[nphot].np = nphot;        // TODO: pretty sure we initialise np elsewhere in define_phot
 
     /* Transport a single photon */
-    int istat = trans_phot_single (w, &p[nphot], iextract);
+    trans_phot_single (w, &p[nphot], iextract);
   }
 
   /* This is the end of the loop over all of the photons; after this the routine returns */
@@ -638,6 +638,8 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
    * the photon was last while in the wind, you want to track p; if you wish to know where it hits the
    * outer boundary of the calculation you would want pp.  So one should keep both lines below, and comment
    * out the one you do not want. */
+
+  // TODO: revert back to normal behaviour
 
   modes.save_photons = 1;
   if (modes.save_photons)

@@ -86,13 +86,24 @@ translate (w, pp, tau_scat, tau, nres)
 {
   int istat;
   int ndomain;
+  int grid;
 
   if (where_in_wind (pp->x, &ndomain) < 0)      //If the return is negative, this means we are outside the wind
   {
     istat = translate_in_space (pp);    //And so we should translate in space
   }
-  else if ((pp->grid = where_in_grid (ndomain, pp->x)) >= 0)
+  else if ((grid = where_in_grid (ndomain, pp->x)) >= 0)
   {
+    /*
+     * Then we've crossed a boundary, and we are able to play Russian Roulette
+     * or split the photon packet
+     */
+
+    if (grid != pp->grid)
+      RussianRoulette.enabled = TRUE;
+
+    pp->grid = grid;
+
     istat = translate_in_wind (w, pp, tau_scat, tau, nres);
   }
   else

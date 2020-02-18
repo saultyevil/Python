@@ -257,6 +257,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   if (RussianRoulette.enabled && cell_tau > RussianRoulette.critcal_tau && p->w < RussianRoulette.weight_limit * p->w_orig)
   {
     play_russian_roulette (p, RussianRoulette.kill_probability);
+    RussianRoulette.enabled = FALSE;    // Turn it back off :-)
 
     // TODO: extra debug to remove
     p->w_rr_orig = p->w;
