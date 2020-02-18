@@ -393,18 +393,6 @@ save_photons (p, comment)
      PhotPtr p;
      char comment[];
 {
-
-  // TODO: remove this lmao
-
-  static int init = 0;
-  if (!init)
-  {
-    modes.extra_diagnostics = 1;
-    init_extra_diagnostics ();
-    fprintf (epltptr, "PHOTON wcycle np freq x y z nx ny nz grid istat origin nres comment\n");
-    init++;
-  }
-
   save_photon_number += 1;
 
   fprintf (epltptr,
