@@ -253,45 +253,48 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
 
   kap_cont = kap_es + kap_bf_tot + kap_ff;      // total continuum opacity
 
-  double cell_tau = kap_cont * smax;
-  if (RussianRoulette.enabled && cell_tau > RussianRoulette.critcal_tau && p->w < RussianRoulette.weight_limit * p->w_orig)
+  if (RussianRoulette.enabled)
   {
-    play_russian_roulette (p, RussianRoulette.kill_probability);
-    RussianRoulette.enabled = FALSE;    // Turn it back off :-)
+    double smax_optical_depth = kap_cont * smax;
 
-    // TODO: extra debug to remove
-    p->w_rr_orig = p->w;
-    record_photon (p);
-
-    // TODO: remove debug when implemented
-    if (RussianRoulette.debug_messages)
+    if (p->crossed_cell && smax_optical_depth > RussianRoulette.critcal_tau && p->w < RussianRoulette.weight_limit * p->w_orig)
     {
-      Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
-      Log ("%s : %i : cell_tau = %f\n", __FILE__, __LINE__, cell_tau);
-      Log ("%s : %i : current_cell = %i\n", __FILE__, __LINE__, p->grid);
-      Log ("%s : %i : ds_current = %e\n", __FILE__, __LINE__, ds_current);
+      play_russian_roulette (p, RussianRoulette.kill_probability);
 
-      int static ngames = 0;
-      int current_photon = p->np;
-      int static previous_photon = 0;
-      if (previous_photon != current_photon)
+      // TODO: extra debug to remove
+      p->w_rr_orig = p->w;
+      record_photon (p);
+
+      // TODO: remove debug when implemented
+      if (RussianRoulette.debug_messages)
       {
-        previous_photon = current_photon;
-        ngames = 1;
-      }
-      else
-      {
-        ngames++;
+        Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
+        Log ("%s : %i : smax_optical_depth = %f\n", __FILE__, __LINE__, smax_optical_depth);
+        Log ("%s : %i : current_cell = %i\n", __FILE__, __LINE__, p->grid);
+        Log ("%s : %i : ds_current = %e\n", __FILE__, __LINE__, ds_current);
+
+        int static ngames = 0;
+        int current_photon = p->np;
+        int static previous_photon = 0;
+        if (previous_photon != current_photon)
+        {
+          previous_photon = current_photon;
+          ngames = 1;
+        }
+        else
+        {
+          ngames++;
+        }
+
+        if (p->istat == P_RR_KILLED)
+          Log ("%s : %i : Photon %i was killed after %i games\n\n", __FILE__, __LINE__, p->np, ngames);
+        else
+          Log ("%s : %i : Photon %i survived\n\n", __FILE__, __LINE__, p->np);
       }
 
       if (p->istat == P_RR_KILLED)
-        Log ("%s : %i : Photon %i was killed after %i games\n\n", __FILE__, __LINE__, p->np, ngames);
-      else
-        Log ("%s : %i : Photon %i survived\n\n", __FILE__, __LINE__, p->np);
+        return ds_current;
     }
-
-    if (p->istat == P_RR_KILLED)
-      return ds_current;
   }
 
   /* Finally begin the loop over the resonances that can interact

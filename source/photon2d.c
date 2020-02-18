@@ -88,22 +88,31 @@ translate (w, pp, tau_scat, tau, nres)
   int ndomain;
   int grid;
 
-  if (where_in_wind (pp->x, &ndomain) < 0)      //If the return is negative, this means we are outside the wind
-  {
-    istat = translate_in_space (pp);    //And so we should translate in space
+  if (where_in_wind (pp->x, &ndomain) < 0)      // If the return is negative, we are outside the wind
+  {                                             // And so we should translate in space
+    istat = translate_in_space (pp);
   }
   else if ((grid = where_in_grid (ndomain, pp->x)) >= 0)
   {
     /*
-     * Then we've crossed a boundary, and we are able to play Russian Roulette
-     * or split the photon packet
+     * Flag when we have crossed a cell boundary. This is done for variance
+     * reduction optimisations, as they are only done when photons have crossed
+     * a cell boundary. We are able to do this because we only update the
+     * grid cell falg of photons here, using where_in_grid which does not update
+     * the photon structure itself. Thus, if grid and p->grid are different,
+     * then the photon has crossed a boundary into another grid.
      */
 
     if (grid != pp->grid)
-      RussianRoulette.enabled = TRUE;
+    {
+      pp->crossed_cell = TRUE;     // We can play Russian Roulette or split
+    }
+    else
+    {
+      pp->crossed_cell = FALSE;    // We are in a cell interior
+    }
 
     pp->grid = grid;
-
     istat = translate_in_wind (w, pp, tau_scat, tau, nres);
   }
   else
