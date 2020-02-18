@@ -260,6 +260,29 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
 
   kap_cont = kap_es + kap_bf_tot + kap_ff;      // total continuum opacity
 
+  double smax_optical_depth = kap_cont * smax;
+
+  /*
+   * If photons are able to be split into multiple low weight packets, then we
+   * check for three conditions.
+   *    - 1: photons have crossed into a new cell.
+   *    - 2: the optical depth along the current trajectory is not large, i.e.
+   *         it is lower than some critical optical depth
+   *    - 3: the weight of the photon is larger than the critical upper
+   *         threshold
+   */
+
+  if (PacketSplitting.enabled)
+  {
+    if (p->crossed_cell && smax_optical_depth < PacketSplitting.critical_tau && p->w > PacketSplitting.weight_limit * p->w_orig)
+    {
+      split_photon_packet (p, PacketSplitting.nsplit);
+
+      if (p->istat == P_PS_SPLIT)
+        return ds_current;
+    }
+  }
+
   /*
    * If photons are allowed to play Russian Roulette, then we check for three
    * conditions.
@@ -275,13 +298,11 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
 
   if (RussianRoulette.enabled)
   {
-    double smax_optical_depth = kap_cont * smax;
-
     if (p->crossed_cell && smax_optical_depth > RussianRoulette.critcal_tau && p->w < RussianRoulette.weight_limit * p->w_orig)
     {
       play_russian_roulette (p, RussianRoulette.kill_probability);
 
-      /* ---------- TODO: Diagnostic Code TO BE REMOVED ----------*/
+      /* ---------- TODO: Diagnostic Code TO BE REMOVED ---------- */
 
       p->w_rr_orig = p->w;
       record_photon (p);
@@ -312,7 +333,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
           Log ("%s : %i : Photon %i survived\n\n", __FILE__, __LINE__, p->np);
       }
 
-      /* ---------- TODO: Diagnostic Code TO BE REMOVED ----------*/
+      /* ---------- TODO: Diagnostic Code TO BE REMOVED ---------- */
 
       if (p->istat == P_RR_KILLED)
         return ds_current;

@@ -48,28 +48,29 @@ init_variance_reduction_optimisations (void)
 
   if (RussianRoulette.enabled)
   {
-    /*
-     * kill probability for russian roulette
-     */
-
     RussianRoulette.kill_probability = 0.1;
     rddoub ("RR.kill_probability", &RussianRoulette.kill_probability);
-
-    /*
-     * If p->w > weight_limit * p_w_orig, then don't play russian roulette with
-     * this photon
-     */
+    if (RussianRoulette.kill_probability < 0 && RussianRoulette.kill_probability > 1)
+    {
+      Error ("%s : %i: the kill probability has to be 0 < pkill < 1\n", __FILE__, __LINE__);
+      Exit (1);
+    }
 
     RussianRoulette.weight_limit = 1e3;
     rddoub ("RR.weight_limit(original_photon_weight)", &RussianRoulette.weight_limit);
-
-    /*
-     * the optical depth in the cell to consider using RR with, this should be
-     * an advanced diag probably
-     */
+    if (RussianRoulette.weight_limit <= 1)
+    {
+      Error ("%s : %i: the upper weight limit of photon packets has to be more than 1\n", __FILE__, __LINE__);
+      Exit (1);
+    }
 
     RussianRoulette.critcal_tau = 20;
     rddoub ("RR.critical_optical_depth", &RussianRoulette.critcal_tau);
+    if (RussianRoulette.critcal_tau < 0)
+    {
+      Error ("%s : %i: the critical optical depth to play Russian Roulette has to be positive and non-zero\n", __FILE__, __LINE__);
+      Exit (1);
+    }
 
     /*
      * TODO
@@ -90,15 +91,26 @@ init_variance_reduction_optimisations (void)
 
   if (PacketSplitting.enabled)
   {
-    /*
-     * The number of low weight photons to create at each splitting sight
-     */
-
     PacketSplitting.nsplit = 5;
     rdint ("PS.max_low_weight_photons_to_create", &PacketSplitting.nsplit);
     if (PacketSplitting.nsplit <= 1)
     {
       Error ("%s : %i : need to create at least 2 low weight photons when splitting\n", __FILE__, __LINE__);
+      Exit (1);
+    }
+
+    PacketSplitting.critical_tau = 1;
+    rddoub ("PS.critical_tau", &PacketSplitting.critical_tau);
+    if (PacketSplitting.critical_tau <= 0)
+    {
+      Error ("%s : %i: the critical optical depth to split photons at has to be positive and non-zero\n", __FILE__, __LINE__);
+      Exit (1);
+    }
+
+    PacketSplitting.weight_limit = 5e2;
+    if (PacketSplitting.weight_limit <= 0)
+    {
+      Error ("%s : %i: the weight threshold to split photons has to be positive and non-zero\n", __FILE__, __LINE__);
       Exit (1);
     }
 
@@ -166,6 +178,69 @@ play_russian_roulette (struct photon *pin, double p_kill)
   }
 
   return pin->istat;
+}
+
+/* ************************************************************************** */
+/**
+ *  @brief      Split an input, high weight, photon packet into multiple low
+ *              weight photon packets.
+ *
+ *  @param[in]  PhotPtr p    The photon which is to be split into multiple
+ *                           low weight photon packets
+ *
+ *  @param[in]  int nsplit   The number of low weight photon packets to create
+ *
+ *  @returns    EXIT_FAIL or EXIT_SUCESS
+ *
+ *  @details
+ *
+ *  The purpose of this function is to create nsplit low weight photon packets
+ *  which are child packets of the original p photon packet. The created photon
+ *  packets are identical, apart from they all have different directions.
+ *
+ * ************************************************************************** */
+
+int
+split_photon_packet (PhotPtr p, int nsplit)
+{
+  int i;
+  double new_weight;
+  struct photon new_photon;
+
+  if (nsplit > PacketSplitting.nsplit)
+  {
+    Error ("%s : %i : nsplit %i exceeds maximum allowed split photons %i. Not splitting photon\n", __FILE__, __LINE__, nsplit,
+           PacketSplitting.nsplit);
+    return EXIT_FAILURE;
+  }
+
+  /*
+   * Check if this is a split photon, because we do not want to split this again
+   * and create situations where we are continuously creating low weight photon
+   * packets.
+   */
+
+  if (p->split_child)
+    return EXIT_SUCCESS;
+
+  /*
+   * Now create the low weight photons and mark them as being children
+   */
+
+  new_weight = p->w / nsplit;
+
+  for (i = 0; i < nsplit; ++i)
+  {
+    stuff_phot (p, &new_photon);
+    new_photon.w = new_photon.w_orig = new_weight;
+    scatter (p, &p->nres, NULL);
+    new_photon.split_child = TRUE;
+    PacketSplitting.photons[i] = new_photon;
+  }
+
+  p->istat = P_PS_SPLIT;
+
+  return EXIT_SUCCESS;
 }
 
 /* ************************************************************************** */

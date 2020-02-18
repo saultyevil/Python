@@ -84,7 +84,7 @@ translate (WindPtr w, PhotPtr pp, double tau_scat, double *tau, int *nres)
   int grid;
 
   if (where_in_wind (pp->x, &ndomain) < 0)      // If the return is negative, we are outside the wind
-  {                                             // And so we should translate in space
+  {                             // And so we should translate in space
     istat = translate_in_space (pp);
   }
   else if ((grid = where_in_grid (ndomain, pp->x)) >= 0)
@@ -93,24 +93,24 @@ translate (WindPtr w, PhotPtr pp, double tau_scat, double *tau, int *nres)
      * Flag when we have crossed a cell boundary. This is done for variance
      * reduction optimisations, as they are only done when photons have crossed
      * a cell boundary. We are able to do this because we only update the
-     * grid cell falg of photons here, using where_in_grid which does not update
+     * grid cell flag of photons here, using where_in_grid which does not update
      * the photon structure itself. Thus, if grid and p->grid are different,
      * then the photon has crossed a boundary into another grid.
      */
 
     if (grid != pp->grid)
     {
-      pp->crossed_cell = TRUE;     // We can play Russian Roulette or split
+      pp->crossed_cell = TRUE;  // We can play Russian Roulette or split
     }
     else
     {
-      pp->crossed_cell = FALSE;    // We are in a cell interior
+      pp->crossed_cell = FALSE; // We are in a cell interior
     }
 
     pp->grid = grid;
     istat = translate_in_wind (w, pp, tau_scat, tau, nres);
   }
-  else                             // It's not in the wind or the grid.  Bummer!
+  else                          // It's not in the wind or the grid. Bummer!
   {
     istat = pp->istat = -1;
     Error ("translate: Found photon that was not in the wind or grid: istat = %i\n", where_in_wind (pp->x, &ndomain));
@@ -449,13 +449,11 @@ translate_in_wind (w, p, tau_scat, tau, nres)
 
 
 {
-
   int n;
   double smax, s, ds_current;
   int istat;
   int nplasma;
   int ndom, ndom_current;
-  int inwind;
 
   WindPtr one;
   PlasmaPtr xplasma;
@@ -474,7 +472,6 @@ translate_in_wind (w, p, tau_scat, tau, nres)
   nplasma = one->nplasma;
   xplasma = &plasmamain[nplasma];
   ndom = one->ndom;
-  inwind = one->inwind;
 
   /* Calculate the maximum distance the photon can travel in the cell */
 
@@ -531,35 +528,53 @@ translate_in_wind (w, p, tau_scat, tau, nres)
 
   ds_current = calculate_ds (w, p, tau_scat, tau, nres, smax, &istat);
 
-  if (p->istat == P_RR_KILLED)
+  /*
+   * If the photon is changed due to any variance reduction optimisations, then
+   * we return from this function immediately to avoid doing extra work which
+   * has no consequence.
+   */
+
+  if (p->istat == P_PS_SPLIT)
+  {
+    p->nres = *nres;
+    return p->istat;
+  }
+  else if (p->istat == P_RR_KILLED)
   {
     p->nres = *nres;
     return p->istat;
   }
 
+  /*
+   * Update the number of scatters, electron and resonance, in the plasmacells
+   */
+
   if (p->nres < 0)
+  {
     xplasma->nscat_es++;
-  if (p->nres > 0)
+  }
+  else if (p->nres > 0)
+  {
     xplasma->nscat_res++;
+  }
 
   /* OK now we increment the radiation field in the cell, translate the photon and wrap
      things up If the photon is going to scatter in this cell, radiation also reduces
      the weight of the photon due to continuum absorption, e.g. free free */
 
   if (geo.rt_mode == RT_MODE_MACRO)
-  {                             // Macro-method
+  {
     /* In the macro-method, b-f and other continuum processes do not reduce the photon
        weight, but are treated as as scattering processes.  Therefore most of what was in
        subroutine radiation can be avoided.
      */
 
-    one = &w[p->grid];
-    nplasma = one->nplasma;
-    xplasma = &plasmamain[nplasma];
-
-    if (geo.ioniz_or_extract == 1)
+    if (geo.ioniz_or_extract)
     {
-      xplasma->ntot++;          // EP 11-19: Moved so only increments during ionisation cycles
+      one = &w[p->grid];
+      nplasma = one->nplasma;
+      xplasma = &plasmamain[nplasma];
+      xplasma->ntot++;
 
       /* For an ionization cycle */
       bf_estimators_increment (one, p, ds_current);
@@ -569,7 +584,6 @@ translate_in_wind (w, p, tau_scat, tau, nres)
 
       /* frequency weighted by the weights and distance in the shell.  See eqn 2 ML93 */
       xplasma->ave_freq += p->freq * p->w * ds_current;
-
     }
   }
   else
@@ -578,10 +592,10 @@ translate_in_wind (w, p, tau_scat, tau, nres)
   }
 
   move_phot (p, ds_current);
-
+  p->istat = istat;
   p->nres = (*nres);
 
-  return (p->istat = istat);
+  return istat;
 }
 
 

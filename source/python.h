@@ -1098,23 +1098,26 @@ typedef struct photon
   double ds;                    /* the distance of the path the photon previously moved */
   double tau;
   int crossed_cell;             /* flag for when a photon has crossed a cell boundary */
+  int split_child;              /* flag for indicating the photon is a child photon created due to packet splitting */
 
   enum istat_enum
   {
-    P_INWIND = 0,               //in wind,
-    P_SCAT = 1,                 //in process of scattering,
-    P_ESCAPE = 2,               //Escaped to reach the universe,
-    P_HIT_STAR = 3,             //absorbed by photosphere of star,
-    P_TOO_MANY_SCATTERS = 4,    //in wind after MAXSCAT scatters
-    P_ERROR = 5,                //Trying to scatter a photon in a location where it should not scatter
-    P_ABSORB = 6,               //Photoabsorbed within wind
-    P_HIT_DISK = 7,             //Banged into disk
-    P_SEC = 8,                  //Photon hit secondary
-    P_ADIABATIC = 9,            //records that a photon created a kpkt which was destroyed by adiabatic cooling
-    P_ERROR_MATOM = 10,         //Some kind of error in processing of a photon which excited a macroattom
-    P_LOFREQ_FF = 11,           //records a photon that had too low a frequency
-    P_REPOSITION_ERROR = 12,    //A photon passed through the disk due to dfudge pushing it through incorrectly
-    P_RR_KILLED = 13,
+    P_INWIND = 0,               // in wind,
+    P_SCAT = 1,                 // in process of scattering,
+    P_ESCAPE = 2,               // escaped to reach the universe,
+    P_HIT_STAR = 3,             // absorbed by photosphere of star,
+    P_TOO_MANY_SCATTERS = 4,    // in wind after MAXSCAT scatters
+    P_ERROR = 5,                // trying to scatter a photon in a location where it should not scatter
+    P_ABSORB = 6,               // photoabsorbed within wind
+    P_HIT_DISK = 7,             // banged into disk
+    P_SEC = 8,                  // photon hit secondary
+    P_ADIABATIC = 9,            // records that a photon created a kpkt which was destroyed by adiabatic cooling
+    P_ERROR_MATOM = 10,         // some kind of error in processing of a photon which excited a macro atom
+    P_LOFREQ_FF = 11,           // records a photon that had too low a frequency
+    P_REPOSITION_ERROR = 12,    // photon passed through the disk due to dfudge pushing it through incorrectly
+    P_RR_KILLED = 13,           // photon has been killed due to losing a game of Russian Roulette
+    P_PS_SPLIT = 14,            // photon has been split into multiple low weight photons
+    N_ISTAT = 15                // the number of photon status currently defined
   } istat;                      /*status of photon. */
 
   int nscat;                    /*number of scatterings */
@@ -1563,5 +1566,7 @@ struct
   int enabled;                /* on/off flag */
   int debug_messages;         /* enable extra debug messages to be printed */
   int nsplit;                 /* defines the maximum number of low weight photon packets to create */
+  double critical_tau;        /* defines the critical optical depth a photon can no longer split into */
+  double weight_limit;        /* defines the upper weight limit a photon has to be above to be split */
   PhotPtr photons;            /* storage for the current low weight photons to be transported */
 } PacketSplitting;

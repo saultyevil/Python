@@ -179,10 +179,25 @@ trans_phot (WindPtr w, PhotPtr p, int iextract)
       }
     }                           /* End of extract loop */
 
-    p[nphot].np = nphot;        // TODO: pretty sure we initialise np elsewhere in define_phot
-
     /* Transport a single photon */
-    trans_phot_single (w, &p[nphot], iextract);
+    int istat = trans_phot_single (w, &p[nphot], iextract);
+
+    /*
+     * If the previous photon was split into multiple low weight photons, then
+     * the transport of this photon was exited prematurely. We now transport the
+     * new, low weight, photons which we do not split again.
+     */
+
+    if (istat == P_PS_SPLIT)
+    {
+      int ii;
+
+      if (PacketSplitting.debug_messages)
+        Log ("%s : %i : Transporting split photons for original photon %i\n", __FILE__, __LINE__, p[nphot].np);
+
+      for (ii = 0; ii < PacketSplitting.nsplit; ++ii)
+        trans_phot_single (w, &PacketSplitting.photons[ii], FALSE);
+    }
   }
 
   /* This is the end of the loop over all of the photons; after this the routine returns */
@@ -300,7 +315,12 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
     /* nres is the resonance at which the photon was stopped.  At present the same value is also stored in pp->nres, but I have
        not yet eliminated it from translate. ?? 02jan ksl */
 
-    if (istat == P_RR_KILLED)
+    /*
+     * If a photon has been changed due to variance reduction optimisations,
+     * then we stopped transporting this photon and break the transport loop.
+     */
+
+    if (istat == P_PS_SPLIT || istat == P_RR_KILLED)
     {
       stuff_phot (&pp, p);
       break;
@@ -639,14 +659,10 @@ trans_phot_single (WindPtr w, PhotPtr p, int iextract)
    * outer boundary of the calculation you would want pp.  So one should keep both lines below, and comment
    * out the one you do not want. */
 
-  // TODO: revert back to normal behaviour
-
-  modes.save_photons = 1;
   if (modes.save_photons)
   {
     save_photons (&pp, "Final");        //The position of the photon where it exits the calculation
   }
-  modes.save_photons = 0;
 
   return istat;
 }
