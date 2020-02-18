@@ -306,22 +306,13 @@ main (argc, argv)
         geo.ndomain = 1;
         rdint ("Wind.number_of_components", &geo.ndomain);
 
-
         for (n = 0; n < geo.ndomain; n++)
         {
-
           get_domain_params (n);
-
         }
       }
-
-
-
-
     }
-
   }
-
 
 /* Get the remainder of the input data.  Note that the next few lines are read from the input file whether or not the windsave file was read in,
    because these are things one would like to be able to change even if we have read in an old windsave file.  init_photons reads in
