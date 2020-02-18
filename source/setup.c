@@ -585,13 +585,6 @@ init_photons ()
       Error ("Over 1 GIGABYTE of photon structure allocated. Could cause serious problems.\n");
   }
 
-  /*
-   * Initialise the Russian Roulette variables here - it seems like a reasonable
-   * place since RR directly effects the photons
-   */
-
-  init_russian_roulette ();
-
   return (p);
 }
 

@@ -105,7 +105,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   int ndom;
   double normal[3];
 
-  one = &w[p->grid];            //pointer to the cell where the photon bundle is located.
+  one = &w[p->grid];            // Pointer to the cell where the photon bundle is located
 
   nplasma = one->nplasma;
   xplasma = &plasmamain[nplasma];
@@ -123,9 +123,11 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     Error ("calculate_ds:  odd tau  %8.2e at %g entering calculate_ds\n", ttau, p->freq);
   }
 
-  /* Note that comp_phot compares the position and
-   * direction of two photons.  If they are the same, then
-   * it just takes v1 from the old value.  */
+  /*
+   * Note that the function comp_phot compares the position and direction of two
+   * photons.  If they are the same, then it takes v1 from the old, pre-stored,
+   * value.
+   */
 
   if (comp_phot (&cds_phot_old, p))
   {
@@ -137,10 +139,11 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     v1 = cds_v2_old;
   }
 
-  /* Initialize two photon structures phot and p_now for internal work
-   * "phot"  will be a photon vector at the far edge of the cell, while p
-   * remains the photon at its current positon. p_now  is located
-   * at the midpoint between these tow positions.
+  /*
+   * Initialize two photon structures phot and p_now for internal work.
+   * phot is a photon vector at the far edge of the cell, whilst p remains the
+   * photon at its current position. p_now is initially located at the midpoint
+   * between these two positions.
    */
 
   stuff_phot (p, &phot);
@@ -148,9 +151,11 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   vwind_xyz (ndom, &phot, v_outer);
   v2 = dot (phot.lmn, v_outer);
 
-  /* Check to see that the velocity is monotonic across the cell
-   * by calculating the velocity at the midpoint of the path.
-   * If it is not monotonic, then reduce smax.
+  /*
+   * We now check to see that the velocity is monotonic across the path, by
+   * calculating the velocity at the midpoint of the path. If it is not
+   * monotonic, then smax is reduced until the velocity is monotonic across
+   * the path.
    */
 
   vc = VLIGHT;
@@ -171,28 +176,33 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     }
   }
 
-  /* This Doppler shift shifts the photon from the global to the local
-   * frame of rest. Therefore multiply. See doppler notes for a discussion
-   * The sign is  correct.  If the photon is moving in the same
-   * direction as v, then in the rest frame of the ions,
-   * then the photon frequency will be less. */
+  /*
+   * This Doppler shifts the photon from the global to the local frame of rest.
+   * See Doppler Notes for a discussion. Note that the sign is correct. If the
+   * photon is moving in the same direction as v (the velocity vector), then in
+   * the rest frame of the ions, then the photon frequency will be less.
+   */
 
   freq_inner = p->freq * (1. - v1 / VLIGHT);
   freq_outer = phot.freq * (1. - v2 / VLIGHT);
   dfreq = freq_outer - freq_inner;
 
-  /* We use the doppler shifted frequency to compute the Klein-Nishina cross
+  /*
+   * We use the doppler shifted frequency to compute the Klein-Nishina cross
    * section, if the frequency is high enough, otherwise we just use the
-   * Thompson cross section.  For the time being, use the average frequency.
-   * If we want true fidelity, perhaps we could compute the cross section
-   * for every little path section between resonances */
+   * Thompson cross section. For the time being, use the average frequency
+   * between the inner and outer frequencies. If we require true fidelity,
+   * perhaps we could compute the cross section for every little path section
+   * between resonances.
+   */
 
   mean_freq = 0.5 * (freq_inner + freq_outer);
 
   /*
-   * The next section checks to see if the frequency difference on
-   * the two sides is very small and if not limits the resonances
-   * one has to worry about
+   * The next section checks to see if the frequency difference on the two sides
+   * is very small, and if not limits the resonances one has to worry about.
+   * The global variables nline_min, nline_max, and nline_delt are defined in
+   * atomic.h and are set by the function limit_lines().
    */
 
   if (fabs (dfreq) < EPSILON)
@@ -200,12 +210,6 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     Error ("calculate_ds: v same at both sides of cell %d\n", one->nwind);
     return (smax);              // This is not really the best thing to do, but it avoids disaster below
   }
-
-  /*
-   * nline_min, nline_max, and nline_delt are found in atomic.h and
-   * are set by limit_lines()
-   */
-
   else if (dfreq > 0)
   {
     limit_lines (freq_inner, freq_outer);
@@ -219,18 +223,21 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     ndelt = (-1);
   }
 
-  /* Compute the angle averaged electron scattering cross section. Note this is
+  /*
+   * Compute the angle averaged electron scattering cross section. Note this is
    * always treated as a scattering event.
    */
 
   kap_es = klein_nishina (mean_freq) * xplasma->ne * zdom[ndom].fill;
 
-  /* If in macro-atom mode, calculate the bf and ff opacities, becuase in macro-atom mode
-   * everthing including bf is calculated as a scattering process.  The routine
-   * kappa_bound stores the individual opacities as well as the total, because when
-   * there is more than one opacity contributin to the total, these are needed to choose
-   * which particular bound-free transition to activate.
-   * For the two level approximation, none of this needed.
+  /*
+   * If in macro-atom mode, we calculate the bf and ff opacities because
+   * everything, including bf, is calculated as a scattering process. The
+   * function kappa_bound() stores the individual opacities, as well
+   * as the total, because when there is more than one opacity contributing to
+   * the total opacity, these are needed to choose which particular bound-free
+   * transition to activate. For the two level approximation, none of this
+   * required.
    */
 
   kap_bf_tot = 0;
@@ -239,7 +246,7 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
   if (geo.rt_mode == RT_MODE_MACRO)
   {
     freq_av = freq_inner;
-    //(freq_inner + freq_outer) * 0.5;  //need to do better than this perhaps but okay for star - comoving frequency (SS)
+    //(freq_inner + freq_outer) * 0.5;  // Need to do better than this perhaps but okay for star - comoving frequency (SS)
 
     kap_bf_tot = kappa_bf (xplasma, freq_av, 0);
     kap_ff = kappa_ff (xplasma, freq_av);
@@ -253,6 +260,19 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
 
   kap_cont = kap_es + kap_bf_tot + kap_ff;      // total continuum opacity
 
+  /*
+   * If photons are allowed to play Russian Roulette, then we check for three
+   * conditions.
+   *   - 1: photons have crossed into a new cell
+   *   - 2: the optical depth along the current trajectory is larger than the
+   *        critical optical depth (currently a fixed value defined by the
+   *        user as a runtime parameter)
+   *   - 3: the current weight of the photon is below a critical upper threshold
+   *        for allowed photon weights. We do not want to play Russian Roulette
+   *        with photons with large weights, as their weight may become even
+   *        further boosted.
+   */
+
   if (RussianRoulette.enabled)
   {
     double smax_optical_depth = kap_cont * smax;
@@ -261,11 +281,11 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
     {
       play_russian_roulette (p, RussianRoulette.kill_probability);
 
-      // TODO: extra debug to remove
+      /* ---------- TODO: Diagnostic Code TO BE REMOVED ----------*/
+
       p->w_rr_orig = p->w;
       record_photon (p);
 
-      // TODO: remove debug when implemented
       if (RussianRoulette.debug_messages)
       {
         Log ("%s : %i : Photon %i is playing RR\n", __FILE__, __LINE__, p->np);
@@ -291,6 +311,8 @@ calculate_ds (w, p, tau_scat, tau, nres, smax, istat)
         else
           Log ("%s : %i : Photon %i survived\n\n", __FILE__, __LINE__, p->np);
       }
+
+      /* ---------- TODO: Diagnostic Code TO BE REMOVED ----------*/
 
       if (p->istat == P_RR_KILLED)
         return ds_current;

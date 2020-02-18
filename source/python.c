@@ -339,8 +339,13 @@ main (argc, argv)
   /* All operating modes */
   init_ionization ();
 
+  /*
+   * Initialise both Russian Roulette and Packet Splitting variables here - it
+   * seems like a reasonable place since RR directly effects photons and
+   * photon transport
+   */
 
-
+  init_variance_reduction_optimisations ();
 
   /* Note: ksl - At this point, SYSTEM_TYPE_PREVIOUS refers both to a restart and to a situation where
    * one is starting from an early wind file as implemented this is quite restrictive about what one

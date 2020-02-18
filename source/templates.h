@@ -559,7 +559,7 @@ double diskrad(double m1, double m2, double period);
 double roche2(double q, double a);
 double logg(double mass, double rwd);
 /* vr.c */
-void init_russian_roulette(void);
+void init_variance_reduction_optimisations (void);
 int play_russian_roulette(struct photon *pin, double p_kill);
 void record_photon(PhotPtr p);
 void vr_debug_print_weights(void);

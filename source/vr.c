@@ -35,9 +35,13 @@
  * ************************************************************************** */
 
 void
-init_russian_roulette (void)
+init_variance_reduction_optimisations (void)
 {
   char default_usage[LINELENGTH];
+
+  /*
+   * Initialise the Russian Roulette variables
+   */
 
   strcpy (default_usage, "no");
   RussianRoulette.enabled = rdchoice ("RR.enable(yes,no)", "1,0", default_usage);
@@ -45,7 +49,6 @@ init_russian_roulette (void)
   if (RussianRoulette.enabled)
   {
     /*
-     * TODO
      * kill probability for russian roulette
      */
 
@@ -53,15 +56,14 @@ init_russian_roulette (void)
     rddoub ("RR.kill_probability", &RussianRoulette.kill_probability);
 
     /*
-     * TODO
-     * If p->w > weight_limit * p_w_orig, then don't play rr
+     * If p->w > weight_limit * p_w_orig, then don't play russian roulette with
+     * this photon
      */
 
-    RussianRoulette.weight_limit = 1e6;
+    RussianRoulette.weight_limit = 1e3;
     rddoub ("RR.weight_limit(original_photon_weight)", &RussianRoulette.weight_limit);
 
     /*
-     * TODO
      * the optical depth in the cell to consider using RR with, this should be
      * an advanced diag probably
      */
@@ -76,6 +78,50 @@ init_russian_roulette (void)
 
     strcpy (default_usage, "no");
     RussianRoulette.debug_messages = rdchoice ("RR.debug_messages(yes,no)", "1,0", default_usage);
+  }
+
+  /*
+   * Initialise the Packet Splitting variables -- reinitialise default_usage
+   * just in case it has been modified
+   */
+
+  strcpy (default_usage, "no");
+  PacketSplitting.enabled = rdchoice ("PS.enable(yes,no)", "1,0", default_usage);
+
+  if (PacketSplitting.enabled)
+  {
+    /*
+     * The number of low weight photons to create at each splitting sight
+     */
+
+    PacketSplitting.nsplit = 5;
+    rdint ("PS.max_low_weight_photons_to_create", &PacketSplitting.nsplit);
+    if (PacketSplitting.nsplit <= 1)
+    {
+      Error ("%s : %i : need to create at least 2 low weight photons when splitting\n", __FILE__, __LINE__);
+      Exit (1);
+    }
+
+    /*
+     * Allocate memory for the storage of low weight photons. We can't create
+     * more photons than the value nsplit, as this is the maximum we have
+     * allowed to be created.
+     */
+
+    PacketSplitting.photons = calloc (PacketSplitting.nsplit, sizeof *PacketSplitting.photons);
+    if (!PacketSplitting.photons)
+    {
+      unsigned long mem = PacketSplitting.nsplit * sizeof *PacketSplitting.photons;
+      Error ("%s : %i : unable to allocate storage (%d bytes) for low weight photons\n", __FILE__, __LINE__, mem);
+      Exit (1);
+    }
+
+    /*
+     * TODO to be remove at later date
+     */
+
+    strcpy (default_usage, "no");
+    PacketSplitting.debug_messages = rdchoice ("PS.debug_messages(yes,no)", "1,0", default_usage);
   }
 }
 

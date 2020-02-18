@@ -1091,11 +1091,14 @@ int size_Jbar_est, size_gamma_est, size_alpha_est;
 
 typedef struct photon
 {
-  double x[3];                  /* Vector containing position of packet */
-  double lmn[3];                /*direction cosines of this packet */
+  double x[3];                  /* vector containing position of packet */
+  double lmn[3];                /* direction cosines of this packet */
   double freq, freq_orig;       /* current and original frequency of this packet */
   double w, w_orig;             /* current and original weight of this packet */
+  double ds;                    /* the distance of the path the photon previously moved */
   double tau;
+  int crossed_cell;             /* flag for when a photon has crossed a cell boundary */
+
   enum istat_enum
   {
     P_INWIND = 0,               //in wind,
@@ -1153,9 +1156,7 @@ typedef struct photon
   int np;                       /*NSH 13/4/11 - an internal pointer to the photon number so 
                                    so we can write out details of where the photon goes */
   double path;                  /* SWM - Photon path length */
-  double ds;                    // EP 11/19 - the distance of the path the photon previously moved
-  int crossed_cell;
-  double w_rr_orig; // TODO debug remove
+  double w_rr_orig;             // TODO debug remove
 }
 p_dummy, *PhotPtr;
 
@@ -1534,13 +1535,33 @@ typedef struct rdpar_choices
 struct rdpar_choices zz_spec;
 
 
-// TODO: move to somewhere more appropriate - do we need this if we only care about RR? Likely not.
+/*
+ * TODO
+ * The following structure stores the critical variables to do with the variance
+ * reduction technique Russian Roulette. The structure has global scope, so
+ * should be possible to use throughout the code if desired.
+ */
 
 struct
 {
-  double weight_limit;
-  double kill_probability;
-  double critcal_tau;
-  int enabled;
-  int debug_messages;
+  int enabled;                /* on/off flag */
+  int debug_messages;         /* enable extra debug messages to be printed */
+  double weight_limit;        /* defines the upper weight limit for a photon packet */
+  double kill_probability;    /* defines the kill probability */
+  double critcal_tau;         /* defines the critical optical depth a photon has to encounter to play */
 } RussianRoulette ;
+
+/*
+ * TODO
+ * The following structure store the critical variables and the pointer to the
+ * split, low weight, photon packets. The structure has scope, so should be
+ * possible to use throughout the code if desired.
+ */
+
+struct
+{
+  int enabled;                /* on/off flag */
+  int debug_messages;         /* enable extra debug messages to be printed */
+  int nsplit;                 /* defines the maximum number of low weight photon packets to create */
+  PhotPtr photons;            /* storage for the current low weight photons to be transported */
+} PacketSplitting;

@@ -77,12 +77,7 @@
  **********************************************************/
 
 int
-translate (w, pp, tau_scat, tau, nres)
-     WindPtr w;                 //w here refers to entire wind, not a single element
-     PhotPtr pp;
-     double tau_scat;
-     double *tau;
-     int *nres;
+translate (WindPtr w, PhotPtr pp, double tau_scat, double *tau, int *nres)
 {
   int istat;
   int ndomain;
@@ -115,10 +110,10 @@ translate (w, pp, tau_scat, tau, nres)
     pp->grid = grid;
     istat = translate_in_wind (w, pp, tau_scat, tau, nres);
   }
-  else
+  else                             // It's not in the wind or the grid.  Bummer!
   {
-    istat = pp->istat = -1;     /* It's not in the wind and it's not in the grid.  Bummer! */
-    Error ("translate: Found photon that was not in wind or grid, istat %i\n", where_in_wind (pp->x, &ndomain));
+    istat = pp->istat = -1;
+    Error ("translate: Found photon that was not in the wind or grid: istat = %i\n", where_in_wind (pp->x, &ndomain));
   }
 
   return (istat);
