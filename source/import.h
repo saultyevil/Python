@@ -22,13 +22,13 @@
  * refer to how many columns are in the data file and what will be read in.
  */
 
-#define READ_NO_TEMP_1D          5
-#define READ_ELECTRON_TEMP_1D    6
-#define READ_BOTH_TEMP_1D        7
+#define READ_NO_TEMP_1D          4
+#define READ_ELECTRON_TEMP_1D    READ_NO_TEMP_1D + 1
+#define READ_BOTH_TEMP_1D        READ_NO_TEMP_1D + 2
 
 #define READ_NO_TEMP_2D          9
-#define READ_ELECTRON_TEMP_2D    10
-#define READ_BOTH_TEMP_2D        11
+#define READ_ELECTRON_TEMP_2D    READ_NO_TEMP_2D + 1
+#define READ_BOTH_TEMP_2D        READ_NO_TEMP_2D + 2
 
 /*
  * The following structure will contain all of the required information for
