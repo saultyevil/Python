@@ -7,12 +7,9 @@
  * @brief   general purpose routines reading in model
  * grids
  *
- * 
  * The routines contained here are basically steering
  * routines. The real works is done in import_spherical,
  * etc
- *
- * TODO: this is confusing
  *
  * For importing models, we first read in the data from a file.
  * We assume all of the data, positions, velocities and importantly
@@ -31,10 +28,6 @@
 #include "atomic.h"
 #include "python.h"
 #include "import.h"
-
-
-/* Read in a model of in various coordiante systems, using the coord_type
- * to specify the type of model */
 
 
 /**********************************************************/
@@ -88,9 +81,56 @@ import_wind (ndom)
   return (0);
 }
 
-/*
- * Create the coordinate grids depending on the coord_type
- */
+
+
+
+/**********************************************************/
+/**
+ * @brief      get parameters associated with an imported wind model
+ *
+ * @param[in] int  ndom               The domain associated with an imported
+ *                                    model
+ * @return    int  init_temperature   Will return TRUE if the temperature is to
+ *                                    be set to the init temperature for this
+ *                                    domain
+ *
+ * @details
+ * At present this routine is simply a place holder and simply returns
+ * to the call in setup_domains. At the moment, there is a flag returned which
+ * indicates if a temperature has been provided with the imported model
+ * data.
+ *
+ * ### Notes ###
+ *
+ **********************************************************/
+
+int
+import_set_wind_boundaries (ndom)
+     int ndom;
+{
+  if (zdom[ndom].coord_type == SPHERICAL)
+  {
+    import_spherical_setup_boundaries (ndom);
+  }
+  else if (zdom[ndom].coord_type == CYLIND)
+  {
+    import_cylindrical_setup_boundaries (ndom);
+  }
+  else if (zdom[ndom].coord_type == RTHETA)
+  {
+    import_rtheta_setup_boundaries (ndom);
+  }
+  else
+  {
+    Error ("get_import_wind_params: unknown coord_type %d\n", zdom[ndom].coord_type);
+    Exit (1);
+  }
+
+  return imported_model[ndom].init_temperature;
+}
+
+
+
 
 /**********************************************************/
 /** 
@@ -129,18 +169,13 @@ import_make_grid (w, ndom)
   }
   else
   {
-    Error ("import_wind: Do not know how to import a model of coor_type %d\n", zdom[ndom].coord_type);
+    Error ("import_wind: Do not know how to import a model of coord_type %d\n", zdom[ndom].coord_type);
     Exit (0);
   }
+
   return (0);
 }
 
-
-/* Determine velocities for the various coord_types.  Note that
- * depending on the coordinate system we may already have calculated
- * velocities for wmain, and in that case these calls are used
- * for interpolation.
- */
 
 
 
@@ -183,35 +218,11 @@ import_velocity (ndom, x, v)
   }
   else
   {
-    Error ("import_velocity: Do not know how to create velocities from model of coor_type %d\n", zdom[ndom].coord_type);
-    Exit (0);
+    Error ("import_velocity: unknown coord_type %d\n", zdom[ndom].coord_type);
+    Exit (1);
   }
 
   return (speed);
-}
-
-
-
-/**********************************************************/
-/** 
- * @brief      get parameters associated with an imported wind model
- *
- * @param [in] int  ndom   The domain associated with an imported model
- * @return   Always returns 0  
- *
- * @details
- * At present this routine is simply a place holder and simply returns
- * to the call in setup_domains.  
- *
- * ### Notes ###
- *
- **********************************************************/
-
-int
-get_import_wind_params (ndom)
-     int ndom;
-{
-  return (0);
 }
 
 
@@ -259,12 +270,15 @@ import_rho (ndom, x)
   }
   else
   {
-    Error ("import_rho:  Do not know how to create velocities from model of coord_type %d\n", zdom[ndom].coord_type);
-    Exit (0);
+    Error ("import_rho: unknown coord_type %d\n", zdom[ndom].coord_type);
+    Exit (1);
   }
 
   return (rho);
 }
+
+
+
 
 /* ************************************************************************** */
 /**
@@ -282,61 +296,31 @@ import_rho (ndom, x)
  * grid cell for an imported wind model. In some cases this will be the
  * temperature which is given by the model, however, we also allow one to not
  * provide a cell temperature. In these cases, a default temperature value is
- * used which at writing this function header is 10,000 K.
- *
- * ## Programming Notes ##
- *
- * This function does not follow the previous conventions of setting the
- * velocity or density by having specific helper functions depending on the
- * imported coordinate system. Instead, we can take advantage of the fact by
- * this point in the program, the wind has already been copied into wmain so
- * we can now use where_in_grid() to find grid locations.
+ * used which is set to the domain's initial wind temperature.
  *
  * ************************************************************************** */
 
 double
-model_temp (int ndom, double x[], int return_t_e)
+import_temperature (int ndom, double *x, int return_t_e)
 {
-  int n;
-  double temperature;
+  double temperature = 0;
 
-  n = where_in_grid (ndom, x);
-  if (n < 0)
+  if (zdom[ndom].coord_type == SPHERICAL)
   {
-    Error ("%s : %i : position x = (%e, %e, %e) not in wind, returning 0 K\n", __FILE__, __LINE__, x[0], x[1], x[2]);
-    return 0.0;
+    temperature = temperature_1d (ndom, x, return_t_e);
   }
-
-  /*
-   * At this point, we need to subtract off the domain nstart to ensure we are
-   * indexing correctly into that domain's imported model struct
-   */
-
-  n -= zdom[ndom].nstart;
-
-  if ((zdom[ndom].coord_type == RTHETA || zdom[ndom].coord_type == CYLIND) && n > NDIM_MAX2D - 1)
+  else if (zdom[ndom].coord_type == CYLIND)
   {
-    Error ("%s : %i : trying to index out of grid bounds for domain %i\n", __FILE__, __LINE__, ndom);
-    return zdom[ndom].twind;
+    temperature = temperature_cylindrical (ndom, x, return_t_e);
   }
-  else if (zdom[ndom].coord_type == SPHERICAL && n > NDIM_MAX - 1)
+  else if (zdom[ndom].coord_type == RTHETA)
   {
-    Error ("%s : %i : trying to index out of grid bounds for domain %i\n", __FILE__, __LINE__, ndom);
-    return zdom[ndom].twind;
-  }
-
-  /*
-   * After finding out where we are in the grid, we can now find the temperature
-   * in the correct domain
-   */
-
-  if (return_t_e)
-  {
-    temperature = imported_model[ndom].t_e[n];
+    temperature = temperature_rtheta (ndom, x, return_t_e);
   }
   else
   {
-    temperature = imported_model[ndom].t_r[n];
+    Error ("import_temperature: unknown coord_type %d\n", zdom[ndom].coord_type);
+    Exit (1);
   }
 
   return temperature;

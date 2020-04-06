@@ -470,7 +470,7 @@ WindPtr (w);
     MPI_Barrier (MPI_COMM_WORLD);
     MPI_Bcast (commbuffer, size_of_commbuffer, MPI_PACKED, n_mpi, MPI_COMM_WORLD);
     MPI_Barrier (MPI_COMM_WORLD);
-    Log ("MPI task %d survived broadcasting plasma update information.\n", rank_global);
+    Log_silent ("MPI task %d survived broadcasting plasma update information.\n", rank_global);
 
     position = 0;
 

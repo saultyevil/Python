@@ -122,7 +122,6 @@ get_atomic_data (masterfile)
   char configname[15];
   double e, rl;
   double xe[NCROSS], xx[NCROSS];
-  // double a21 ();
   int nlines_simple;
   int nspline;
   double tmin;
@@ -132,7 +131,6 @@ get_atomic_data (masterfile)
   int bb_max, bf_max;
   int lev_type;
   int nn;
-//  double yield;
   double gstemp[BAD_GS_RR_PARAMS];      //Temporary storage for badnell resolved GS RR rates
   double temp[LINELENGTH];      //Temporary storage for data read in off a line this is enogh if every character on the
   char gsflag, drflag;          //Flags to say what part of data is being read in for DR and RR
@@ -711,8 +709,8 @@ structure does not have this property! */
  *  Level   1   1   2    4  10.200166
  *  Level   1   1   3    2  12.089051
  *  @endverbatim
- * where the colums are z, istate (in conventianal notation), a unique level no,
- * the multiplicity of the level and the exitation energy of the level in eV
+ * where the colums are z, istate (in conventional notation), a unique level no,
+ * the multiplicity of the level and the excitation energy of the level in eV
  *
  *
  *
@@ -1110,7 +1108,7 @@ described as macro-levels. */
 /**
  * @section  Photoionization
  *
- * Until at least Oct 2001, Python used photoionization crossections from Verner, Ferland, Korista, and Yakolev (DFKY)
+ * Until at least Oct 2001, Python used photoionization crossections from Verner, Ferland, Korista, and Yakolev (VFKY)
  * The routine sigma_phot(xptr, freq) calculates the crossection based on this.
  *
  *

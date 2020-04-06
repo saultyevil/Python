@@ -6,7 +6,7 @@ Type
   Double
 
 Unit
-  M☉/year
+  M$\odot$/year
 
 Values
   Greater than 0

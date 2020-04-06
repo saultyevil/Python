@@ -6,7 +6,7 @@ Type
   Double
 
 Unit
-  M☉/year
+  M$\odot$/year
 
 File
   `setup_disk.c <https://github.com/agnwinds/python/blob/master/source/setup_disk.c>`_

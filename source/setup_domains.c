@@ -46,7 +46,6 @@ int
 get_domain_params (ndom)
      int ndom;
 {
-  int input_int;
   char answer[LINELENGTH];
 
   if (ndom >= geo.ndomain)
@@ -55,7 +54,6 @@ get_domain_params (ndom)
     Exit (0);
   }
 
-
   strcpy (answer, "SV");
 
   if (geo.system_type == SYSTEM_TYPE_STAR)
@@ -63,9 +61,7 @@ get_domain_params (ndom)
     strcpy (answer, "star");
   }
 
-
   zdom[ndom].wind_type = rdchoice ("Wind.type(SV,star,hydro,corona,kwd,homologous,shell,imported)", "0,1,3,4,5,6,9,10", answer);
-
 
   /* For a shell wind, we define the coordinate system in shell_wind */
   if (zdom[ndom].wind_type == SHELL)
@@ -73,16 +69,12 @@ get_domain_params (ndom)
     return (0);
   }
 
-
-
   strcat (zdom[ndom].name, "Wind");
 
-
-  input_int = 1;
-
-
   /* Define the coordinate system for the grid and allocate memory for the wind structure */
+
   strcpy (answer, "cylindrical");
+
   if (geo.system_type == SYSTEM_TYPE_STAR)
   {
     strcpy (answer, "spherical");
@@ -90,14 +82,14 @@ get_domain_params (ndom)
 
   zdom[ndom].coord_type = rdchoice ("Wind.coord_system(spherical,cylindrical,polar,cyl_var)", "0,1,2,3", answer);
 
-  if (zdom[ndom].wind_type == IMPORT)
+  if (zdom[ndom].wind_type == IMPORT)   // Do not define dimensions for imported model
   {
     import_wind (ndom);
   }
   else
   {
     rdint ("Wind.dim.in.x_or_r.direction", &zdom[ndom].ndim);
-    if (zdom[ndom].coord_type)
+    if (zdom[ndom].coord_type > SPHERICAL)
     {
       rdint ("Wind.dim.in.z_or_theta.direction", &zdom[ndom].mdim);
       if (zdom[ndom].mdim < 4)
@@ -107,18 +99,18 @@ get_domain_params (ndom)
       }
     }
     else
+    {
       zdom[ndom].mdim = 1;
-
+    }
   }
 
-/* Check that NDIM_MAX is greater than NDIM and MDIM.  */
+  /* Check that NDIM_MAX is greater than NDIM and MDIM.  */
 
   if ((zdom[ndom].ndim > NDIM_MAX) || (zdom[ndom].mdim > NDIM_MAX))
   {
     Error ("NDIM_MAX %d is less than NDIM %d or MDIM %d. Fix in python.h and recompile\n", NDIM_MAX, zdom[ndom].ndim, zdom[ndom].mdim);
     Exit (0);
   }
-
 
   /* If we are in advanced then allow the user to modify scale lengths */
   if (modes.iadvanced)
@@ -130,13 +122,12 @@ get_domain_params (ndom)
     {
       Log ("You have opted to adjust the grid scale lengths\n");
       rddoub ("@geo.xlog_scale", &zdom[ndom].xlog_scale);
-      if (zdom[ndom].coord_type != SPHERICAL)
+      if (zdom[ndom].coord_type > SPHERICAL)
         rddoub ("@geo.zlog_scale", &zdom[ndom].zlog_scale);
     }
   }
 
   zdom[ndom].ndim2 = zdom[ndom].ndim * zdom[ndom].mdim;
-
 
   return (0);
 }
@@ -167,6 +158,7 @@ int
 get_wind_params (ndom)
      int ndom;
 {
+  int import_t_init = FALSE;
 
   /* Now get parameters that are specific to a given wind model
 
@@ -201,21 +193,27 @@ get_wind_params (ndom)
   {
     get_homologous_params (ndom);
   }
-//OLD  else if (zdom[ndom].wind_type == YSO)
-//OLD  {
-//OLD    get_yso_wind_params (ndom);
-//OLD  }
   else if (zdom[ndom].wind_type == SHELL)       //NSH 18/2/11 This is a new wind type to produce a thin shell.
   {
     get_shell_wind_params (ndom);
   }
-  else if (zdom[ndom].wind_type == IMPORT)      //Read in the wind model.
+  else if (zdom[ndom].wind_type == IMPORT)
   {
-    get_import_wind_params (ndom);
+    /*
+     * At this stage, we should set the boundaries for the wind imported wind
+     * as this will avoid the situation where one has to provide Wind.radmax
+     * or Wind.t.init when these have already been set by the data which
+     * has been read in.
+     *
+     * Note there is a horrid spaghetti variable which is a flag for if the
+     * temperature has been provided or not.
+     */
+
+    import_t_init = import_set_wind_boundaries (ndom);
   }
   else
   {
-    Error ("get_wind_parameters: Unknown wind type %d\n", zdom[ndom].wind_type);
+    Error ("get_wind_params(%i): unknown wind type %d\n", __LINE__, zdom[ndom].wind_type);
     Exit (0);
   }
 
@@ -234,11 +232,18 @@ get_wind_params (ndom)
    * Others currently have it defined within get_whatever_params
    *
    * stellar, homologous, shell, corona
+   *
+   * Note that we define the maximum wind radius elsewhere in Python, so we should
+   * not check for the error condition here, as there is no reason to supply Wind.radmax
+   * for an imported model.
    */
+
+  Log ("Checking wind boundaries for domain %i\n", ndom);
 
   if (zdom[ndom].rmax == 0)
   {
-    Error ("get_wind_params: zdom[ndom].rmax 0 for wind type %d\n", zdom[ndom].wind_type);
+    if (zdom[ndom].wind_type != SV || zdom[ndom].wind_type != KNIGGE)   // Not an error for these models, see above
+      Error ("get_wind_params: zdom[ndom].rmax = 0 for wind type %d\n", zdom[ndom].wind_type);
 
     if (geo.system_type == SYSTEM_TYPE_AGN || geo.system_type == SYSTEM_TYPE_BH)
     {
@@ -250,19 +255,23 @@ get_wind_params (ndom)
     }
 
     rddoub ("Wind.radmax(cm)", &zdom[ndom].rmax);
-  }
-
-  if (zdom[ndom].rmax <= zdom[ndom].rmin)
-  {
-    Error ("get_wind_parameters: rmax (%10.4e) less than or equal to rmin %10.4e in domain %d\n", zdom[ndom].rmax, zdom[ndom].rmin, ndom);
-    Exit (0);
+    if (zdom[ndom].rmax == 0)
+    {
+      Error ("get_wind_params: wind.radmax == 0. Should be non-zero number!\n");
+      Exit (1);
+    }
+    if (zdom[ndom].rmax < 0)
+    {
+      Error ("get_wind_params: Wind.rmax %e < 0 -- multiplying by -1\n", zdom[ndom].rmax);
+      zdom[ndom].rmax *= -1;
+    }
   }
 
   zdom[ndom].twind = 40000;
   rddoub ("Wind.t.init", &zdom[ndom].twind);
 
 
-  /* Next lines are to assure that we have the largest possible value of the 
+  /* Next lines are to assure that we have the largest possible value of the
    * sphere surrounding the system
    * JM 1710 -- if this is the first domain, then initialise geo.rmax see #305
    */
@@ -272,15 +281,50 @@ get_wind_params (ndom)
   }
   geo.rmax_sq = geo.rmax * geo.rmax;
 
+  if (zdom[ndom].rmax <= zdom[ndom].rmin)
+  {
+    Error ("get_wind_params: rmax (%10.4e) less than or equal to rmin %10.4e in domain %d\n", zdom[ndom].rmax, zdom[ndom].rmin, ndom);
+    Exit (1);
+  }
+
+  /*
+   * Only query for Wind.t.init if the model is not imported, or if it is an
+   * imported model and no temperature has been provided with the model
+   */
+
+  zdom[ndom].twind = 40000;
+  if (zdom[ndom].wind_type != IMPORT || (zdom[ndom].wind_type == IMPORT && import_t_init))
+  {
+    rddoub ("Wind.t.init", &zdom[ndom].twind);
+    if (zdom[ndom].twind == 0)
+    {
+      Error ("get_wind_params: Wind.t.init == 0. Increase the temperature!\n", zdom[ndom].twind);
+      Exit (1);
+    }
+    if (zdom[ndom].twind < 0)
+    {
+      Error ("get_wind_params: Wind.t.init %e < 0 -- multiplying by -1\n", zdom[ndom].twind);
+      zdom[ndom].twind *= -1;
+    }
+  }
+
   /* Get the filling factor of the wind */
-
-  zdom[ndom].fill = 1.;
-
   /* JM 1606 -- the filling factor is now specified on a domain by domain basis. See #212
      XXX allows any domain to be allowed a filling factor but this should be modified when
      we know what we are doing with inputs for multiple domains. Could create confusion */
 
+  zdom[ndom].fill = 1.;
   rddoub ("Wind.filling_factor(1=smooth,<1=clumped)", &zdom[ndom].fill);
+  if (zdom[ndom].fill > 1)
+  {
+    Error ("get_wind_params: filling factor f = %e > 1\n", zdom[ndom].fill);
+    Exit (1);
+  }
+  if (zdom[ndom].fill < 0)
+  {
+    Error ("get_wind_params: negative filling factor f = %e -- multiplying by -1\n", zdom[ndom].fill);
+    zdom[ndom].fill *= -1;
+  }
 
   return (0);
 }

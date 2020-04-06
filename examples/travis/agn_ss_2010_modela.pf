@@ -2,7 +2,7 @@ System_type(star,cv,bh,agn,previous)                  agn
 
 ### Parameters for the Central Object
 Central_object.mass(msol)                  4.3e6
-Central_object.radius(cm)                  6.34728e11
+Central_object.radius(cm)                  3.8e12
 
 ### Parameters for the Disk (if there is one)
 Disk.type(none,flat,vertically.extended)                 flat
@@ -12,15 +12,14 @@ Disk.temperature.profile(standard,readin)             standard
 Disk.mdot(msol/yr)                         8.8267e-3
 Disk.radmax(cm)                            5e16
 
-### Parameters for boundary layer or AGN
+### Parameters for Boundary Layer or the compact object in an X-ray Binary or AGN
 Central_object.radiation(yes,no)                  yes
 Central_object.rad_type_to_make_wind(bb,models,power,cloudy,brems)                power
 Central_object.luminosity(ergs/s)          1e43
 Central_object.power_law_index             -1.38
 Central_object.geometry_for_source(sphere,lamp_post)               sphere
 
-### Parameters descibing the various winds or coronae in the system
-Wind.radiation(yes,no)                          yes
+### Parameters describing the various winds or coronae in the system
 Wind.number_of_components                  1
 Wind.type(SV,star,hydro,corona,kwd,homologous,shell,imported)                  kwd
 Wind.coord_system(spherical,cylindrical,polar,cyl_var)          cylindrical
@@ -31,8 +30,9 @@ Wind.dim.in.z_or_theta.direction           30
 Photons_per_cycle                          2000000
 Ionization_cycles                          20
 Spectrum_cycles                            20
-Wind.ionization(on.the.spot,ML93,LTE_tr,LTE_te,fixed,matrix_bb,matrix_pow)           matrix_pow
-Line_transfer(pure_abs,pure_scat,sing_scat,escape_prob,thermal_trapping,macro_atoms,macro_atoms_thermal_trapping)     thermal_trapping
+Wind.ionization(on.the.spot,ML93,LTE_tr,LTE_te,fixed,matrix_bb,matrix_pow,matrix_est)           matrix_pow
+Line_transfer(pure_abs,pure_scat,sing_scat,escape_prob,thermal_trapping,macro_atoms_escape_prob,macro_atoms_thermal_trapping)     thermal_trapping
+Wind.radiation(yes,no)                          yes
 Atomic_data                                data/standard80.dat
 Surface.reflection.or.absorption(reflect,absorb,thermalized.rerad)               absorb
 Wind_heating.extra_processes(none,adiabatic,nonthermal,both)            adiabatic
@@ -54,7 +54,7 @@ Wind.filling_factor(1=smooth,<1=clumped)   1
 ### Parameters defining the spectra seen by observers
 
 Disk.rad_type_in_final_spectrum(bb,models,uniform)                   bb
-Central_object.rad_type_in_final_spectrum(power,cloudy,brems)                power
+Central_object.rad_type_in_final_spectrum(bb,models,power,cloudy,brems)                power
 
 ### The minimum and maximum wavelengths in the final spectra
 Spectrum.wavemin(Angstroms)                0.01
@@ -77,4 +77,3 @@ Reverb.type(none,photon,wind,matom)                 none
 
 ### Other parameters
 Photon_sampling.approach(T_star,cv,yso,AGN,min_max_freq,user_bands,cloudy_test,wide,logarithmic)                  agn
-udy_test,wide,logarithmic)                  agn

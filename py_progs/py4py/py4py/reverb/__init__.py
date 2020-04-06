@@ -130,7 +130,7 @@ class TransferFunction:
         template TF, unless explicitly told not to. Filters don't overwrite!
         They stack. So you can't simply call '.line()' to change the line the TF
         corresponds to if its template was a different line, unless you specify
-        thhat the template was of a different line.
+        that the template was of a different line.
 
         Arguments:
             database (sqlalchemy.engine.Connection):
@@ -629,12 +629,17 @@ class TransferFunction:
                 percentile = (1 - (10**(-self._delay_dynamic_range)))*100
                 range_delay = [0, np.percentile(data[:, 1], percentile)]
                 if verbose:
-                    print("Delays up to the {} percentile value, {}d".format(
-                        percentile, range_delay[1] / SECONDS_PER_DAY))
+                    print(
+                        "Delays up to the {} percentile value, {}d".format(
+                            percentile, range_delay[1] / SECONDS_PER_DAY
+                        )
+                    )
             else:
                 range_delay = [0, np.amax(data[:, 1])]
-            self._bins_delay = np.linspace(range_delay[0], range_delay[1],
-                                           self._bins_delay_count+1, endpoint=True, dtype=np.float64)
+
+            self._bins_delay = np.linspace(
+                range_delay[0], range_delay[1], self._bins_delay_count+1, endpoint=True, dtype=np.float64
+            )
 
         # Check if we've already got wavelength bins from another TF
         if self._bins_wave is None:
@@ -651,7 +656,7 @@ class TransferFunction:
                 ]
                 print(
                     "Creating new wavelength bins from template, velocities from {:.2e}-{:.2e} to waves: {:.2f}-{:.2f}"
-                    .format(self._bins_vel[0], self._bins_vel[-1], range_wave[0], range_wave[1])
+                    .format(self._bins_vel[0], self._bins_vel[-1], range_wave[0], range_wave[-1])
                 )
 
             # Now create the bins for each dimension
@@ -661,18 +666,22 @@ class TransferFunction:
         # Check if we've already got velocity bins from another TF and we have a line to center around
         if self._bins_vel is None and self._line_wave is not None:
             range_wave = [self._bins_wave[0], self._bins_wave[-1]]
-            self._bins_vel = np.linspace(doppler_shift_vel(self._line_wave, range_wave[1]),
-                                         doppler_shift_vel(self._line_wave, range_wave[0]),
-                                         self._bins_wave_count + 1, endpoint=True, dtype=np.float64)
+            self._bins_vel = np.linspace(
+                doppler_shift_vel(self._line_wave, range_wave[0]),
+                doppler_shift_vel(self._line_wave, range_wave[-1]),
+                self._bins_wave_count + 1, endpoint=True, dtype=np.float64
+            )
             # Convert speed from m/s to km/s
             self._bins_vel = np.true_divide(self._bins_vel, 1000.0)
 
         # Now we bin the photons, weighting them by their photon weights for the luminosity
-        self._emissivity, junk, junk = np.histogram2d(data[:, 1], data[:, 0], weights=data[:, 2],
-                                                      bins=[self._bins_delay, self._bins_wave])
+        self._emissivity, junk, junk = np.histogram2d(
+            data[:, 1], data[:, 0], weights=data[:, 2], bins=[self._bins_delay, self._bins_wave]
+        )
         # Keep an unweighted photon count for statistical error purposes
-        self._count, junk, junk = np.histogram2d(data[:, 1], data[:, 0],
-                                                 bins=[self._bins_delay, self._bins_wave])
+        self._count, junk, junk = np.histogram2d(
+            data[:, 1], data[:, 0], bins=[self._bins_delay, self._bins_wave]
+        )
 
         # Scaling factor! Each spectral cycle outputs L photons. If we do 50 cycles, we want a factor of 1/50
         self._emissivity *= scaling_factor
@@ -848,7 +857,7 @@ class TransferFunction:
             dynamic_range: int = None, rms: bool = False, show: bool = False,
             max_delay: Optional[float] = None, format: str = '.eps'
     ) -> 'TransferFunction':
-        """r
+        """
         Takes the data gathered by calling 'run' and outputs a plot
 
         Args:
@@ -1087,8 +1096,12 @@ class TransferFunction:
             cb_label_scale = r""
 
         # Plot the main colourplot for the transfer function
-        tf = ax_tf.pcolor(bins_x, bins_y, data_plot,
-                          vmin=cb_min, vmax=cb_max, cmap=cb_map)
+        tf = ax_tf.pcolor(
+            bins_x,
+            bins_y,
+            data_plot,
+            vmin=cb_min, vmax=cb_max, cmap=cb_map
+        )
         if not max_delay:
             ax_tf.set_ylim(bottom=bins_y[0], top=bins_y[-1])
         else:

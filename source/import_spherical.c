@@ -102,18 +102,19 @@ import_1d (ndom, filename)
 
       if (n == READ_ELECTRON_TEMP_1D)
       {
+        imported_model[ndom].init_temperature = FALSE;
         imported_model[ndom].t_e[ncell] = t_e;
         imported_model[ndom].t_r[ncell] = 1.1 * t_e;
       }
       else if (n == READ_BOTH_TEMP_1D)
       {
+        imported_model[ndom].init_temperature = FALSE;
         imported_model[ndom].t_e[ncell] = t_e;
         imported_model[ndom].t_r[ncell] = t_r;
       }
       else
       {
-        imported_model[ndom].t_e[ncell] = DEFAULT_IMPORT_TEMPERATURE;
-        imported_model[ndom].t_r[ncell] = 1.1 * DEFAULT_IMPORT_TEMPERATURE;
+        imported_model[ndom].init_temperature = TRUE;
       }
 
       ncell++;
@@ -139,6 +140,40 @@ import_1d (ndom, filename)
 
   return (0);
 }
+
+
+
+
+/* ************************************************************************** */
+/**
+ * @brief   Set up the various domain boundaries for a spherical coordinate
+ *          system
+ *
+ * @param[in] int ndom         The domain of interest
+ *
+ * @return    Always returns 0
+ *
+ * @details
+ *
+ * This used to be contained within spherical_make_grid_import, however, it
+ * does not reply on any of the variables in that function and only relies on
+ * the imported_model struct. Therefore, the boundary setup was moved into a
+ * separate function so it could be done else where in the program flow.
+ *
+ * ************************************************************************** */
+
+int
+import_spherical_setup_boundaries (int ndom)
+{
+  zdom[ndom].wind_rho_min = zdom[ndom].rho_min = 0;
+  zdom[ndom].rmin = imported_model[ndom].r[1];  // <- this assumes the 1st cell is a ghost cell
+  zdom[ndom].wind_rho_max = zdom[ndom].zmax = zdom[ndom].rho_max = zdom[ndom].rmax = imported_model[ndom].r[imported_model[ndom].ncell - 2];    // <- this assumes the last 2 cells are ghost cells
+  zdom[ndom].wind_thetamin = zdom[ndom].wind_thetamax = 0;
+
+  return 0;
+}
+
+
 
 
 /* The next section contains routines to make the grids for imported models.
@@ -175,11 +210,6 @@ spherical_make_grid_import (w, ndom)
 {
 
   int j, n;
-
-  zdom[ndom].wind_rho_min = zdom[ndom].rho_min = 0;
-  zdom[ndom].rmin = imported_model[ndom].r[0];
-  zdom[ndom].wind_rho_max = zdom[ndom].zmax = zdom[ndom].rho_max = zdom[ndom].rmax = imported_model[ndom].r[imported_model[ndom].ncell - 1];
-  zdom[ndom].wind_thetamin = zdom[ndom].wind_thetamax = 0.;
 
   for (j = 0; j < imported_model[ndom].ncell; j++)
   {
@@ -333,4 +363,64 @@ rho_1d (ndom, x)
   }
 
   return (rho);
+}
+
+
+
+
+/* ************************************************************************** */
+/**
+ * @brief      Get the temperature at a position x
+ *
+ * @param[in] int    ndom        The domain for the imported model
+ * @param[in] double *x          A position (3d)
+ * @param[in] int    return_t_e  If TRUE, the electron temperature is returned
+ *
+ * @return     The temperature in K
+ *
+ * @details
+ *
+ * ************************************************************************** */
+
+double
+temperature_1d (int ndom, double *x, int return_t_e)
+{
+  int n;
+  double r, temperature = 0;
+
+  if (imported_model[ndom].init_temperature)
+  {
+    if (return_t_e)
+      temperature = 1.1 * zdom[ndom].twind;
+    else
+      temperature = zdom[ndom].twind;
+  }
+  else
+  {
+    r = length (x);
+
+    n = 0;
+    while (r >= imported_model[ndom].r[n] && n < imported_model[ndom].ncell)
+    {
+      n++;
+    }
+    n--;
+
+    if (n < imported_model[ndom].ncell)
+    {
+      if (return_t_e)
+        temperature = imported_model[ndom].t_e[n];
+      else
+        temperature = imported_model[ndom].t_r[n];
+    }
+    else
+    {
+      if (return_t_e)
+        temperature = imported_model[ndom].t_e[imported_model[ndom].ncell - 1];
+      else
+        temperature = imported_model[ndom].t_r[imported_model[ndom].ncell - 1];
+    }
+  }
+
+  return temperature;
 }

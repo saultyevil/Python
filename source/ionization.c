@@ -368,7 +368,7 @@ check_convergence (void)
   xconverging = ((double) nconverging) / ntot;
   geo.fraction_converged = xconverge;
 
-  Log ("!!Check_convergence: %4d (%.3f) converged and %4d (%.3f) converging of %d the cells actually in the wind\n",
+  Log ("!!Check_convergence: %4d (%.3f) converged and %4d (%.3f) converging of %d cells actually in the wind\n",
        nconverge, xconverge, nconverging, xconverging, ntot);
   Log ("!!Check_convergence: t_r %4d t_e(real) %4d t_e(maxed) %4d hc(real) %4d\n", ntr, nte, nmax, nhc);
   Log_flush ();

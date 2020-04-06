@@ -117,8 +117,8 @@ fb_topbase_partial (freq)
   else
   {
     Error
-      ("fb_topbase_partial: Did not understand cross-section type %i for ion %i. Setting multiplicity to zero!\n",
-       ion[nion].phot_info, nion);
+      ("fb_topbase_partial: Did not understand cross-section type %i for ion %i (z=%i, istate %i). Setting multiplicity to zero!\n",
+       ion[nion].phot_info, nion, ion[nion].z, ion[nion].istate);
     gn = 0.0;
   }
 

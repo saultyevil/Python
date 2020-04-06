@@ -69,7 +69,7 @@ main (argc, argv)
   WindPtr w;
 
   double freqmin, freqmax;
-  int n;
+  unsigned int n;
   char values[LINELENGTH], answer[LINELENGTH];
   int get_models ();            // Note: Needed because get_models cannot be included in templates.h
   int dummy_spectype;
@@ -554,11 +554,7 @@ main (argc, argv)
 
 
 
-  /* DFUDGE is a distance that assures we can "push through" boundaries.  setup_dfudge
-     sets the push through distance depending on the size of the system.
-   */
 
-  DFUDGE = setup_dfudge ();
 
   /* Now define the wind cones generically. modifies the global windcone structure */
   setup_windcone ();
@@ -586,7 +582,11 @@ main (argc, argv)
     init_rand (1084515760 + (13 * rank_global));
   }
 
+  /* DFUDGE is a distance that assures we can "push through" boundaries.  setup_dfudge
+     sets the push through distance depending on the size of the system.
+   */
 
+  DFUDGE = setup_dfudge ();
 
   /* Next line finally defines the wind if this is the initial time this model is being run */
 
@@ -595,7 +595,7 @@ main (argc, argv)
     define_wind ();
   }
 
-
+  Log ("DFUDGE set to %e based on geo.rmax\n", DFUDGE);
 
   if (modes.zeus_connect == 1)  //We have restarted, but are in zeus connect mode, so we want to update density, temp and velocities
   {

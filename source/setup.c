@@ -104,7 +104,7 @@ init_geo ()
   geo.tstar = 40000;
 
   geo.ioniz_mode = IONMODE_ML93;        /* default is on the spot and find the best t */
-  geo.line_mode = 3;            /* default is escape probabilites */
+  geo.line_mode = LINE_MODE_ESC_PROB;   /* default is escape probabilites */
 
   geo.star_radiation = TRUE;    /* 1 implies star will radiate */
   geo.disk_radiation = TRUE;    /* 1 implies disk will radiate */
@@ -802,8 +802,6 @@ setup_dfudge ()
     }
   }
 
-
-
   delta = geo.rmax - rmin;
 
   if (delta < 1.e8)
@@ -818,8 +816,6 @@ setup_dfudge ()
   {
     dfudge = geo.rmax / 1.e10;
   }
-
-  Log ("DFUDGE set to %e based on geo.rmax\n", dfudge);
 
   return (dfudge);
 }

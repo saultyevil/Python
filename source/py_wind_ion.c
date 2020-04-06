@@ -440,13 +440,13 @@ line_summary (w, rootname, ochoice)
 
 
   rdint ("line_transfer(0=pure.abs,1=pure.scat,2=sing.scat,3=escape.prob, 4=off, diagnostic)", &geo.line_mode);
-  if (geo.line_mode == 0)
+  if (geo.line_mode == LINE_MODE_ABSORB)
     Log ("Pure_abs in line heating/cooling\n");
-  else if (geo.line_mode == 1)
+  else if (geo.line_mode == LINE_MODE_SCAT)
     Log ("Pure_scat_in line heating/cooling\n");
-  else if (geo.line_mode == 2)
+  else if (geo.line_mode == LINE_MODE_SINGLE_SCAT)
     Log ("Single scat for line heating/cooling\n");
-  else if (geo.line_mode == 3)
+  else if (geo.line_mode == LINE_MODE_ESC_PROB)
     Log ("Escape probabilities for line heating/cooling\n");
   else if (geo.line_mode == 4)
     Log ("No line transfer; diagnostic mode only\n");
@@ -503,7 +503,7 @@ line_summary (w, rootname, ochoice)
         x *= PLANCK * lin_ptr[nline]->freq * plasmamain[nplasma].vol;
 
         /* Include effects of line trapping */
-        if (geo.line_mode == 3)
+        if (geo.line_mode == LINE_MODE_ESC_PROB)
           x *= p_escape (lin_ptr[nline], &plasmamain[nplasma]);
       }
 

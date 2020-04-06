@@ -37,6 +37,8 @@ extensions = ['sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinx.ext.autosectionlabel',
     'sphinx_issues',
+	'nbsphinx',
+	'IPython.sphinxext.ipython_console_highlighting',
     # 'sphinx.ext.autodoc',
 ]
 
@@ -59,7 +61,7 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.ipynb']
 
 # The master toctree document.
 master_doc = 'index'

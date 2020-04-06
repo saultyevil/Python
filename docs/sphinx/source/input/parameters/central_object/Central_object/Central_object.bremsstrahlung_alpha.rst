@@ -1,6 +1,6 @@
 Central_object.bremsstrahlung_alpha
 ===================================
-The frequency exponent 𝛼 in bremstrahlung SED of the form
+The frequency exponent $\alpha$ in bremstrahlung SED of the form
 $L_\nu=\nu^{\alpha}e^{-h\nu/kT}$
 
 Type

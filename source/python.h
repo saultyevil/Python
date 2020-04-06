@@ -441,6 +441,14 @@ struct geometry
                                    the same results as pre-Macro Atom versions of the code. */
   int partition_mode;           /* Diagnostic to force the partition function to be calculated in
                                    a specific way. */
+
+#define LINE_MODE_ABSORB      0     
+#define LINE_MODE_SCAT        1
+#define LINE_MODE_SINGLE_SCAT 2
+#define LINE_MODE_ESC_PROB    3
+
+
+
   int line_mode;                /*0, the atomosphere is a completely absorbing and no photons
                                    will be scattered.  In this mode, assuming the wind is a source
                                    of emission, the emissivity will be the Einstein A coefficient
@@ -449,12 +457,13 @@ struct geometry
                                    as a result of radiation transfer
                                    2, then a simple single scattering approximation is applied in which
                                    case the scattered flux is just  A21/(C21+A21). 
-                                   3, then radiation trapping is included as well.
-                                   6, If set to 6 initially, this switches on the macro atom stuff
-                                   and then behaves like 3. (SS)
+                                   3, then radiation trapping aka escape probabilities are included as well.
+                                   6 - 9,  If set to 6-9 initially, this switches on the macro atom case
+                                   and then behaves like LINE_MODE_ESC_PROB. 
                                  */
-/* Note that the scatter_mode is actually a subsidiary variable of the line_mode.  Chooising a line_mode
+/* Note that the scatter_mode is actually a subsidiary variable of the line_mode.  Choosing a line_mode
  * results in the selection of a scatter_mode */
+
 #define SCATTER_MODE_ISOTROPIC    0
 #define SCATTER_MODE_THERMAL      2
 
@@ -1102,6 +1111,7 @@ int size_Jbar_est, size_gamma_est, size_alpha_est;
 #define NEBULARMODE_MATRIX_BB 8 // matrix solver BB model
 #define NEBULARMODE_MATRIX_SPECTRALMODEL 9      // matrix solver spectral model
 #define NEBULARMODE_MATRIX_ESTIMATORS 10      // matrix solver spectral model
+
 
 
 typedef struct photon

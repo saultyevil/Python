@@ -1,6 +1,6 @@
 Central_object.power_law_index
 ==============================
-The exponent 𝛼 in a power law SED applied to a power law source of the form $L_\nu=K\nu^\alpha$.
+The exponent $\alpha$ in a power law SED applied to a power law source of the form $L_\nu=K\nu^\alpha$.
 
 Type
   Double

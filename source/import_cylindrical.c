@@ -100,18 +100,19 @@ import_cylindrical (ndom, filename)
 
       if (n == READ_ELECTRON_TEMP_2D)
       {
+        imported_model[ndom].init_temperature = FALSE;
         imported_model[ndom].t_e[ncell] = t_e;
         imported_model[ndom].t_r[ncell] = 1.1 * t_e;
       }
       else if (n == READ_BOTH_TEMP_2D)
       {
+        imported_model[ndom].init_temperature = FALSE;
         imported_model[ndom].t_e[ncell] = t_e;
         imported_model[ndom].t_r[ncell] = t_r;
       }
       else
       {
-        imported_model[ndom].t_e[ncell] = DEFAULT_IMPORT_TEMPERATURE;
-        imported_model[ndom].t_r[ncell] = 1.1 * DEFAULT_IMPORT_TEMPERATURE;
+        imported_model[ndom].init_temperature = TRUE;
       }
 
       ncell++;
@@ -202,65 +203,30 @@ import_cylindrical (ndom, filename)
 
 
 
-/**********************************************************/
+/* ************************************************************************** */
 /**
- * @brief       Use the imported data to initialize various
- * portions of the Wind and Domain structures
+ * @brief   Set up the various domain boundaries for a cylindrical coordinate
+ *          system
  *
+ * @param[in] int ndom         The domain of interest
  *
- * @param [in] w   The entire wind
- * @param [in] ndom   The domain number
- * @return   Always returns 0
+ * @return    Always returns 0
  *
  * @details
- * This routine initializes the portions of the wind structure
- * using the imported model, specifically those portions having
- * to do with positions, and velocities.
  *
- * The routine creates a pillbox around the grid to be used
- * for defining the region which the wind (maximally) occupies.
+ * This used to be contained within cylindrical_make_grid_import, however, it
+ * does not reply on any of the variables in that function and only relies on
+ * the imported_model struct. Therefore, the boundary setup was moved into a
+ * separate function so it could be done else where in the program flow.
  *
- *
- * ### Notes ###
- *
- **********************************************************/
+ * ************************************************************************** */
 
 int
-cylindrical_make_grid_import (w, ndom)
-     WindPtr w;
-     int ndom;
+import_cylindrical_setup_boundaries (int ndom)
 {
   int n;
-  int nn;
   double rmin, rmax, rho_min, rho_max, zmin, zmax;
   double x[3], r_inner, r_outer;
-
-/*  This is an attempt to make the grid directly.
- *
- *  Note also that none of this will work unless a complete grid is read
- *  in
- *  */
-  for (n = 0; n < imported_model[ndom].ncell; n++)
-  {
-    wind_ij_to_n (ndom, imported_model[ndom].i[n], imported_model[ndom].j[n], &nn);
-    w[nn].x[0] = imported_model[ndom].x[n];
-    w[nn].x[1] = 0;
-    w[nn].x[2] = imported_model[ndom].z[n];
-    w[nn].v[0] = imported_model[ndom].v_x[n];
-    w[nn].v[1] = imported_model[ndom].v_y[n];
-    w[nn].v[2] = imported_model[ndom].v_z[n];
-    w[nn].inwind = imported_model[ndom].inwind[n];
-
-    if (w[nn].inwind == W_NOT_INWIND || w[nn].inwind == W_PART_INWIND)
-      w[nn].inwind = W_IGNORE;
-
-    w[nn].xcen[0] = imported_model[ndom].wind_midx[imported_model[ndom].i[n]];
-    w[nn].xcen[1] = 0;
-    w[nn].xcen[2] = imported_model[ndom].wind_midz[imported_model[ndom].j[n]];
-
-  }
-
-
 
   /* Now add information used in zdom */
 
@@ -269,33 +235,28 @@ cylindrical_make_grid_import (w, ndom)
     zdom[ndom].wind_x[n] = imported_model[ndom].wind_x[n];
   }
 
-
-
   for (n = 0; n < zdom[ndom].mdim; n++)
   {
     zdom[ndom].wind_z[n] = imported_model[ndom].wind_z[n];
   }
 
-
   /* Now set up wind boundaries so they are harmless.
 
    * Note that given that we have already filled out
    * the WindPtr it seems like we could do this
-   * without needing the internal structure used in this 
+   * without needing the internal structure used in this
    * routine.  It's done this way to follow the procedure
    * in the rtheta model
-   * 
+   *
    * Note that one has to be careful here, because one
    * has to include all of the outer most cell that
    * is in the wind.
-   * 
+   *
    */
-
 
   rmax = rho_max = zmax = 0;
   rmin = rho_min = zmin = VERY_BIG;
   for (n = 0; n < imported_model[ndom].ncell; n++)
-
   {
     if (imported_model[ndom].inwind[n] >= 0)
     {
@@ -338,12 +299,6 @@ cylindrical_make_grid_import (w, ndom)
     }
   }
 
-
-
-  Log ("Imported:    rmin    rmax  %e %e\n", rmin, rmax);
-  Log ("Imported:    zmin    zmax  %e %e\n", zmin, zmax);
-  Log ("Imported: rho_min rho_max  %e %e\n", rho_min, rho_max);
-
   zdom[ndom].wind_rho_min = zdom[ndom].rho_min = rho_min;
   zdom[ndom].wind_rho_max = zdom[ndom].rho_max = rho_max;
   zdom[ndom].zmax = zmax;
@@ -368,10 +323,69 @@ cylindrical_make_grid_import (w, ndom)
   zdom[ndom].windplane[1].lmn[0] = zdom[ndom].windplane[0].lmn[1] = 0;
   zdom[ndom].windplane[1].lmn[2] = 1;
 
+  return 0;
+}
+
+
+
+
+/**********************************************************/
+/**
+ * @brief       Use the imported data to initialize various
+ * portions of the Wind and Domain structures
+ *
+ *
+ * @param [in] w   The entire wind
+ * @param [in] ndom   The domain number
+ * @return   Always returns 0
+ *
+ * @details
+ * This routine initializes the portions of the wind structure
+ * using the imported model, specifically those portions having
+ * to do with positions, and velocities.
+ *
+ * The routine creates a pillbox around the grid to be used
+ * for defining the region which the wind (maximally) occupies.
+ *
+ *
+ * ### Notes ###
+ *
+ **********************************************************/
+
+int
+cylindrical_make_grid_import (w, ndom)
+     WindPtr w;
+     int ndom;
+{
+  int n;
+  int nn;
+
+  /*  This is an attempt to make the grid directly.
+   *
+   *  Note also that none of this will work unless a complete grid is read
+   *  in
+   *  */
+  for (n = 0; n < imported_model[ndom].ncell; n++)
+  {
+    wind_ij_to_n (ndom, imported_model[ndom].i[n], imported_model[ndom].j[n], &nn);
+    w[nn].x[0] = imported_model[ndom].x[n];
+    w[nn].x[1] = 0;
+    w[nn].x[2] = imported_model[ndom].z[n];
+    w[nn].v[0] = imported_model[ndom].v_x[n];
+    w[nn].v[1] = imported_model[ndom].v_y[n];
+    w[nn].v[2] = imported_model[ndom].v_z[n];
+    w[nn].inwind = imported_model[ndom].inwind[n];
+
+    if (w[nn].inwind == W_NOT_INWIND || w[nn].inwind == W_PART_INWIND)
+      w[nn].inwind = W_IGNORE;
+
+    w[nn].xcen[0] = imported_model[ndom].wind_midx[imported_model[ndom].i[n]];
+    w[nn].xcen[1] = 0;
+    w[nn].xcen[2] = imported_model[ndom].wind_midz[imported_model[ndom].j[n]];
+  }
 
   return (0);
 }
-
 
 /* The next section calculates velocities.  We follow the hydro approach of
  * getting those velocities from the original grid.  This is really only
@@ -500,4 +514,65 @@ rho_cylindrical (ndom, x)
 
 
   return (rho);
+}
+
+
+
+
+/* ************************************************************************** */
+/**
+ * @brief      Get the temperature at a position x
+ *
+ * @param[in] int    ndom        The domain for the imported model
+ * @param[in] double *x          A position (3d)
+ * @param[in] int    return_t_e  If TRUE, the electron temperature is returned
+ *
+ * @return     The temperature in K
+ *
+ * @details
+ *
+ * ************************************************************************** */
+
+double
+temperature_cylindrical (int ndom, double *x, int return_t_e)
+{
+  int i, j, n;
+  double r, z;
+  double temperature = 0;
+
+  if (imported_model[ndom].init_temperature)
+  {
+    if (return_t_e)
+      temperature = 1.1 * zdom[ndom].twind;
+    else
+      temperature = zdom[ndom].twind;
+  }
+  else
+  {
+    r = sqrt (x[0] * x[0] + x[1] * x[1]);
+    z = fabs (x[2]);
+
+    i = 0;
+    while (z > imported_model[ndom].wind_z[i] && i < imported_model[ndom].mdim)
+    {
+      i++;
+    }
+    i--;
+
+    j = 0;
+    while (r > imported_model[ndom].wind_x[j] && j < imported_model[ndom].ndim)
+    {
+      j++;
+    }
+    j--;
+
+    n = j * imported_model[ndom].mdim + i;
+
+    if (return_t_e)
+      temperature = imported_model[ndom].t_e[n];
+    else
+      temperature = imported_model[ndom].t_r[n];
+  }
+
+  return temperature;
 }

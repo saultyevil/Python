@@ -40,6 +40,8 @@ int iicount = 0;
  *   j,ave_freq,ntot, heat_photo, heat_ff, heat_h, heat_he1, heat_he2, heat_z,
  *   nioniz, and ioniz[].
  *
+ * @details
+ *
  * ### Notes ###
  * The # of ionizations of a specific ion = (w(0)-w(s))*n_i sigma_i/ (h nu * kappa_tot).  (The # of ionizations
  * is just given by the integral of n_i sigma_i w(s) / h nu ds, but if the density is assumed to
@@ -615,7 +617,6 @@ sigma_phot (x_ptr, freq)
   int nmax;
   double xsection;
   double frac, fbot, ftop;
-  int linterp ();
   int nlast;
 
   if (freq < x_ptr->freq[0])
@@ -653,52 +654,6 @@ sigma_phot (x_ptr, freq)
 
 
 
-/**********************************************************/
-/** 
- * @brief      calculates the photionization crossection due to the transition
- *  	associated with x_ptr at frequency freq (when the data is in the form of the Verner x-sections
- *
- * @param [in] struct innershell *  x_ptr   The stucture that contains information in the format of Verner for 
- * a particular ion level
- * @param [in] double  freq   The frequency where the x-section is calculated
- * @return     The photoinization x-section
- *
- * @details
- * Same as sigma_phot but using the older compilation from Verner that includes inner shells
- *
- * ### Notes ###
- * 
- * I (NSH) think this routine has been largely superceeded by the new inner shell formulation of auger ionization.
- * At some point we may wish to expunge the old augerion perts of python.
- *
- **********************************************************/
-
-double
-sigma_phot_verner (x_ptr, freq)
-     struct innershell *x_ptr;
-     double freq;
-{
-  double ft;
-  double y;
-  double f1, f2, f3;
-  double xsection;
-
-  ft = x_ptr->freq_t;           /* threshold frequency */
-
-  if (ft < freq)
-  {
-    y = freq / x_ptr->E_0 * HEV;
-
-    f1 = ((y - 1.0) * (y - 1.0)) + (x_ptr->yw * x_ptr->yw);
-    f2 = pow (y, 0.5 * x_ptr->P - 5.5 - x_ptr->l);
-    f3 = pow (1.0 + sqrt (y / x_ptr->ya), -x_ptr->P);
-    xsection = x_ptr->Sigma * f1 * f2 * f3;     // the photoinization xsection
-
-    return (xsection);
-  }
-  else
-    return (0.0);
-}
 
 
 
@@ -804,7 +759,7 @@ pop_kappa_ff_array ()
         sum += plasmamain[i].density[j] * (ion[j].istate - 1) * (ion[j].istate - 1) * gaunt;
         if (sane_check (sum))
         {
-          Error ("pop_kappa_ff_array:sane_check sum is %e this is a problem, possible in gaunt %3\n", sum, gaunt);
+          Error ("pop_kappa_ff_array:sane_check sum is %e this is a problem, possible in gaunt %e\n", sum, gaunt);
         }
       }
       else

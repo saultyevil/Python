@@ -239,7 +239,7 @@ communicate_estimators_para ()
     qdisk.heat[mpi_i] = qdisk_helper2[mpi_i];
     qdisk.ave_freq[mpi_i] = qdisk_helper2[mpi_i + NRINGS];
   }
-  Log_parallel ("Thread %d happy after broadcast.\n", rank_global);
+  Log_silent ("Thread %d happy after broadcast.\n", rank_global);
 
   /* now we've done all the doubles so we can free their helper arrays */
   free (qdisk_helper);
@@ -334,18 +334,18 @@ communicate_estimators_para ()
 
 
 /**********************************************************/
-/** 
- * @brief sum up the synthetic spectra between threads.   
- * 
- * @param [in] int  nspecs number of spectra to compute 
- * @param [in] int nspec_helper the length of the big arrays 
- *                  to help with the MPI reductions of the spectra 
+/**
+ * @brief sum up the synthetic spectra between threads.
+ *
+ * @param [in] int  nspecs number of spectra to compute
+ * @param [in] int nspec_helper the length of the big arrays
+ *                  to help with the MPI reductions of the spectra
  *                  equal to 2 * number of spectra (NSPEC) * number of wavelengths.
  *
  * @details
  * sum up the synthetic spectra between threads. Does an
- * MPI_Reduce then an MPI_Bcast for each element of the 
- * linear and log spectra arrays (xxspec) 
+ * MPI_Reduce then an MPI_Bcast for each element of the
+ * linear and log spectra arrays (xxspec)
  *
  **********************************************************/
 
@@ -401,11 +401,11 @@ gather_spectra_para (nspec_helper, nspecs)
 
 
 /**********************************************************/
-/** 
- * @brief      
+/**
+ * @brief
  *
- * @details averages the macro-atom estimators between tasks using MPI_Reduce. 
- *   It should only be called if the MPI_ON flag was present 
+ * @details averages the macro-atom estimators between tasks using MPI_Reduce.
+ *   It should only be called if the MPI_ON flag was present
  *   in compilation, and returns 0 immediately if no macro atom levels.
  *   This should probably be improved by working out exactly
  *   what is needed in simple-ion only mode.
@@ -461,7 +461,7 @@ communicate_matom_estimators_para ()
 
 
 
-  /* now we loop through each cell and copy the values of our variables 
+  /* now we loop through each cell and copy the values of our variables
      into our helper arrays */
   for (mpi_i = 0; mpi_i < NPLASMA; mpi_i++)
   {
@@ -600,7 +600,7 @@ communicate_matom_estimators_para ()
 
 
   /* at this stage each thread should have the correctly averaged estimators */
-  Log_parallel ("Thread %d happy after broadcast.\n", rank_global);
+  Log_silent ("Thread %d happy after broadcast.\n", rank_global);
 
 
 

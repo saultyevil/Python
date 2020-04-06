@@ -129,7 +129,6 @@ int scatter(PhotPtr p, int *nres, int *nnscat);
 double radiation(PhotPtr p, double ds);
 double kappa_ff(PlasmaPtr xplasma, double freq);
 double sigma_phot(struct topbase_phot *x_ptr, double freq);
-double sigma_phot_verner(struct innershell *x_ptr, double freq);
 double den_config(PlasmaPtr xplasma, int nconf);
 double pop_kappa_ff_array(void);
 int update_banded_estimators(PlasmaPtr xplasma, PhotPtr p, double ds, double w_ave);
@@ -485,27 +484,33 @@ int create_ion_table(int ndom, char rootname[], int iz, int ion_switch);
 double *get_ion(int ndom, int element, int istate, int iswitch, char *name);
 double *get_one(int ndom, char variable_name[]);
 /* import.c */
+int import_set_wind_boundaries (int ndom);
 int import_wind(int ndom);
 int import_make_grid(WindPtr w, int ndom);
 double import_velocity(int ndom, double *x, double *v);
-int get_import_wind_params(int ndom);
 double import_rho(int ndom, double *x);
-double model_temp(int ndom, double x[], int return_t_e);
+double import_temperature(int ndom, double *x, int return_t_e);
 /* import_spherical.c */
 int import_1d(int ndom, char *filename);
+int import_spherical_setup_boundaries(int ndom);
 int spherical_make_grid_import(WindPtr w, int ndom);
 double velocity_1d(int ndom, double *x, double *v);
 double rho_1d(int ndom, double *x);
+double temperature_1d(int ndom, double *x, int return_t_e);
 /* import_cylindrical.c */
 int import_cylindrical(int ndom, char *filename);
+int import_cylindrical_setup_boundaries(int ndom);
 int cylindrical_make_grid_import(WindPtr w, int ndom);
 double velocity_cylindrical(int ndom, double *x, double *v);
 double rho_cylindrical(int ndom, double *x);
+double temperature_cylindrical(int ndom, double *x, int return_t_e);
 /* import_rtheta.c */
 int import_rtheta(int ndom, char *filename);
+int import_rtheta_setup_boundaries(int ndom);
 int rtheta_make_grid_import(WindPtr w, int ndom);
 double velocity_rtheta(int ndom, double *x, double *v);
 double rho_rtheta(int ndom, double *x);
+double temperature_rtheta(int ndom, double *x, int return_t_e);
 /* reverb.c */
 double delay_to_observer(PhotPtr pp);
 int delay_dump_prep(int restart_stat);

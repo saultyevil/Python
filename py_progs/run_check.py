@@ -172,6 +172,7 @@ def plot_converged(root,converged,converging,t_r,t_e,hc):
     Make a plot of the convergence statistics in the diag directroy
     '''
 
+
     pylab.figure(1,(6,6))
     pylab.clf()
     pylab.plot(t_r,'--',label='t_r')
@@ -214,14 +215,20 @@ def check_completion(root):
 
     complete_message=[]
 
+    ion_time=0 # To handle the case where there were no ionization cycles
+
     if line.count('COMPLETE'):
         word=complete_string.split()
         message='%s ran to completion in %s s' % (root,word[5])
         complete_message.append(message)
-        word=ion_string.split()
-        message='%s ionization cycles were completed in %s s' % (word[8],word[5])
-        ion_time=eval(word[5])
+        try:
+            word=ion_string.split()
+            message='%s ionization cycles were completed in %s s' % (word[8],word[5])
+            ion_time=eval(word[5])
+        except:
+            message='There were no ionization cycles for this run'
         complete_message.append(message)
+
         try:
             word=spec_string.split()
             spec_time=eval(word[5])
@@ -273,8 +280,11 @@ def make_html(root,converge_plot,te_plot,tr_plot,spec_tot_plot,spec_plot,complet
 
     string+=xhtml.hline()
     string+=xhtml.h2('Did the run converge?')
-    # print(xhtml.image('file:./diag_%s/convergence.png' % root))
-    string+=xhtml.image('file:./diag_%s/convergence.png' % root)
+
+    if os.path.isfile('./diag_%s/convergence.png' % root):
+        string+=xhtml.image('file:./diag_%s/convergence.png' % root)
+    else:
+        string+=xhtml.paragraph('There is no convergence plot. OK if no ionization cycles')
 
     string+=xhtml.paragraph(convergence_message)
 
@@ -290,7 +300,12 @@ def make_html(root,converge_plot,te_plot,tr_plot,spec_tot_plot,spec_plot,complet
     # string+=xhtml.image('file:./diag_%s/%s_t_r.png' % (root,root))
     string+=xhtml.hline()
     string+=xhtml.h2('What do the total spectra look like (somewhat smoothed)?')
-    string+=xhtml.image('file:%s' % (spec_tot_plot))
+
+    if os.path.isfile(spec_tot_plot):
+        string+=xhtml.image('file:%s' % (spec_tot_plot))
+    else:
+        string+=xhtml.paragraph('There is no total spectrum plot. OK if no ionization cycles')
+
     string+=xhtml.hline()
     string+=xhtml.h2('What do the final spectra look like (somewhat smoothed)?')
     if spec_plot != 'None':
@@ -383,8 +398,10 @@ def doit(root='ixvel',outputfile='out.txt'):
 
     converged,converging,t_r,t_e,hc=read_diag(root)
 
-    if len(converged):
+    if len(converged)>1:
         plot_converged(root,converged,converging,t_r,t_e,hc)
+    else:
+        print('There were not enough cycles to plot the convergence by cycle')
 
     plot_tot.doit(root)
     spec_tot_plot=root+'.spec_tot.png'

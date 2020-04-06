@@ -6,7 +6,7 @@ Type
   Double
 
 Unit
-  M☉
+  M$\odot$
 
 Values
   Greater than 0

@@ -1,6 +1,6 @@
 Boundary_layer.power_law_index
 ==============================
-The exponent 𝛼 in a power law SED applied to an AGN-style power law source for a non-AGN system.
+The exponent $\alpha$ in a power law SED applied to an AGN-style power law source for a non-AGN system.
 central source of the form $L_\nu=K\nu^\alpha$.
 
 Type

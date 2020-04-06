@@ -46,7 +46,4 @@ def doppler_shift_vel(line: float, wave: float) -> float:
     Returns:
         float:          Speed of Doppler shift
     """
-    if wave > line:
-        return -1*apc.c.value * (1 - (line / wave))
-    else:
-        return apc.c.value * ((line / wave) - 1)
+    return apc.c.value * (wave - line) / line

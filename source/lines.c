@@ -4,7 +4,7 @@
  * @author ksl
  * @date   May, 2018
  *
- * @brief  Subroutines assocaited with with resonance line radiation
+ * @brief  Subroutines associated with with resonance line radiation
  *
  *
  ***********************************************************/
@@ -135,7 +135,7 @@ lum_lines (one, nmin, nmax)
       x *= foo2 = q * a21 (lin_ptr[n]) * z / (1. - z);
 
       x *= foo3 = PLANCK * lin_ptr[n]->freq * xplasma->vol;
-      if (geo.line_mode == 3)
+      if (geo.line_mode == LINE_MODE_ESC_PROB)
         x *= foo4 = p_escape (lin_ptr[n], xplasma);     // Include effects of line trapping
       else
       {
@@ -468,10 +468,10 @@ scattering_fraction (line_ptr, xplasma)
   double ne, te;
   double w;                     /* the radiative weight, and radiation tempeature */
 
-  if (geo.line_mode == 0)
+  if (geo.line_mode == LINE_MODE_ABSORB)
     return (0.0);               //purely absorbing atmosphere
 
-  else if (geo.line_mode == 1)
+  else if (geo.line_mode == LINE_MODE_SCAT)
     return (1.);                //purely scattering atmosphere
 
   //Populate variable from previous calling structure
@@ -486,10 +486,10 @@ scattering_fraction (line_ptr, xplasma)
   c = ne * q21 (line_ptr, te) * z;
   q = c / (a + c);              //q == epsilon in Rybicki and elsewhere
 
-  if (geo.line_mode == 2)
+  if (geo.line_mode == LINE_MODE_SINGLE_SCAT)
     return (1 - q);             //single scattering atmosphere
 
-  else if (geo.line_mode == 3)
+  else if (geo.line_mode == LINE_MODE_ESC_PROB)
   {                             // atmosphere with  line trapping
 
     escape = p_escape (line_ptr, xplasma);

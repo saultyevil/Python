@@ -39,9 +39,22 @@
 void
 calloc_import (int coord_type, int ndom)
 {
+  if (imported_model == NULL)
+  {
+    imported_model = calloc (MaxDom, sizeof *imported_model);
+    if (imported_model == NULL)
+    {
+      Error ("calloc_import: unable to allocate %i domains for imported_model\n", MaxDom);
+      Exit (1);
+    }
+  }
+
+  imported_model[ndom].init_temperature = FALSE;
+
   if (coord_type == SPHERICAL)
   {
     imported_model[ndom].i = calloc (sizeof *imported_model[ndom].i, NDIM_MAX);
+    imported_model[ndom].inwind = calloc (sizeof *imported_model[ndom].inwind, NDIM_MAX);
     imported_model[ndom].r = calloc (sizeof *imported_model[ndom].r, NDIM_MAX);
     imported_model[ndom].v_r = calloc (sizeof *imported_model[ndom].v_r, NDIM_MAX);
     imported_model[ndom].mass_rho = calloc (sizeof *imported_model[ndom].mass_rho, NDIM_MAX);
@@ -77,7 +90,7 @@ calloc_import (int coord_type, int ndom)
   }
   else
   {
-    Error ("%s: %i: Unknown coord_type %i\n", __FILE__, __LINE__, coord_type);
+    Error ("calloc_import: Unknown coord_type %i\n", coord_type);
     Exit (1);
   }
 }
@@ -104,6 +117,7 @@ free_import (int coord_type, int ndom)
   if (coord_type == SPHERICAL)
   {
     free (imported_model[ndom].i);
+    free (imported_model[ndom].inwind);
     free (imported_model[ndom].r);
     free (imported_model[ndom].v_r);
     free (imported_model[ndom].mass_rho);
@@ -132,7 +146,9 @@ free_import (int coord_type, int ndom)
   }
   else
   {
-    Error ("%s: %i: Unknown coord_type %i\n", __FILE__, __LINE__, coord_type);
+    Error ("free_import: Unknown coord_type %i\n", coord_type);
     Exit (1);
   }
+
+  free (imported_model);
 }

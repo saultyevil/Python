@@ -116,18 +116,19 @@ import_rtheta (ndom, filename)
 
       if (n == READ_ELECTRON_TEMP_2D)
       {
+        imported_model[ndom].init_temperature = FALSE;
         imported_model[ndom].t_e[ncell] = t_e;
         imported_model[ndom].t_r[ncell] = 1.1 * t_e;
       }
       else if (n == READ_BOTH_TEMP_2D)
       {
+        imported_model[ndom].init_temperature = FALSE;
         imported_model[ndom].t_e[ncell] = t_e;
         imported_model[ndom].t_r[ncell] = t_r;
       }
       else
       {
-        imported_model[ndom].t_e[ncell] = DEFAULT_IMPORT_TEMPERATURE;
-        imported_model[ndom].t_r[ncell] = 1.1 * DEFAULT_IMPORT_TEMPERATURE;
+        imported_model[ndom].init_temperature = TRUE;
       }
 
       ncell++;
@@ -202,6 +203,109 @@ import_rtheta (ndom, filename)
 
 
 
+
+/* ************************************************************************** */
+/**
+ * @brief   Set up the various domain boundaries for a rtheta coordinate
+ *          system
+ *
+ * @param[in] int ndom         The domain of interest
+ *
+ * @return    Always returns 0
+ *
+ * @details
+ *
+ * This used to be contained within rtheta_make_grid_import, however, it
+ * does not reply on any of the variables in that function and only relies on
+ * the imported_model struct. Therefore, the boundary setup was moved into a
+ * separate function so it could be done else where in the program flow.
+ *
+ * ************************************************************************** */
+
+int
+import_rtheta_setup_boundaries (int ndom)
+{
+  int n_inner, n_outer;
+  double rho_max, rho_min, r_inner, r_outer, rmin, rmax;
+  double zmin, zmax;
+  double x_inner[3], r_inner_next, x_outer[3], r_outer_next;
+
+
+  /* Now set up wind boundaries so they are harmless.
+   * Note that the grid goes from near the pole
+   * to the equator
+   */
+
+
+  rmax = rho_max = zmax = 0;
+  rmin = rho_min = zmin = VERY_BIG;
+  for (n_inner = 0; n_inner < imported_model[ndom].ncell; n_inner++)
+  {
+    if (imported_model[ndom].inwind[n_inner] >= 0)
+    {
+      n_outer = n_inner + imported_model[ndom].mdim;
+
+      x_inner[0] = imported_model[ndom].r[n_inner] * sin (imported_model[ndom].theta[n_inner]);
+      x_inner[1] = 0;
+      x_inner[2] = imported_model[ndom].r[n_inner] * cos (imported_model[ndom].theta[n_inner]);
+      r_inner_next = imported_model[ndom].r[n_inner + 1] * cos (imported_model[ndom].theta[n_inner + 1]);
+
+      r_inner = length (x_inner);
+
+      x_outer[0] = imported_model[ndom].r[n_outer] * sin (imported_model[ndom].theta[n_outer]);
+      x_outer[1] = 0;
+      x_outer[2] = imported_model[ndom].r[n_inner + 1] * cos (imported_model[ndom].theta[n_inner + 1]);
+      r_outer_next = imported_model[ndom].r[n_outer + 1] * sin (imported_model[ndom].theta[n_outer + 1]);
+
+      r_outer = length (x_outer);
+
+      if (r_outer_next > rho_max)
+      {
+        rho_max = r_outer_next;
+      }
+
+      if (x_outer[2] > zmax)
+      {
+        zmax = x_outer[2];
+      }
+
+      if (r_inner_next < zmin && r_inner_next > 0)
+      {
+        zmin = r_inner_next;
+      }
+
+      if (r_outer > rmax)
+      {
+        rmax = r_outer;
+      }
+
+      if (rho_min > x_inner[0])
+      {
+        rho_min = x_inner[0];
+      }
+
+      if (rmin > r_inner)
+      {
+        rmin = r_inner;
+      }
+
+    }
+  }
+
+  zdom[ndom].wind_rho_min = zdom[ndom].rho_min = rho_min;
+  zdom[ndom].wind_rho_max = zdom[ndom].rho_max = rho_max;
+  zdom[ndom].zmax = zmax;
+
+  zdom[ndom].rmax = rmax;
+  zdom[ndom].rmin = rmin;
+  zdom[ndom].wind_thetamin = zdom[ndom].wind_thetamax = 0.;
+
+  return 0;
+}
+
+
+
+
 /**********************************************************/
 /**
  * @brief      Use the imported data to initialize various
@@ -228,10 +332,11 @@ rtheta_make_grid_import (w, ndom)
      WindPtr w;
      int ndom;
 {
-  int n, nn, nn_outer;
+  int n, nn;
   double theta;
   double rho_max, rho_min, r_inner, r_outer, rmin, rmax;
   double zmin, zmax;
+  double x_inner[3], r_inner_next, x_outer[3], r_outer_next;
 
   /* As in the case of other models we assume that the grid has been
    * read in correctly and so now that the WindPtrs have been generated
@@ -291,75 +396,6 @@ rtheta_make_grid_import (w, ndom)
   {
     zdom[ndom].wind_z[n] = imported_model[ndom].wind_z[n];
   }
-
-  /* Now set up wind boundaries so they are harmless.
-   * Note that the grid goes from near the pole
-   * to the equator
-   */
-
-
-  rmax = rho_max = zmax = 0;
-  rmin = rho_min = zmin = VERY_BIG;
-  for (n = 0; n < imported_model[ndom].ncell; n++)
-  {
-    wind_ij_to_n (ndom, imported_model[ndom].i[n], imported_model[ndom].j[n], &nn);
-
-    if (w[nn].inwind >= 0)
-    {
-
-      r_inner = length (w[nn].x);
-
-      nn_outer = nn + imported_model[ndom].mdim;
-
-      if (nn_outer + 1 >= zdom[ndom].ndim2)
-      {
-        Error ("rtheta_make_grid_import: Trying to access cell %d > %d outside grid\n", nn_outer + 1, zdom[ndom].ndim2);
-      }
-
-      if (nn_outer < zdom[ndom].ndim2)
-      {
-        r_outer = length (w[nn_outer].x);
-      }
-
-
-      if (w[nn_outer + 1].x[0] > rho_max)
-      {
-        rho_max = w[nn_outer + 1].x[0];
-      }
-      if (w[nn_outer].x[2] > zmax)
-      {
-        zmax = w[nn_outer].x[2];
-      }
-      if (w[nn + 1].x[2] < zmin && w[nn + 1].x[2] > 0)
-      {
-        zmin = w[nn + 1].x[2];
-      }
-      if (r_outer > rmax)
-      {
-        rmax = r_outer;
-      }
-      if (rho_min > w[nn].x[0])
-      {
-        rho_min = w[nn].x[0];
-      }
-      if (rmin > r_inner)
-      {
-        rmin = r_inner;
-      }
-    }
-  }
-  Log ("Imported:    rmin    rmax  %e %e\n", rmin, rmax);
-  Log ("Imported:    zmin    zmax  %e %e\n", zmin, zmax);
-  Log ("Imported: rho_min rho_max  %e %e\n", rho_min, rho_max);
-
-
-  zdom[ndom].wind_rho_min = zdom[ndom].rho_min = rho_min;
-  zdom[ndom].wind_rho_max = zdom[ndom].rho_max = rho_max;
-  zdom[ndom].zmax = zmax;
-
-  zdom[ndom].rmax = rmax;
-  zdom[ndom].rmin = rmin;
-  zdom[ndom].wind_thetamin = zdom[ndom].wind_thetamax = 0.;
 
   /* The next line is necessary for calculating distances in a cell in rthota coordiatnes */
 
@@ -494,4 +530,69 @@ rho_rtheta (ndom, x)
   rho = imported_model[ndom].mass_rho[n];
 
   return (rho);
+}
+
+
+
+
+/* ************************************************************************** */
+/**
+ * @brief      Get the temperature at a position x
+ *
+ * @param[in] int    ndom        The domain for the imported model
+ * @param[in] double *x          A position (3d)
+ * @param[in] int    return_t_e  If TRUE, the electron temperature is returned
+ *
+ * @return     The temperature in K
+ *
+ * @details
+ *
+ * ************************************************************************** */
+
+double
+temperature_rtheta (int ndom, double *x, int return_t_e)
+{
+  int i, j, n;
+  double r, z;
+  double temperature = 0;
+  double ctheta, angle;
+
+  if (imported_model[ndom].init_temperature)
+  {
+    if (return_t_e)
+      temperature = 1.1 * zdom[ndom].twind;
+    else
+      temperature = zdom[ndom].twind;
+  }
+  else
+  {
+    r = length (x);
+    z = fabs (x[2]);
+
+    ctheta = z / r;
+    angle = acos (ctheta) * RADIAN;
+
+    i = 0;
+    while (angle > imported_model[ndom].wind_z[i] && i < imported_model[ndom].mdim)
+    {
+      i++;
+    }
+    i--;
+
+    j = 0;
+    while (r > imported_model[ndom].wind_x[j] && j < imported_model[ndom].ndim)
+    {
+      j++;
+    }
+    j--;
+
+    n = j * imported_model[ndom].mdim + i;
+
+    if (return_t_e)
+      temperature = imported_model[ndom].t_e[n];
+    else
+      temperature = imported_model[ndom].t_r[n];
+  }
+
+  return (temperature);
 }

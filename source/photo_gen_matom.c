@@ -460,7 +460,7 @@ get_matom_f (mode)
 
         }
 
-        Log_parallel ("MPI task %d broadcasting matom emissivity information.\n", rank_global);
+        Log_silent ("MPI task %d broadcasting matom emissivity information.\n", rank_global);
       }
 
 

@@ -42,11 +42,11 @@ There are four different types of transitions, each with their own scaling betwe
 
 For example, for type 1 (the most common)
 
-:math:`x=1-\frac{lnC}{ln\left(\frac{kT}{E_ij}+C\right)`
+:math:`x=1-\frac{lnC}{ln\left(\frac{kT}{E_ij}+C\right)}`
 
 and
 
-:math:`y(x)=\frac{\Upsilon}{ln\left(\frac{kT}{E_{ij}}+e\right)`
+:math:`y(x)=\frac{\Upsilon}{ln\left(\frac{kT}{E_{ij}}+e\right)}`
 
 So, to get :math:`\Upsilon` for a given T, one converts T to x via the correct equation,then linearly interpolate between values of y(x), then convert back to $\Upsilon$
 
@@ -70,7 +70,7 @@ The data is stored in Python in the Coll\_stren structure which has memebers
 
 There is also a member in the line structure (coll_index) which points to the relevant record
 
-comments
+Comments
 ========
 
 This data has been generated to match the Verner line list. If we want to use the Kurukz line list, then a new set of data should be made

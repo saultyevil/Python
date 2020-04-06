@@ -267,10 +267,6 @@ model_velocity (ndom, x, v)
   {
     speed = homologous_velocity (ndom, x, v);
   }
-//OLD  else if (zdom[ndom].wind_type == YSO)
-//OLD  {
-//OLD    speed = yso_velocity (ndom, x, v);
-//OLD  }
   else if (zdom[ndom].wind_type == SHELL)
   {
     speed = stellar_velocity (ndom, x, v);
@@ -409,10 +405,6 @@ model_rho (ndom, x)
   {
     rho = homologous_rho (ndom, x);
   }
-//OLD  else if (zdom[ndom].wind_type == YSO)
-//OLD  {
-//OLD    rho = yso_rho (ndom, x);
-//OLD  }
   else if (zdom[ndom].wind_type == SHELL)
   {
     rho = stellar_rho (ndom, x);
@@ -436,8 +428,8 @@ model_rho (ndom, x)
 /** 
  * @brief      Simple checks of the wind structure for reasonability
  *
- * @param [in, out] WindPtr  www   The entire wind
- * @param [in, out] int  n   n >= 0  then an element of the array will be checked
+ * @param [in] WindPtr  www   The entire wind
+ * @param [in] int  n   n >= 0  then an element of the array will be checked
  * @return     Always returns 0
  *
  * @details
@@ -445,13 +437,14 @@ model_rho (ndom, x)
  * 
  * * wind_check(w,-1);  to check the entire structure
  * * wind_check(w,50);   to check element 50 of the structure
- * * wind_check(w[50],0) to check elemetn 50 of the structure
+ * * wind_check(w[50],0) to check element 50 of the structure
  *
  * ### Notes ###
  * 
- * These checks are so basic, just NaN (sane_checks), that they hardly 
- * seem worth doing.  One would think one would want to stop the
- * program if any of them failed.  But this does not take much time.
+ * These checks are basic, just NaN (sane_checks) and a check that
+ * the wind does not contain velocities that exceed the speed of light. 
+ * 
+ * The program will stop if any of the checks failed.
  *
  * The checks are made on the wind, without reference to domains
  *
@@ -463,6 +456,8 @@ wind_check (www, n)
      int n;
 {
   int i, j, k, istart, istop;
+  int ierr = 0;
+
   if (n < 0)
   {
     istart = 0;
@@ -476,19 +471,27 @@ wind_check (www, n)
 
   for (i = istart; i < istop; i++)
   {
+    if (length (www[i].v) > VLIGHT)
+    {
+      Error ("wind_check: greater than light speed velocity %e in wind element %d\n", length (www[i].v), i);
+      ierr++;
+    }
     for (j = 0; j < 3; j++)
     {
       if (sane_check (www[i].x[j]))
       {
         Error ("wind_check:sane_check www[%d].x[%d] %e\n", i, j, www[i].x[j]);
+        ierr++;
       }
       if (sane_check (www[i].xcen[j]))
       {
         Error ("wind_check:sane_check www[%d].xcen[%d] %e\n", i, j, www[i].xcen[j]);
+        ierr++;
       }
       if (sane_check (www[i].v[j]))
       {
         Error ("wind_check:sane_check www[%d].v[%d] %e\n", i, j, www[i].v[j]);
+        ierr++;
       }
     }
     for (j = 0; j < 3; j++)
@@ -498,12 +501,18 @@ wind_check (www, n)
         if (sane_check (www[i].v_grad[j][k]))
         {
           Error ("wind_check:sane_check www[%d].v_grad[%d][%d] %e\n", i, j, k, www[i].v_grad[j][k]);
+          ierr++;
         }
       }
 
     }
   }
 
+  if (ierr)
+  {
+    Error ("wind_check: Something is very seriously wrong with the wind.  %d problems Exiting\n", ierr);
+    Exit (0);
+  }
   Log ("Wind_check: Punchthrough distance DFUDGE %e www[1].x[2] %e\n", DFUDGE, www[1].x[2]);
   return (0);
 }
