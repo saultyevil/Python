@@ -278,12 +278,6 @@ spherical_volumes (ndom, w)
     rmin = zdom[ndom].wind_x[i];
     rmax = zdom[ndom].wind_x[i + 1];
 
-    if (w[n].inwind != W_ALL_INWIND && zdom[ndom].wind_type == IMPORT)
-    {
-      w[n].vol = 0;
-      continue;
-    }
-
     w[n].vol = 4. / 3. * PI * (rmax * rmax * rmax - rmin * rmin * rmin);
 
     if (i == ndim - 1)

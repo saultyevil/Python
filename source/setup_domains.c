@@ -267,10 +267,6 @@ get_wind_params (ndom)
     }
   }
 
-  zdom[ndom].twind = 40000;
-  rddoub ("Wind.t.init", &zdom[ndom].twind);
-
-
   /* Next lines are to assure that we have the largest possible value of the
    * sphere surrounding the system
    * JM 1710 -- if this is the first domain, then initialise geo.rmax see #305
