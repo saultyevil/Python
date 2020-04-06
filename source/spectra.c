@@ -534,6 +534,8 @@ spectrum_create (p, f1, f2, nangle, select_extract)
 
   max_scat = max_res = 0;
 
+  int const MAXSCAT_SHOW = 500;
+
   for (i = 0; i < MAXSCAT + 1; i++)
   {
     if (nscat[i] > 0)
@@ -548,7 +550,7 @@ spectrum_create (p, f1, f2, nangle, select_extract)
 
   Log ("\nNo. of photons which have scattered n times.     The max number of scatters seen was %d\n", max_scat);
 
-  for (i = 0; i <= max_scat; i++)
+  for (i = 0; i <= MAXSCAT_SHOW; i++)
   {
     Log ("%6d", nscat[i]);
     if ((i % 10) == 9)
@@ -556,7 +558,7 @@ spectrum_create (p, f1, f2, nangle, select_extract)
   }
 
   Log ("\nNumber of photons resonantly scattering n times.  The max number of scatters seen was %d\n", max_res);
-  for (i = 0; i <= max_res; i++)
+  for (i = 0; i <= MAXSCAT_SHOW; i++)
   {
     Log ("%6d", nres[i]);
     if ((i % 10) == 9)

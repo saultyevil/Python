@@ -149,6 +149,7 @@ xtemp_rad (w)
         j++;
       }
 
+      Log ("\n");
 
       return (0);
     }
