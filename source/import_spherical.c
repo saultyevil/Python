@@ -121,8 +121,7 @@ import_1d (ndom, filename)
 
       if (ncell > NDIM_MAX)
       {
-        Error ("%s : %i : trying to read in more grid points than allowed (%i). Try changing NDIM_MAX and recompiling.\n", __FILE__,
-               __LINE__, NDIM_MAX);
+        Error ("import_1d: trying to read in more grid points than allowed (%i). Try changing NDIM_MAX and recompiling.\n", NDIM_MAX);
         Exit (1);
       }
 
@@ -130,6 +129,21 @@ import_1d (ndom, filename)
   }
 
   imported_model[ndom].ncell = ncell;
+
+  /*
+   * Check that each cell has its own unique radius and that the radius is
+   * constantly increasing with grid cell
+   */
+
+  for (n = 1; n < imported_model[ndom].ncell; ++n)
+  {
+    if (imported_model[ndom].r[n] <= imported_model[ndom].r[n - 1])
+    {
+      Error ("import_1d: cell %i r %e < cell %i r %e. The grid radii must be constantly increasing in size. Exiting!\n", n,
+             imported_model[ndom].r[n], n - 1, imported_model[ndom].r[n - 1]);
+      Exit (1);
+    }
+  }
 
   /* Although much of the initialization of zdom can be postponed
    * one has to define mdim and ndim of zdom here, so that the correct
