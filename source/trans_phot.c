@@ -88,13 +88,7 @@ trans_phot (WindPtr w, PhotPtr p, int iextract)
   int nreport;
   struct timeval timer_t0;
 
-  nreport = 100000;
-  if (nreport < NPHOT / 100)
-  {
-    nreport = NPHOT / 100;
-  }
-
-
+  nreport = (int) NPHOT / 10;
   Log ("\n");
 
   timer_t0 = init_timer_t0 ();
