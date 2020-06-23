@@ -393,91 +393,7 @@ ds_to_wind (pp, ndom_current)
 
 
 
-/* ************************************************************************* */
-/**
- * @brief           Calculate the maximum distance a photon can travel in its
- *                  current cell.
- *
- * @param[in]       PhotPtr   p       The currently transported photon packet
- *
- * @return          double    smax    The maximum distance the photon packet
- *                                    can move
- *
- * @details
- *
- * smax can be found in various ways depending on if the photon is in the wind
- * or not.
- *
- * This section of code was put into its own function in an attempt to avoid
- * code duplication for the optical depth diagnostic ray tracing thing.
- *
- * ************************************************************************** */
 
-double
-find_smax (PhotPtr p)
-{
-  int n;
-  int ndom;
-  int ndom_current;
-
-  double s;
-  double smax;
-
-  WindPtr one;
-
-  n = p->grid;
-  one = &wmain[n];              /* one is the grid cell where the photon is */
-  ndom = one->ndom;
-
-/* Calculate the maximum distance the photon can travel in the cell */
-
-  if ((smax = ds_in_cell (ndom, p)) < 0)
-  {
-    return ((int) smax);
-  }
-  if (one->inwind == W_PART_INWIND)
-  {                             /* The cell is partially in the wind */
-    s = ds_to_wind (p, &ndom_current);  /* smax is set to be the distance to edge of the wind */
-    if (s < smax)
-      smax = s;
-    s = ds_to_disk (p, 0);      /* the 0 implies ds_to_disk can not return a negative distance */
-    if (s > 0 && s < smax)
-      smax = s;
-  }
-  else if (one->inwind == W_IGNORE)
-  {
-    smax += one->dfudge;
-    move_phot (p, smax);
-    return (p->istat);
-
-  }
-  else if (one->inwind == W_NOT_INWIND)
-  {                             /* The cell is not in the wind at all */
-
-    Error ("translate_in_wind: Grid cell %d of photon is not in wind, moving photon %.2e\n", n, smax);
-    Error ("translate_in_wind: photon %d position: x %g y %g z %g\n", p->np, p->x[0], p->x[1], p->x[2]);
-    move_phot (p, smax);
-    return (p->istat);
-
-  }
-
-/* At this point we now know how far the photon can travel in it's current grid cell */
-
-  smax += one->dfudge;          /* dfudge is to force the photon through the cell boundaries. */
-
-/* Set limits the distance a photon can travel.  There are
-a good many photons which travel more than this distance without this
-limitation, at least in the standard 30 x 30 instantiation.  It does
-make small differences in the structure of lines in some cases.
-The choice of SMAX_FRAC can affect execution time.*/
-
-  if (smax > SMAX_FRAC * length (p->x))
-  {
-    smax = SMAX_FRAC * length (p->x);
-  }
-
-  return smax;
-}
 
 
 
@@ -557,7 +473,7 @@ return and record an error */
   nplasma = one->nplasma;
   xplasma = &plasmamain[nplasma];
 
-  smax = find_smax (p);
+  smax = smax_in_cell (p);
 
   if (modes.save_photons)
   {
@@ -623,6 +539,91 @@ return and record an error */
   return (p->istat = istat);
 
 
+}
+
+
+
+
+/* ************************************************************************* */
+/**
+ * @brief           Calculate the maximum distance a photon can travel in its
+ *                  current cell.
+ *
+ * @param[in]       PhotPtr   p       The currently transported photon packet
+ *
+ * @return          double    smax    The maximum distance the photon packet
+ *                                    can move
+ *
+ * @details
+ *
+ * smax can be found in various ways depending on if the photon is in the wind
+ * or not.
+ *
+ * This section of code was put into its own function in an attempt to avoid
+ * code duplication for the optical depth diagnostic ray tracing thing.
+ *
+ * ************************************************************************** */
+
+double
+smax_in_cell (PhotPtr p)
+{
+  int n, ndom, ndom_current;
+  double s, smax;
+
+  WindPtr one;
+
+  n = p->grid;
+  one = &wmain[n];              /* one is the grid cell where the photon is */
+  ndom = one->ndom;
+
+  /* Calculate the maximum distance the photon can travel in the cell */
+
+  if ((smax = ds_in_cell (ndom, p)) < 0)
+  {
+    return ((int) smax);
+  }
+  if (one->inwind == W_PART_INWIND)
+  {                             /* The cell is partially in the wind */
+    s = ds_to_wind (p, &ndom_current);  /* smax is set to be the distance to edge of the wind */
+    if (s < smax)
+      smax = s;
+    s = ds_to_disk (p, 0);      /* the 0 implies ds_to_disk can not return a negative distance */
+    if (s > 0 && s < smax)
+      smax = s;
+  }
+  else if (one->inwind == W_IGNORE)
+  {
+    smax += one->dfudge;
+    move_phot (p, smax);
+    return (p->istat);
+
+  }
+  else if (one->inwind == W_NOT_INWIND)
+  {                             /* The cell is not in the wind at all */
+
+    Error ("translate_in_wind: Grid cell %d of photon is not in wind, moving photon %.2e\n", n, smax);
+    Error ("translate_in_wind: photon %d position: x %g y %g z %g\n", p->np, p->x[0], p->x[1], p->x[2]);
+    move_phot (p, smax);
+    return (p->istat);
+
+  }
+
+  /* At this point we now know how far the photon can travel in it's current grid cell */
+
+  smax += one->dfudge;          /* dfudge is to force the photon through the cell boundaries. */
+
+  /* Set limits the distance a photon can travel.  There are
+  a good many photons which travel more than this distance without this
+  limitation, at least in the standard 30 x 30 instantiation.  It does
+  make small differences in the structure of lines in some cases.
+  The choice of SMAX_FRAC can affect execution time.*/
+
+  if (smax > SMAX_FRAC * length (p->x))
+  {
+    smax = SMAX_FRAC * length (p->x);
+  }
+
+  return smax;
 }
 
 

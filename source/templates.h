@@ -29,7 +29,7 @@ int main(int argc, char *argv[]);
 int translate(WindPtr w, PhotPtr pp, double tau_scat, double *tau, int *nres);
 int translate_in_space(PhotPtr pp);
 double ds_to_wind(PhotPtr pp, int *ndom_current);
-double find_smax(PhotPtr p);
+double smax_in_cell (PhotPtr p);
 int translate_in_wind(WindPtr w, PhotPtr p, double tau_scat, double *tau, int *nres);
 double ds_in_cell(int ndom, PhotPtr p);
 /* photon_gen.c */

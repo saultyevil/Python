@@ -55,6 +55,7 @@ static const int NTAU = sizeof EDGES / sizeof *EDGES;   // The number of optical
 static int NBINS_SPEC = NWAVE;  // The number of bins for the spectra - modified for large frequency range
 
 #define LAUNCH_DOMAIN 0         // For now, assume we only care about photons starting in domain 0
+#define MAXDIFF VCHECK/VLIGHT   // The same as our old velocity requirement
 
 /* ************************************************************************** */
 /**
@@ -265,7 +266,8 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
 
   /*
    * Determine where in the plasma grid the cell is. This is required so a
-   * column density can be calculated
+   * column density can be calculated. Also calculate the maximum distance the
+   * photon can traverse across the cell
    */
 
   wind_cell = &w[p->grid];
@@ -273,32 +275,27 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
   nplasma = w[p->grid].nplasma;
   plasma_cell = &plasmamain[nplasma];
   density = plasma_cell->rho;
-
-  /*
-   * smax should be the transverse distance of the cell the photon is in
-   */
-
-  smax = find_smax (p);
+  smax = smax_in_cell (p);
   if (smax < 0)
   {
     Error ("%s : %i : abnormal value of smax for photon\n", __FILE__, __LINE__);
     return EXIT_FAILURE;
   }
 
+  // Transform photon at starting location to local frame
   observer_to_local_frame (p, &p_start);
+
+  // Move photon smax and transform to local frame
   stuff_phot (p, &p_stop);
   move_phot (&p_stop, smax);
   observer_to_local_frame (&p_stop, &p_stop);
 
-  /* At this point p_start and pstop are in the local frame
+  /* At this point p_start and p_stop are in the local frame
    * at the and p_stop is at the maximum distance it can
-   * travel.  We want to check that the frequncy shift is
+   * travel. We want to check that the frequency shift is
    * not too great along the path that a linear approximation
    * to the change in frequency is not reasonable
    */
-
-  diff = 1;
-#define MAXDIFF VCHECK/VLIGHT   /* The same as our old velocity requirement */
 
   while (smax > DFUDGE)
   {
