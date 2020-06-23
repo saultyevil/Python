@@ -52,7 +52,7 @@ static const struct edges EDGES[] = {
 
 static int NANGLES;             // The number of inclination angles
 static const int NTAU = sizeof EDGES / sizeof *EDGES;   // The number of optical depths for the simple calculation
-static int NBINS_SPEC = NWAVE;  // The number of bins for the spectra - modified for large frequency range
+
 
 #define LAUNCH_DOMAIN 0         // For now, assume we only care about photons starting in domain 0
 #define MAXDIFF VCHECK/VLIGHT   // The same as our old velocity requirement
@@ -168,12 +168,12 @@ write_optical_depth_spectrum (const double *tau_spectrum, const double freq_min,
 
   frequency = freq_min;
 
-  for (ifreq = 0; ifreq < NBINS_SPEC; ifreq++)
+  for (ifreq = 0; ifreq < NWAVE; ifreq++)
   {
     wavelength = VLIGHT / frequency / ANGSTROM; // TODO check correct conversion
     fprintf (filep, "%-12e %-12e ", frequency, wavelength);
     for (ispec = 0; ispec < NANGLES; ispec++)
-      fprintf (filep, "%-12e ", tau_spectrum[ispec * NBINS_SPEC + ifreq]);
+      fprintf (filep, "%-12e ", tau_spectrum[ispec * NWAVE + ifreq]);
     fprintf (filep, "\n");
     frequency += dfreq;
   }
@@ -214,9 +214,9 @@ mpi_gather_spectra (double *const spec, const int nspec)
 {
 #ifdef MPI_ON
   if (rank_global == 0)
-    MPI_Reduce (MPI_IN_PLACE, spec, NBINS_SPEC * nspec, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce (MPI_IN_PLACE, spec, NWAVE * nspec, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
   else
-    MPI_Reduce (spec, spec, NBINS_SPEC * nspec, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce (spec, spec, NWAVE * nspec, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 #endif
 }
 
@@ -404,7 +404,7 @@ extract_tau (WindPtr w, PhotPtr porig, double *col_den, double *tau)
         return EXIT_FAILURE;
       }
     }
-    // Move the photon in the wind
+      // Move the photon in the wind
     else if ((pextract.grid = where_in_grid (ndom, pextract.x)) >= 0)
     {
       ierr = calculate_tau_across_cell (w, &pextract, col_den, tau);
@@ -594,10 +594,10 @@ init_sightlines (void)
     }
   }
 
-  /*
-   * If no spectrum cycles are being run, or if the model is being restarted
-   * without initialising xxspec, then a default set of angles is used instead.
-   */
+    /*
+     * If no spectrum cycles are being run, or if the model is being restarted
+     * without initialising xxspec, then a default set of angles is used instead.
+     */
 
   else
   {
@@ -649,6 +649,10 @@ init_sightlines (void)
  * to complete. If NBINS is large enough, it can take a bit longer than one
  * would like, hence the reason why this routine is parallelised.
  *
+ * NOTES
+ * MPI parallelisation has been disabled for now. It doesn't work when the
+ * number of processes > 24.
+ *
  * ************************************************************************** */
 
 static void
@@ -667,25 +671,24 @@ create_optical_depth_spectrum (WindPtr w)
 
   Log ("Creating optical depth spectra:\n");
 
-  tau_spectrum = calloc (NANGLES * NBINS_SPEC, sizeof *tau_spectrum);
+  tau_spectrum = calloc (NANGLES * NWAVE, sizeof *tau_spectrum);
   if (tau_spectrum == NULL)
   {
-    Error ("%s : %i : cannot allocate %d bytes for tau_spectrum\n", __FILE__, __LINE__, NANGLES * NBINS_SPEC * sizeof *tau_spectrum);
+    Error ("%s : %i : cannot allocate %d bytes for tau_spectrum\n", __FILE__, __LINE__, NANGLES * NWAVE * sizeof *tau_spectrum);
     return;
   }
 
   /*
    * Define the limits of the spectra in frequency space. If xxpsec is NULL,
-   * then the frequency range will be over the generated photon bands. Otherwise,
-   * the frequency range of the extracted spectrum is used.
-   * TODO used logarithmically spaced frequency bins
+   * then the frequency range will be over a default 100 - 10,000 Angstrom
+   * band.
    */
 
   if (xxspec == NULL)
   {
-    freq_min = xband.f1[0];
-    freq_max = xband.f2[xband.nbands - 1];
-    NBINS_SPEC = (int) pow (10, log10 (freq_max / freq_min));
+    Error ("create_optical_depth_spectrum: xxspec is uninitialized, defaulting spectral wavelength to 100 - 10,000 Angstrom\n");
+    freq_min = VLIGHT / (10000 * ANGSTROM);
+    freq_max = VLIGHT / (100 * ANGSTROM);
   }
   else
   {
@@ -693,10 +696,7 @@ create_optical_depth_spectrum (WindPtr w)
     freq_max = VLIGHT / (geo.swavemin * ANGSTROM);
   }
 
-  if (NBINS_SPEC < NWAVE)
-    NBINS_SPEC = NWAVE;
-
-  dfreq = (freq_max - freq_min) / NBINS_SPEC;
+  dfreq = (freq_max - freq_min) / NWAVE;
   kbf_need (freq_min, freq_max);
 
   /*
@@ -704,11 +704,15 @@ create_optical_depth_spectrum (WindPtr w)
    * processors
    */
 
-  nbins = ceil ((double) NBINS_SPEC / np_mpi_global);
-  mpi_lower = nbins * rank_global;
-  mpi_upper = nbins * (rank_global + 1);
-  if (mpi_upper > NBINS_SPEC)
-    mpi_upper = NBINS_SPEC;
+  // MPI has been temporarily disabled
+  // nbins = ceil ((double) NWAVE / np_mpi_global);
+  // mpi_lower = nbins * rank_global;
+  // mpi_upper = nbins * (rank_global + 1);
+  // if (mpi_upper > NWAVE)
+  //   mpi_upper = NWAVE;
+
+  mpi_lower = 0;
+  mpi_upper = NWAVE;
 
   /*
    * Now create the optical depth spectra for each sightline
@@ -724,8 +728,8 @@ create_optical_depth_spectrum (WindPtr w)
 
     for (ifreq = mpi_lower; ifreq < mpi_upper; ifreq++)
     {
-      tau = 0;
-      column = 0;
+      tau = 0.0;
+      column = 0.0;
       ierr = create_tau_photon (&ptau, freq, current_observer);
       if (ierr == EXIT_FAILURE)
       {
@@ -737,12 +741,12 @@ create_optical_depth_spectrum (WindPtr w)
       if (ierr == EXIT_FAILURE)
         continue;
 
-      tau_spectrum[ispec * NBINS_SPEC + ifreq] = tau;
+      tau_spectrum[ispec * NWAVE + ifreq] = tau;
       freq += dfreq;
     }
   }
 
-  mpi_gather_spectra (tau_spectrum, NANGLES);
+  // mpi_gather_spectra (tau_spectrum, NANGLES);
   write_optical_depth_spectrum (tau_spectrum, freq_min, dfreq);
   free (tau_spectrum);
 }
