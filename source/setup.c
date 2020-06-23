@@ -730,6 +730,13 @@ init_ionization ()
     geo.macro_ioniz_mode = 0;
   }
 
+  /*
+   * Inform the user which BF treatment is being used for metals in macro atoms
+   */
+
+  if (geo.rt_mode == RT_MODE_MACRO && BF_SIMPLE_EMISSIVITY_APPROACH)
+    Log ("The simple emissivity approach for b-f in simple-macro mode is ENABLED\n");
+
   return (0);
 
 }
