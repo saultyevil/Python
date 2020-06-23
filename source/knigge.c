@@ -220,6 +220,7 @@ kn_velocity (ndom, x, v)
   struct photon ptest;
   double xtest[3];
   double s;
+  int hit_disk;
 
   DomainPtr one_dom;
 
@@ -261,7 +262,7 @@ kn_velocity (ndom, x, v)
     ptest.lmn[0] = sin (theta); // ptest direction is along the stream line
     ptest.lmn[1] = 0.0;
     ptest.lmn[2] = cos (theta);
-    s = ds_to_disk (&ptest, 1);
+    s = ds_to_disk (&ptest, 1, &hit_disk);
     move_phot (&ptest, s);      // Now move the test photon to  disk surface
     vsub (ptest.x, xtest, xtest);       // Poloidal distance is just the distance between these two points.
     ldist = length (xtest);
@@ -363,7 +364,7 @@ kn_rho (ndom, x)
   double v[3], rho;
   struct photon ptest;
   double s, theta;
-//  double xtest[3];
+  int hit_disk;
 
   DomainPtr one_dom;
 
@@ -384,26 +385,13 @@ kn_rho (ndom, x)
   {
     theta = atan (rzero / dd);
 
-//OLD    ptest.x[0] = rzero;
-//OLD    ptest.x[1] = 0.0;
-//OLD    ptest.x[2] = EPSILON;
-//OLD    ptest.lmn[0] = cos (theta);
-//OLD    ptest.lmn[1] = 0.0;
-//OLD    ptest.lmn[2] = sin (theta);
-//OLD    s = ds_to_disk (&ptest, 1);
-//OLD    move_phot (&ptest, s);      // Now test photon is at disk surface
-//OLD    rzero = sqrt (ptest.x[0] * ptest.x[0] + ptest.x[1] * ptest.x[1]);
-
-//    xtest[0] = r;               // Define xtest in the +xz plane
-//    xtest[1] = 0;
-//    xtest[2] = fabs (x[2]);
     ptest.x[0] = rzero;         // Define ptest at the intersection of the streamline and x axis
     ptest.x[1] = 0.0;
     ptest.x[2] = EPSILON;
     ptest.lmn[0] = sin (theta); // lmn is along the streamline toward xtest
     ptest.lmn[1] = 0.0;
     ptest.lmn[2] = cos (theta);
-    s = ds_to_disk (&ptest, 1);
+    s = ds_to_disk (&ptest, 1, &hit_disk);
     move_phot (&ptest, s);      // Now test photon is at disk surface
 //    vsub (ptest.x, xtest, xtest);
 //    ldist = length (xtest);

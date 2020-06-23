@@ -31,6 +31,9 @@
  *
  * ### Notes ###
  *
+ * EP 15 Jun 2020: It appears to me that this function can only ever return 0
+ * as the functions called in here only return 0.
+ *
  **********************************************************/
 
 int
@@ -41,9 +44,8 @@ ion_abundances (PlasmaPtr xplasma, int mode)
 
   if (mode == IONMODE_ML93_FIXTE)
   {
-/* on-the-spot approximation using existing t_e.   This routine does not attempt
-to match heating and cooling in the wind element! */
-
+    /* on-the-spot approximation using existing t_e.   This routine does not attempt
+       to match heating and cooling in the wind element! */
     if ((ireturn = nebular_concentrations (xplasma, NEBULARMODE_ML93)))
     {
       Error ("ionization_abundances: nebular_concentrations failed to converge\n");
@@ -52,12 +54,12 @@ to match heating and cooling in the wind element! */
   }
   else if (mode == IONMODE_LTE_TR)
   {
-/* LTE using t_r */
+    /* LTE using t_r */
     ireturn = nebular_concentrations (xplasma, NEBULARMODE_TR);
   }
   else if (mode == IONMODE_LTE_TE)
   {
-/* LTE using t_e */
+    /* LTE using t_e */
     ireturn = nebular_concentrations (xplasma, NEBULARMODE_TE);
   }
   else if (mode == IONMODE_FIXED)
@@ -65,88 +67,39 @@ to match heating and cooling in the wind element! */
 
     ireturn = fix_concentrations (xplasma, 0);
   }
-  else if (mode == IONMODE_ML93)
+  else if (mode == IONMODE_ML93 || mode == IONMODE_MATRIX_BB)
   {
-/* On the spot, with one_shot at updating t_e before calculating densities */
+    /* On the spot, with one_shot at updating t_e before calculating densities */
 
-/* Shift values to old */
     xplasma->dt_e_old = xplasma->dt_e;
     xplasma->dt_e = xplasma->t_e - xplasma->t_e_old;
     xplasma->t_e_old = xplasma->t_e;
-    //OLD xplasma->t_r_old = xplasma->t_r;
     xplasma->lum_tot_old = xplasma->lum_tot;
     xplasma->heat_tot_old = xplasma->heat_tot;
-
     ireturn = one_shot (xplasma, mode);
 
-/* Convergence check */
     convergence (xplasma);
   }
-  else if (mode == IONMODE_MATRIX_BB)
+  else if (mode == IONMODE_MATRIX_SPECTRALMODEL || mode == IONMODE_MATRIX_ESTIMATORS)
   {
-    /* New abundances have been computed using matrix scheme with dilute blackbody model for J_nu
-       We can now attempt to balance heating and cooling with the new abundance in the
-       same way as mode 3. */
-
-/* Shift values to old */
-    xplasma->dt_e_old = xplasma->dt_e;
-    xplasma->dt_e = xplasma->t_e - xplasma->t_e_old;
-    xplasma->t_e_old = xplasma->t_e;
-    //OLD xplasma->t_r_old = xplasma->t_r;
-    xplasma->lum_tot_old = xplasma->lum_tot;
-    xplasma->heat_tot_old = xplasma->heat_tot;
-
-    ireturn = one_shot (xplasma, mode);
-
-/* Convergence check */
-    convergence (xplasma);
-  }
-  else if (IONMODE_MATRIX_SPECTRALMODEL)
-  {
-
 /*  spectral_estimators does the work of getting banded W and alpha. Then oneshot gets called. */
 
-    ireturn = spectral_estimators (xplasma);
+    spectral_estimators (xplasma);
 
     xplasma->dt_e_old = xplasma->dt_e;
     xplasma->dt_e = xplasma->t_e - xplasma->t_e_old;
     xplasma->t_e_old = xplasma->t_e;
-    //OLD xplasma->t_r_old = xplasma->t_r;
     xplasma->lum_tot_old = xplasma->lum_tot;
     xplasma->heat_tot_old = xplasma->heat_tot;
-
-
     ireturn = one_shot (xplasma, mode);
 
-
-/* Convergence check */
-    convergence (xplasma);
-  }
-  else if (IONMODE_MATRIX_ESTIMATORS)
-  {
-
-/*  spectral_estimators does the work of getting banded W and alpha. Then oneshot gets called. */
-
-    ireturn = spectral_estimators (xplasma);
-
-    xplasma->dt_e_old = xplasma->dt_e;
-    xplasma->dt_e = xplasma->t_e - xplasma->t_e_old;
-    xplasma->t_e_old = xplasma->t_e;
-    //OLD xplasma->t_r_old = xplasma->t_r;
-    xplasma->lum_tot_old = xplasma->lum_tot;
-    xplasma->heat_tot_old = xplasma->heat_tot;
-
-
-    ireturn = one_shot (xplasma, mode);
-
-
-/* Convergence check */
     convergence (xplasma);
   }
   else
   {
     Error ("ion_abundances: Could not calculate abundances for mode %d\n", mode);
-    Exit (0);
+    Exit (EXIT_FAILURE);
+    exit (EXIT_FAILURE);        // avoids compiler warnings about return being uninitialized
   }
 
   /* If we want the Auger effect deal with it now. Initially, this is
@@ -155,10 +108,10 @@ to match heating and cooling in the wind element! */
      ions so that the ionization balance of the other ions is not
      affected in an important way. */
 
-//  if (geo.auger_ionization == 1)
-//    {
-//      auger_ionization (xplasma);
-//    }
+//OLD    if (geo.auger_ionization == 1)
+//OLD    {
+//OLD      auger_ionization (xplasma);
+//OLD    }
 
 
   return (ireturn);

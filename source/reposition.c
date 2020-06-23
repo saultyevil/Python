@@ -44,6 +44,7 @@ reposition (PhotPtr p)
 {
   int n;
   double s, s_disk, s_star;
+  int hit_disk;
 
   if (p->nres < 0)
     return (0);                 /* Do nothing for non-resonant scatters */
@@ -58,7 +59,7 @@ reposition (PhotPtr p)
 
   if (geo.disk_type != DISK_NONE)
   {
-    s_disk = ds_to_disk (p, 1); // Allow negative values
+    s_disk = ds_to_disk (p, 1, &hit_disk);      // Allow negative values
     if (s_disk > 0 && s_disk < s)
     {
       s = 0.1 * s_disk;

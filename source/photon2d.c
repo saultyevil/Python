@@ -141,7 +141,6 @@ translate_in_space (pp)
   double ds, delta, s, smax;
   int ndom, ndom_next;
   struct photon ptest;
-  int ifail;
 
   ds = ds_to_wind (pp, &ndom);
 
@@ -155,13 +154,6 @@ translate_in_space (pp)
     move_phot (&ptest, ds + DFUDGE);    /* So now ptest is at the edge of the wind as defined by the boundary
                                            From here on we should be in the grid  */
     ds += DFUDGE;               //Fix for Bug #592 - we need to keep track of the little DFUDGE we moved the test photon
-    /* XXX this is a test.  We check at the start whether we are in the grid */
-
-    if ((ifail = where_in_grid (ndom, ptest.x)) < 0)
-    {
-    }
-
-    /* XXX this ends the test */
 
 
 
@@ -475,10 +467,10 @@ return and record an error */
 
   smax = smax_in_cell (p);
 
-  if (modes.save_photons)
-  {
-    Diag ("smax  %10.3e tau_scat %10.3e tau %10.3e\n", smax, tau_scat, *tau);
-  }
+//OLD  if (modes.save_photons)
+//OLD  {
+//OLD    Diag ("smax  %10.3e tau_scat %10.3e tau %10.3e\n", smax, tau_scat, *tau);
+//OLD  }
 
   /* We now determine whether scattering prevents the photon from reaching the far edge of
      the cell.  calculate_ds calculates whether there are scatterings and makes use of the

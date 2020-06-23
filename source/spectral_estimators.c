@@ -40,7 +40,7 @@ double lspec_numin, lspec_numax;
  * in variables, such as spec_mod_type, pl_alpah, pl_log,exp_temp, etc.
  *
  * ### Notes ###
- * ??? NOTES ???
+ * TODO this function only returns 0, the documentation claims otherwise however
  *
  **********************************************************/
 

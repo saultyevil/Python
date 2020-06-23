@@ -404,15 +404,15 @@ save_photons (p, comment)
 {
   save_photon_number += 1;
 
-//FORNOW  fprintf (epltptr,
-//FORNOW           "PHOTON %3d %3d %10.4e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %3d %3d %3d %3d %3d %3d %s \n",
-//FORNOW           geo.wcycle, p->np, p->freq, p->w, p->x[0], p->x[1], p->x[2], p->lmn[0], p->lmn[1],
-//FORNOW           p->lmn[2], p->grid, p->istat, p->origin, p->nscat, p->nres, p->frame, comment);
-
   fprintf (epltptr,
-           "PHOTON %3d %3d %10.4e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %3d %3d %3d %3d %3d %s \n",
+           "PHOTON %3d %3d %10.4e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %3d %3d %3d %3d %3d %3d %s \n",
            geo.wcycle, p->np, p->freq, p->w, p->x[0], p->x[1], p->x[2], p->lmn[0], p->lmn[1],
-           p->lmn[2], p->grid, p->istat, p->origin, p->nscat, p->nres, comment);
+           p->lmn[2], p->grid, p->istat, p->origin, p->nscat, p->nres, p->frame, comment);
+
+//OLD  fprintf (epltptr,
+//OLD           "PHOTON %3d %3d %10.4e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e %3d %3d %3d %3d %3d %s \n",
+//OLD           geo.wcycle, p->np, p->freq, p->w, p->x[0], p->x[1], p->x[2], p->lmn[0], p->lmn[1],
+//OLD           p->lmn[2], p->grid, p->istat, p->origin, p->nscat, p->nres, comment);
 
   fflush (epltptr);
 

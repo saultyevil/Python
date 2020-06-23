@@ -58,7 +58,7 @@ check_frame (p, desired_frame, msg)
   }
   else if (ncheck_frame < 100)
   {
-    Error ("check_frame: %s :Photon (%s) of type (%d) not in frame %d\n", msg, p->np, p->istat, desired_frame);
+    Error ("check_frame: %s :Photon (%d) of type (%d) not in frame %d\n", msg, p->np, p->istat, desired_frame);
     ncheck_frame++;
 
     if (modes.save_photons)
@@ -246,6 +246,88 @@ local_to_observer_frame (p_in, p_out)
 /**********************************************************/
 /**
  * @brief      carries out the transformation of a all the quantities
+ *      in a photon structure
+ *      from the observer (or global) frame to the local (or co-moving)
+ *      frame
+ *
+ * @param [in] PhotPtr  p_in   The photon in the observer frame
+ * @param [out] PhotPtr  p_out   The photon in the local frame
+ *
+ * @return    The routine returns 0, unless there was an error
+ *
+ *
+ * @details
+ * The routine copies all of the quantities contain in the p_in to
+ * p_out, obtains the velocity at that point in the wind, and then
+ * performs an in place transformation from the * global to the local
+ * frame of the photon allowing for special
+ * relativity.
+ *
+ *
+ * ### Notes ###
+ *
+ * It p_in and p_out are the same then the transformation will
+ * be performed in place.
+ *
+ **********************************************************/
+
+int
+observer_to_local_frame_disk (p_in, p_out)
+     PhotPtr p_in, p_out;
+{
+  double f_out, f_in;
+  double x;
+  double v[3], vel;
+  double gamma;
+  int i, ierr;
+
+
+
+  ierr = check_frame (p_in, F_OBSERVER, "Observer_to_local_frame_disk");
+
+  /* Initialize the output photon */
+  stuff_phot (p_in, p_out);
+  p_out->frame = F_LOCAL;
+
+  /* Calculate the local velocity of the disk at this position */
+  vdisk (p_in->x, v);
+
+  vel = dot (p_in->lmn, v);
+
+
+  f_in = p_in->freq;
+
+  if (rel_mode == REL_MODE_LINEAR)
+  {
+    f_out = p_out->freq = f_in * (1. - vel / VLIGHT);
+    return (ierr);
+  }
+
+
+
+  // beta=length(v)/VLIGHT;
+
+  gamma = sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT)));
+
+  f_out = p_out->freq = f_in * gamma * (1. - vel / VLIGHT);
+
+  x = gamma / VLIGHT * (1.0 - (gamma * vel / ((gamma + 1) * VLIGHT)));
+
+  for (i = 0; i < 3; i++)
+  {
+    p_out->lmn[i] = f_out / f_in * (p_in->lmn[i] - x * v[i]);
+  }
+
+  p_out->w *= (f_out / f_in);
+
+  return (ierr);
+}
+
+
+
+/**********************************************************/
+/**
+ * @brief      carries out the transformation of a all the quantities
  *      in a photon emitted from the surface of the disk
  *      from the local (or co-moving) frame to the observer (or global)
  *      frame
@@ -296,7 +378,8 @@ local_to_observer_frame_disk (p_in, p_out)
   vdisk (p_in->x, v);
   vel = dot (p_in->lmn, v);
 
-  f_in = p_in->freq_orig_loc;
+//OLD  f_in = p_in->freq_orig_loc;
+  f_in = p_in->freq;
 
 
 

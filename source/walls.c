@@ -90,9 +90,7 @@ walls (p, pold, normal)
   double s_disk, s_star, z;
   double theta, phi;
   double xpath;
-//OLD  double test1, test2;
-//OLD  int icompare1, icompare2, ireport;
-//OLD  struct photon phit;
+  int hit_disk;
 
   /* Check to see if the photon has hit the star. If so
    * put the photon at the star surface and use that position
@@ -110,44 +108,13 @@ walls (p, pold, normal)
   vsub (p->x, pold->x, xxx);
   xpath = length (xxx);
 
-//OLD  icompare1 = 0;
-//OLD  icompare2 = 0;
-//OLD  ireport = 0;
-
-//OLD  if (r < geo.rstar_sq || p->ds > s_star)
-//OLD    icompare1 = 1;
-//OLD  if (r < geo.rstar_sq || xpath > s_star)
-//OLD    icompare2 = 1;
-//OLD  if (icompare1 != icompare2)
-//OLD  {
-//OLD    ireport = 1;
-//OLD  }
-
-
-//OLD  if (r < geo.rstar_sq || p->ds > s_star)
   if (r < geo.rstar_sq || (s_star < VERY_BIG && xpath > s_star))
   {
 
-//OLD    if (ireport)
-//OLD    {
-//OLD      test1 = sqrt (dot (pold->x, pold->x));
-//OLD      test2 = sqrt (dot (p->x, p->x));
-//OLD      Log ("XTEST 1 %d  r %e xpath %e  %e > %e\n", p->np, sqrt (r), xpath, p->ds, s_star);
-//OLD      Log ("XTEST 2 old %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e -- %10.3e \n",
-//OLD           pold->x[0], pold->x[1], pold->x[2], pold->lmn[0], pold->lmn[1], pold->lmn[2], test1);
-//OLD      Log ("XTEST 3 new %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e -- %10.3e \n",
-//OLD           p->x[0], p->x[1], p->x[2], p->lmn[0], p->lmn[1], p->lmn[2], test2);
-//OLD    }
 
     stuff_phot (pold, p);
     move_phot (p, s_star);
 
-
-//OLD    if (ireport)
-//OLD    {
-//OLD      Log ("XTEST 4 fin %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e -- %10.3e \n",
-//OLD           p->x[0], p->x[1], p->x[2], p->lmn[0], p->lmn[1], p->lmn[2], test2);
-//OLD    }
 
     stuff_v (p->x, normal);
     return (p->istat = P_HIT_STAR);
@@ -214,6 +181,14 @@ walls (p, pold, normal)
       Error ("walls: %d The previous position %11.4e %11.4e %11.4e is inside the disk by %e\n", pold->np, pold->x[0], pold->x[1],
              pold->x[2], z - fabs (pold->x[2]));
 
+      if (modes.save_photons)
+      {
+        save_photons (pold, "walls:old");
+        save_photons (p, "walls:new");
+        Diag ("walls: %d At rho %11.4e, zdisk is %e and zpos %e is inside the disk by %e\n", pold->np, rho, z, fabs (pold->x[2]),
+              z - fabs (pold->x[2]));
+      }
+
     }
 
     if (pold->lmn[0] != p->lmn[0])
@@ -235,7 +210,7 @@ walls (p, pold, normal)
       p->istat = P_HIT_DISK;
     }
 
-    s_disk = ds_to_disk (pold, 0);      /* The 0 imples that s cannot be negative */
+    s_disk = ds_to_disk (pold, 0, &hit_disk);   /* The 0 imples that s cannot be negative */
 
     if (s_disk > 0 && p->ds > s_disk)
     {
@@ -252,20 +227,39 @@ walls (p, pold, normal)
 
       stuff_phot (pold, p);
       move_phot (p, s_disk - DFUDGE);
+
+      rho = sqrt (p->x[0] * p->x[0] + p->x[1] * p->x[1]);
       /* This leaves the photon just outside the disk */
 
       /* Finally, we must calculate the normal to the disk at this point to be able to calculate the scattering direction */
 
-      theta = atan ((zdisk (r * (1. + EPSILON)) - z) / (EPSILON * r));
-      phi = atan2 (p->x[0], p->x[1]);
+      phi = atan2 (p->x[1], p->x[0]);
 
-      normal[0] = (-cos (phi) * sin (theta));
-      normal[1] = (-sin (phi) * sin (theta));
-      normal[2] = cos (theta);
-
-      if (p->x[2] < 0)
+      if (hit_disk == DISK_HIT_EDGE)
       {
-        normal[2] *= -1;
+        normal[0] = cos (phi);
+        normal[1] = sin (phi);
+        normal[2] = 0;
+      }
+      else
+      {
+        theta = atan ((zdisk (rho * (1. + EPSILON)) - zdisk (rho)) / (EPSILON * rho));
+
+        normal[0] = (-cos (phi) * sin (theta));
+        normal[1] = (-sin (phi) * sin (theta));
+        normal[2] = cos (theta);
+
+        if (p->x[2] < 0)
+        {
+          normal[2] *= -1;
+        }
+      }
+
+      if (modes.save_photons)
+      {
+        Diag ("NORMAL   %d   %e %e %e (%e %e %e %e %e)\n", p->np, normal[0], normal[1], normal[2], theta,
+              (zdisk (rho * (1. + EPSILON)) - z), (EPSILON * rho), rho, EPSILON);
+
       }
 
 

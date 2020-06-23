@@ -48,7 +48,19 @@ Primary routines:
 Notes:
 
     Regression here means to run a series of models. These routines do not compare the
-    models to earlier runs
+    models to earlier runs.  There is a seperate python script to compare models to between
+    regression tests
+
+    Sometimes it will be desirable to run different tests with different command line switches.
+    This can be accomplished using a named file 'commands.txt' in the pf_dir directory. 
+    This file should contain lines for at least the pf files to which one wishes to apply
+    these switches.  The line in the file should read
+
+    py switches and the pf file name, e.g
+
+    py -gamma agn_gamma.pf
+
+    The global switches obtained from the command line are applied after the individual swithches
 
     It is possible to add special tests for regression, either to because models must be 
     run in a certain order or because special options must be used.  These should
@@ -149,14 +161,18 @@ def check_one(xfile,root):
     Perform some checks on what happened in a run
     '''
 
-    g=open(root+'.sig')
-    lines=g.readlines()
-    last_line=lines[len(lines)-1]
-    words=last_line.split()
-    if last_line.count('COMPLETE'):
-        string='The model ran to completion in %s s' % (words[5])
-    else:
-        string='The models stopped before completing'
+    try:
+        g=open(root+'.sig')
+        lines=g.readlines()
+
+        last_line=lines[len(lines)-1]
+        words=last_line.split()
+        if last_line.count('COMPLETE'):
+            string='The model ran to completion in %s s' % (words[5])
+        else:
+            string='The models stopped before completing'
+    except:
+        string='This run did not produce a .sig file, suggesting that there were problems with the command line'
 
     print(string)
     xfile.write('%s\n' % string)
@@ -244,6 +260,28 @@ def doit(version='py',pf_dir='',out_dir='',np=3,switches='',outputfile='Summary.
             print(one)
 
 
+    # get any text files if any
+
+    for one in txt_files:
+        shutil.copy(one,out_dir)
+
+    # Lookd for a file with extra switches for some models
+    try:
+        x=open('%s/commands.txt' % (out_dir))
+        xx=x.readlines()
+        xcommands=[]
+        for one in xx:
+            words=one.split()
+            if words[0][0]!='#':
+                xcommands.append(words)
+    except:
+        print('There is no special command file in ')
+        xcommands=[]
+
+    print('xcommands')
+    print(xcommands)
+    			
+
 
     commands=[]
     root_names=[]
@@ -253,18 +291,18 @@ def doit(version='py',pf_dir='',out_dir='',np=3,switches='',outputfile='Summary.
         words=one.split('/')
         pf=(words[len(words)-1])
         root_name=pf.replace('.pf','')
+
+        xswitch=''
+        for one in xcommands:
+            if one[-1]==pf or one[-1]==root_name:
+                for one_word in one[1:-1]:
+                        xswitch='%s %s ' % (xswitch,one_word)
         if np<=1:
-            command='%s %s' % (version,pf)
+            command='%s %s%s %s' % (version,xswitch,switch,pf)
         else:
-            command='mpirun -np %d %s %s %s >%s.stdout.txt' % (np,version,switches,pf,root_name)
+            command='mpirun -np %d %s %s%s %s >%s.stdout.txt' % (np,version,xswitch,switches,pf,root_name)
         commands.append(command)
         root_names.append(root_name)
-
-    # get any text files if any
-
-    for one in txt_files:
-        shutil.copy(one,out_dir)
-    			
 
     print('The commands that will be executed will be:')
     for one in commands:

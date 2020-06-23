@@ -77,9 +77,8 @@ Spectrum.wavemin(Angstroms)                850
 Spectrum.wavemax(Angstroms)                1850
 
 ### The observers and their location relative to the system
-Spectrum.no_observers                      4
+Spectrum.no_observers                      3
 Spectrum.angle(0=pole)                     10
-Spectrum.angle(0=pole)                     30
 Spectrum.angle(0=pole)                     60
 Spectrum.angle(0=pole)                     80
 Spectrum.live_or_die(live.or.die,extract)              extract

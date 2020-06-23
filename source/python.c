@@ -618,10 +618,6 @@ main (argc, argv)
 
 
 
-
-  /* Start with photon history off */
-  phot_hist_on = 0;
-
   /* If required, read in a non-standard disk temperature profile */
   if (geo.disk_tprofile == 1)
   {

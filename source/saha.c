@@ -48,38 +48,24 @@ nebular_concentrations (xplasma, mode)
      PlasmaPtr xplasma;
      int mode;
 {
-  double get_ne ();
-  int lucy_mazzali1 ();
   int m;
 
-  if (mode == NEBULARMODE_TR)
-  {                             // LTE all the way -- uses tr
-
+  // LTE all the way -- uses tr or te for partition functions depending on nebular mode
+  if (mode == NEBULARMODE_TR || mode == NEBULARMODE_TE)
+  {
     partition_functions (xplasma, mode);
-
     m = concentrations (xplasma, mode);
-
-  }
-  else if (mode == NEBULARMODE_TE)
-  {                             //LTE but uses temperature te
-
-    partition_functions (xplasma, mode);
-
-    m = concentrations (xplasma, mode);
-
   }
   else if (mode == NEBULARMODE_ML93)    // This is the standard LM method
   {
-
-
-    partition_functions (xplasma, mode);        // calculate partition functions, using t_r with weights
+    partition_functions (xplasma, mode);        // calculate partition functions, using t_r with weights (dilute blackbody W)
 
     /* JM 1308 -- concentrations then populates xplasma with saha abundances. 
        in macro atom mode it also call macro_pops, which is done incorrectly, 
        the escape probabilities are calculated with saha ion densities each time,
        because saha() repopulates xplasma in each cycle. */
 
-    m = concentrations (xplasma, NEBULARMODE_TR);       // Saha equation using t_r
+    concentrations (xplasma, NEBULARMODE_TR);   // Saha equation using t_r
 
     /* JM 1308 -- lucy then applies the lucy mazzali correction factors to the saha abundances. 
        in macro atom mode it also call macro_pops which is done correctly in this case, as lucy_mazzali, 
@@ -87,33 +73,13 @@ nebular_concentrations (xplasma, mode)
        it doesn't actually matter that concentrations does macro level populations wrong, as that is 
        corrected here. It should be sorted very soon, however. */
 
-    m = lucy (xplasma);         // Main routine for running LucyMazzali
-
+    m = lucy (xplasma);         // Main routine for running Lucy Mazzali
   }
-  else if (mode == NEBULARMODE_MATRIX_BB)
+  else if (mode == NEBULARMODE_MATRIX_BB || mode == NEBULARMODE_MATRIX_SPECTRALMODEL || mode == NEBULARMODE_MATRIX_ESTIMATORS)
   {
-    /* Use rate matrices based on pairwise bb approxmaitions
-     * to the spectra
-     */
-
-    m = matrix_ion_populations (xplasma, mode);
-  }
-
-  else if (mode == NEBULARMODE_MATRIX_SPECTRALMODEL)
-  {
-
-    /* Use rate natrices based on powr law approximations to
-     * the spectra
-     */
-
-    m = matrix_ion_populations (xplasma, mode);
-  }
-
-  else if (mode == NEBULARMODE_MATRIX_ESTIMATORS)
-  {
-
-    /* Use rate natrices based on powr law approximations to
-     * the spectra
+    /*
+     * Use rate matrices based on pairwise bb approximations (matrix_bb) or
+     * power law approximations for the SED in a cell (matrix_est, matrix_pow)
      */
 
     m = matrix_ion_populations (xplasma, mode);
@@ -121,8 +87,8 @@ nebular_concentrations (xplasma, mode)
   else
   {
     Error ("nebular_concentrations: Unknown mode %d\n", mode);
-    Exit (0);
-    return (0);
+    Exit (EXIT_FAILURE);
+    exit (EXIT_FAILURE);        // avoids compiler warnings about return being uninitialized
   }
 
 

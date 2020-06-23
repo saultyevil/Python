@@ -201,7 +201,7 @@ one_continuum (spectype, t, g, freqmin, freqmax)
  *
  * As indicated this is not a general purpose routine.  Not all spectral
  * models for stars are calculated in terms of the Eddington flux.  The
- * factor of 4 pi is the conversion from Eddington flux to phhysical flux
+ * factor of 4 pi is the conversion from Eddington flux to physical flux
  *
  * For an explanation see Hubeny & Mihalas - Theory of Stellar Atmospheres,
  * equation 3.70 (or Mihalas, Stellar Atmospheres 2nd ed, eq (1-27).
@@ -267,7 +267,7 @@ emittance_continuum (spectype, freqmin, freqmax, t, g)
     {
       x += 0.0;
     }
-    else if (w1 < lambdamin && w2 > lambdamin)  //The bin bracckets the lower band boundary
+    else if (w1 < lambdamin && w2 > lambdamin)  //The bin brackets the lower band boundary
     {
       linterp (lambdamin, comp[integ_spectype].xmod.w, comp[integ_spectype].xmod.f, comp[integ_spectype].nwaves, &f_interp, 1); //Obtain the interpolated flux at lambdamin
       x += (w2 - lambdamin) * (f_interp + comp[spectype].xmod.f[n + 1]) / 2.0;  //Add the mean flux in the bin x the wavelength range

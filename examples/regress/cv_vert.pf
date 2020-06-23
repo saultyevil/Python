@@ -10,18 +10,19 @@ Binary.mass_sec(msol)                      0.6
 Binary.period(hr)                          5.57
 
 ### Parameters for the Disk (if there is one)
-Disk.type(none,flat,vertically.extended)                 flat
+Disk.type(none,flat,vertically.extended)  vertically.extended
 Disk.radiation(yes,no)                          yes
 Disk.rad_type_to_make_wind(bb,models)                   bb
 Disk.temperature.profile(standard,readin)             standard
 Disk.mdot(msol/yr)                         1e-8
 Disk.radmax(cm)                            2.4e+10
+Disk.z0(fractional.height.at.diskrad)                 0.3
+Disk.z1(powerlaw.index)                          2
 
 ### Parameters for Boundary Layer or the compact object in an X-ray Binary or AGN
 Boundary_layer.radiation(yes,no)                   no
 
 ### Parameters describing the various winds or coronae in the system
-Wind.radiation(yes,no)                          yes
 Wind.number_of_components                  1
 Wind.type(SV,star,hydro,corona,kwd,homologous,shell,imported)                   sv
 Wind.coord_system(spherical,cylindrical,polar,cyl_var)          cylindrical
@@ -32,10 +33,11 @@ Wind.dim.in.z_or_theta.direction           30
 Photons_per_cycle                          100000
 Ionization_cycles                          10
 Spectrum_cycles                            10
-Wind.ionization(on.the.spot,ML93,LTE_tr,LTE_te,fixed,matrix_bb,matrix_pow)            matrix_bb
-Line_transfer(pure_abs,pure_scat,sing_scat,escape_prob,thermal_trapping,macro_atoms,macro_atoms_thermal_trapping)     thermal_trapping
+Wind.ionization(on.the.spot,ML93,LTE_tr,LTE_te,fixed,matrix_bb,matrix_pow,matrix_est)            matrix_bb
+Line_transfer(pure_abs,pure_scat,sing_scat,escape_prob,thermal_trapping,macro_atoms_escape_prob,macro_atoms_thermal_trapping)     thermal_trapping
+Wind.radiation(yes,no)                          yes
 Atomic_data                                data/standard80_reduced.dat
-Surface.reflection.or.absorption(reflect,absorb,thermalized.rerad)               absorb
+Surface.reflection.or.absorption(reflect,absorb,thermalized.rerad)              reflect
 Wind_heating.extra_processes(none,adiabatic,nonthermal,both)            adiabatic
 
 ### Parameters for Domain 0

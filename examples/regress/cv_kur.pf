@@ -26,7 +26,7 @@ Boundary_layer.radiation(yes,no)                   no
 Wind.radiation(yes,no)                          yes
 Wind.number_of_components                  1
 Wind.type(SV,star,hydro,corona,kwd,homologous,shell,imported)                   sv
-Wind.coord_system(spherical,cylindrical,polar,cyl_var)          cylindrical
+Wind.coord_system(spherical,cylindrical,polar,cyl_var)          polar
 Wind.dim.in.x_or_r.direction               30
 Wind.dim.in.z_or_theta.direction           30
 
@@ -37,7 +37,7 @@ Spectrum_cycles                            10
 Wind.ionization(on.the.spot,ML93,LTE_tr,LTE_te,fixed,matrix_bb,matrix_pow)            matrix_bb
 Line_transfer(pure_abs,pure_scat,sing_scat,escape_prob,thermal_trapping,macro_atoms,macro_atoms_thermal_trapping)     thermal_trapping
 Atomic_data                                data/standard80_reduced.dat
-Surface.reflection.or.absorption(reflect,absorb,thermalized.rerad)               absorb
+Surface.reflection.or.absorption(reflect,absorb,thermalized.rerad)               reflect
 Wind_heating.extra_processes(none,adiabatic,nonthermal,both)            adiabatic
 
 ### Parameters for Domain 0
@@ -69,14 +69,10 @@ Spectrum.wavemin(Angstroms)                800
 Spectrum.wavemax(Angstroms)                1850
 
 ### The observers and their location relative to the system
-Spectrum.no_observers                      5
+Spectrum.no_observers                      3
 Spectrum.angle(0=pole)                     10
-Spectrum.angle(0=pole)                     27.5
 Spectrum.angle(0=pole)                     45
-Spectrum.angle(0=pole)                     62.5
 Spectrum.angle(0=pole)                     80
-Spectrum.orbit_phase(0=inferior_conjunction)   0.5
-Spectrum.orbit_phase(0=inferior_conjunction)   0.5
 Spectrum.orbit_phase(0=inferior_conjunction)   0.5
 Spectrum.orbit_phase(0=inferior_conjunction)   0.5
 Spectrum.orbit_phase(0=inferior_conjunction)   0.5

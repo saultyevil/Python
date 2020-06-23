@@ -106,8 +106,6 @@ int trans_phot_single(WindPtr w, PhotPtr p, int iextract);
 int stuff_phot(PhotPtr pin, PhotPtr pout);
 int move_phot(PhotPtr pp, double ds);
 int comp_phot(PhotPtr p1, PhotPtr p2);
-int phot_hist(PhotPtr p, int iswitch);
-int phot_history_summarize(void);
 double ds_to_cone(ConePtr cc, struct photon *p);
 double ds_to_sphere(double r, struct photon *p);
 double ds_to_sphere2(double x[], double r, struct photon *p);
@@ -208,7 +206,7 @@ double gdisk(double mass, double mdot, double rmin);
 double geff(double g0, double x);
 double vdisk(double x[], double v[]);
 double zdisk(double r);
-double ds_to_disk(struct photon *p, int allow_negative);
+double ds_to_disk(struct photon *p, int allow_negative, int *hit);
 double disk_height(double s, void *params);
 /* lines.c */
 double total_line_emission(WindPtr one, double f1, double f2);
@@ -576,6 +574,7 @@ double ch_ex_heat(WindPtr one, double t_e);
 int check_frame(PhotPtr p, enum frame desired_frame, char *msg);
 int observer_to_local_frame(PhotPtr p_in, PhotPtr p_out);
 int local_to_observer_frame(PhotPtr p_in, PhotPtr p_out);
+int observer_to_local_frame_disk(PhotPtr p_in, PhotPtr p_out);
 int local_to_observer_frame_disk(PhotPtr p_in, PhotPtr p_out);
 /* tau_spectrum.c */
 void optical_depth_diagnostics(WindPtr w);

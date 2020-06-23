@@ -387,6 +387,10 @@ struct geometry
   double tmax;                  /*NSH 120817 the maximum temperature of any element of the model 
                                    - used to help estimate things for an exponential representation of the spectrum in a cell */
 
+#define DISK_MISSED 0
+#define DISK_HIT_TOP 1
+#define DISK_HIT_BOT 2
+#define DISK_HIT_EDGE  3
 
 #define DISK_NONE   0
 #define DISK_FLAT   1
@@ -1124,6 +1128,8 @@ typedef struct photon
   double freq, freq_orig, freq_orig_loc;        /* current, original frequency redshifted and unredshifted) of this packet */
   double w, w_orig;                             /* current and original weight of this packet */
   double tau;                                   /* optical depth of the photon since its creation or last interaction */
+
+#define N_ISTAT 13 // number of entries in the istat_enum 
   enum istat_enum
   {
     P_INWIND = 0,               //in wind,
@@ -1199,14 +1205,6 @@ PhotPtr photmain;               /* A pointer to all of the photons that have bee
 #define TAU_MIN 1e-6
 
 
-    /* 68b - ksl - This is a structure in which the history of a single photon bundle can be recorded
-     * See phot_util   phot_hist().  It needs to be used carefully.  if phot_hist_on is true
-     * then photon histories will be attempted.
-     */
-
-#define MAX_PHOT_HIST	1000
-int n_phot_hist, phot_hist_on, phot_history_spectrum;
-struct photon xphot_hist[MAX_PHOT_HIST];
 
 struct basis
 {

@@ -164,6 +164,7 @@ sv_velocity (x, v, ndom)
   double s;
   double vzero;
   double ldist_orig, rzero_orig;
+  int hit_disk;
 
   zzz = v_escape = vzero = -99.;
 
@@ -186,7 +187,7 @@ sv_velocity (x, v, ndom)
     ptest.lmn[0] = sin (theta); // ptest direction is along the stream line
     ptest.lmn[1] = 0.0;
     ptest.lmn[2] = cos (theta);
-    s = ds_to_disk (&ptest, 1);
+    s = ds_to_disk (&ptest, 1, &hit_disk);
     move_phot (&ptest, s);      // Now move the test photon to  disk surface
     vsub (ptest.x, xtest, xtest);       // Poloidal distance is just the distance between these two points.
     ldist = length (xtest);
@@ -285,6 +286,7 @@ sv_rho (ndom, x)
   struct photon ptest;
   double xtest[3];
   double s;
+  int hit_disk;
 
   sv_velocity (x, v, ndom);
 
@@ -306,7 +308,7 @@ sv_rho (ndom, x)
     ptest.lmn[0] = sin (theta); // ptest direction is along the stream line
     ptest.lmn[1] = 0.0;
     ptest.lmn[2] = cos (theta);
-    s = ds_to_disk (&ptest, 1);
+    s = ds_to_disk (&ptest, 1, &hit_disk);
     move_phot (&ptest, s);      // Now move the test photon to  disk surface
     vsub (ptest.x, xtest, xtest);       // Poloidal distance is just the distance between these two points.
     ldist = length (xtest);

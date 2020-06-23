@@ -65,10 +65,14 @@ Spectrum.wavemin(Angstroms)                800
 Spectrum.wavemax(Angstroms)                1850
 
 ### The observers and their location relative to the system
-Spectrum.no_observers                      3
+Spectrum.no_observers                      5
 Spectrum.angle(0=pole)                     10
+Spectrum.angle(0=pole)                     27.5
 Spectrum.angle(0=pole)                     45
+Spectrum.angle(0=pole)                     62.5
 Spectrum.angle(0=pole)                     80
+Spectrum.orbit_phase(0=inferior_conjunction)   0.5
+Spectrum.orbit_phase(0=inferior_conjunction)   0.5
 Spectrum.orbit_phase(0=inferior_conjunction)   0.5
 Spectrum.orbit_phase(0=inferior_conjunction)   0.5
 Spectrum.orbit_phase(0=inferior_conjunction)   0.5
