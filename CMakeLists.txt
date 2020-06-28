@@ -100,8 +100,8 @@ set(PYTHON_SOURCE
         source/setup_line_transfer.c source/setup_reverb.c
         source/setup_star_bh.c source/shell_wind.c source/signal.c
         source/spectra.c source/spectral_estimators.c source/spherical.c
-        source/stellar_wind.c source/sv.c source/synonyms.c source/time.c
-        source/tau_spectrum.c source/trans_phot.c source/vvector.c
+        source/stellar_wind.c source/sv.c source/synonyms.c source/tau_spectrum.c
+        source/time.c source/tau_spectrum.c source/trans_phot.c source/vvector.c
         source/walls.c source/wind.c source/wind2d.c source/wind_sum.c
         source/wind_updates2d.c source/wind_util.c source/windsave.c
         source/windsave2table_sub.c source/xlog.c source/zeta.c
