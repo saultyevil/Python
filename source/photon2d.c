@@ -560,6 +560,7 @@ double
 smax_in_cell (PhotPtr p)
 {
   int n, ndom, ndom_current;
+  int hitdisc;
   double s, smax;
 
   WindPtr one;
@@ -579,7 +580,7 @@ smax_in_cell (PhotPtr p)
     s = ds_to_wind (p, &ndom_current);  /* smax is set to be the distance to edge of the wind */
     if (s < smax)
       smax = s;
-    s = ds_to_disk (p, 0);      /* the 0 implies ds_to_disk can not return a negative distance */
+    s = ds_to_disk (p, 0, &hitdisc);        /* the 0 implies ds_to_disk can not return a negative distance */
     if (s > 0 && s < smax)
       smax = s;
   }
@@ -605,10 +606,10 @@ smax_in_cell (PhotPtr p)
   smax += one->dfudge;          /* dfudge is to force the photon through the cell boundaries. */
 
   /* Set limits the distance a photon can travel.  There are
-  a good many photons which travel more than this distance without this
-  limitation, at least in the standard 30 x 30 instantiation.  It does
-  make small differences in the structure of lines in some cases.
-  The choice of SMAX_FRAC can affect execution time.*/
+     a good many photons which travel more than this distance without this
+     limitation, at least in the standard 30 x 30 instantiation.  It does
+     make small differences in the structure of lines in some cases.
+     The choice of SMAX_FRAC can affect execution time. */
 
   if (smax > SMAX_FRAC * length (p->x))
   {
