@@ -378,7 +378,6 @@ local_to_observer_frame_disk (p_in, p_out)
   vdisk (p_in->x, v);
   vel = dot (p_in->lmn, v);
 
-//OLD  f_in = p_in->freq_orig_loc;
   f_in = p_in->freq;
 
 

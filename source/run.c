@@ -260,7 +260,7 @@ calculate_ionization (restart_stat)
 
 
     photon_checks (p, freqmin, freqmax, "Check after transport");
-    spectrum_create (p, freqmin, freqmax, geo.nangles, geo.select_extract);
+    spectrum_create (p, geo.nangles, geo.select_extract);
 
 
 
@@ -551,7 +551,6 @@ make_spectra (restart_stat)
     nphot_to_define = (long) NPHOT *(long) geo.pcycles;
     define_phot (p, freqmin, freqmax, nphot_to_define, 1, iwind, 0);
 
-    /* TODAY */
 //OLD    if (modes.save_photons)
 //OLD    {
 //OLD      for (n = 0; n < NPHOT; n++)
@@ -573,7 +572,7 @@ make_spectra (restart_stat)
 
     trans_phot (w, p, geo.select_extract);
 
-    spectrum_create (p, freqmin, freqmax, geo.nangles, geo.select_extract);
+    spectrum_create (p, geo.nangles, geo.select_extract);
 
 /* Write out the detailed spectrum each cycle so that one can see the statistics build up! */
     renorm = ((double) (geo.pcycles)) / (geo.pcycle + 1.0);

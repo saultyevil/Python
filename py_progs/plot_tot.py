@@ -88,25 +88,29 @@ def doit(rootname='sphere',smooth=21,fig_no=2):
     # print(data.colnames)
 
     
-    pylab.figure(fig_no,(6,6))
+    pylab.figure(fig_no,(12,6))
     pylab.clf()
 
     created=data['Freq.']*xsmooth(data['Created'])
+    pylab.loglog(data['Freq.'],created,label='Created(Ext)')
+
+    try:
+        wind=data['Freq.']*xsmooth(data['WCreated'])
+        pylab.loglog(data['Freq.'],wind,label='Created(Wind)')
+    except:
+        pass
+
+
+
     emitted=data['Freq.']*xsmooth(data['Emitted'])
     hit_surf=data['Freq.']*xsmooth(data['HitSurf'])
     wind=data['Freq.']*xsmooth(data['Wind'])
 
-    pylab.loglog(data['Freq.'],created,label='Created')
-    # pylab.loglog(data['Freq.'],data['Created'],label='Created')
+    pylab.loglog(data['Freq.'],emitted,label='Observed(Tot)')
 
-    pylab.loglog(data['Freq.'],emitted,label='Observed')
-    # pylab.loglog(data['Freq.'],data['Emitted'],label='Observed')
+    pylab.loglog(data['Freq.'],wind,label='Observed(Wind)')
 
     pylab.loglog(data['Freq.'],hit_surf,label='Hit Surface')
-    # pylab.loglog(data['Freq.'],data['HitSurf'],label='Hit Surface')
-
-    pylab.loglog(data['Freq.'],wind,label='Wind Observed')
-    # pylab.loglog(data['Freq.'],data['Wind'],label='Wind Observed')
 
     zz=pylab.axis()
 

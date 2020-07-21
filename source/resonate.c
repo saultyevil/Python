@@ -1188,6 +1188,9 @@ scatter (p, nres, nnscat)
     {                           /* This is a ff event (SS). */
       macro_gov (p, nres, 2, &which_out);       //ff always make a k-packet
     }
+
+
+
   }
   /*XFRAME need to make sure that macro_gov leaves the photon in the Local frame. We will do all
      of the transformations back to the observer frame here.
@@ -1205,37 +1208,29 @@ scatter (p, nres, nnscat)
     p->freq = lin_ptr[*nres]->freq;
   }
 
-  /* SS July 04
-     Next block is modified to include the thermal trapping model for anisotropic scattering.
-     The code for this has been moved from trans_phot to here so that this model can work
-     with macro atoms.
-     For macro atoms the code above decides that emission will occur in the line - we now just need
-     to use the thermal trapping model to choose the direction. */
 
-  if (*nres == -1)              //Its an electron scatter
+  /* Now determine the direction of the scattered photon, for electrons scatering (-1), ff emision (-2), or
+     bound free emission (>NLINES), allowing depending on the scattering mode for thermal trapping. 
+     Note that this portion of the code is identical for both simple and macro atoms, except for the fact
+     that ff and bf are only treated as scattering processin in macro-atom mode.
+   */
+
+  if (*nres == -1)
   {
 
-    compton_dir (p);            // Get a new direction using the KN formula
+    compton_dir (p);            // uses the KN formula
 
   }
   else if (*nres == -2 || *nres > NLINES || geo.scatter_mode == SCATTER_MODE_ISOTROPIC)
   {
-    /*  ff emission (-2) , bf emission (>NLINES) or 
-       or it was a line photon but we want isotropic scattering anyway. Note
-       that ff and bf are only treated as scattering processes in macro-atom mode */
     randvec (z_prime, 1.0);
     stuff_v (z_prime, p->lmn);
   }
   else
-  {                             //It was a line photon and we want to use the thermal trapping model to choose the output direction
-
-    /* JM 1906 -- added normalisation of the below rejection method. We normalise
-       to the escape probability of along the direction of dvds_max, with a safety net of
-       20% in case we missed the maximum */
-    randwind_thermal_trapping (p, nnscat);
+  {
+    randwind_thermal_trapping (p, nnscat);      // the thermal trapping case
   }
 
-  /* End of modification for thermal trapping model (SS July 04) */
 
 
   /* Finally put everything back in the observer frame */
@@ -1243,6 +1238,14 @@ scatter (p, nres, nnscat)
   local_to_observer_frame (p, p);
 
 
+  /* If we are in macro-atom mode, add the photon to the created wind spectrum.  For simple
+     atoms the wind spectrum is constructed in sectra.c */
+
+  if (geo.rt_mode == RT_MODE_MACRO && *nres != -1)
+  {
+    p->nmacro++;
+    spec_add_one (p, SPEC_CWIND);
+  }
 
 /*Now calculate the momentum transfer.  What follows appears to be
 correct only if there was no energy absorbed at the scattering site.
@@ -1257,6 +1260,7 @@ if fixed.
 
 //XFRAME - Is this  the correct way to calculate the momentum transfer allowing for CMF calculation ? 
 // ioniz_or_extract is True for ionization cycles, false for spectral cycles
+
   if (geo.ioniz_or_extract)
   {
     stuff_v (p_orig.lmn, p_init);

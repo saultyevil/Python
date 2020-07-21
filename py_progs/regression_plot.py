@@ -295,9 +295,42 @@ def doit_two(run1='py82i_181127',run2='py82i_181126',model='cv_kur',outdir=''):
         pylab.title('%s (1) vs %s (2) for %s' % (run1,run2,model))
         flux1=xsmooth(spec1['Created'],21)
         flux2=xsmooth(spec2['Created'],21)
+
+        try:
+            wind=xsmooth(spec1['WCreated'],21)
+            flux1=flux1+wind
+        except:
+            pass
+
+
+        try:
+            wind=xsmooth(spec2['WCreated'],21)
+            flux2=flux2+wind
+        except:
+            pass
+
+
         diff_created=flux2-flux1
         pylab.loglog(spec1['Freq.'],flux1,label='Created1')
         pylab.loglog(spec2['Freq.'],flux2,label='Created2')
+
+        
+#        iboth=True
+#        try:
+#            flux1=xsmooth(spec1['WCreated'],21)
+#            pylab.loglog(spec1['Freq.'],flux1,label='WCreated1')
+#        except:
+#            iboth=False
+
+#        try:
+#            flux2=xsmooth(spec2['WCreated'],21)
+#            pylab.loglog(spec2['Freq.'],flux2,label='WCreated2')
+#        except:
+#            iboth=False
+
+#        if iboth:
+#            diff_wcreated=flux2-flux1
+
         y=pylab.ylim()
         pylab.ylim(y[1]/1e5,y[1])
 
@@ -349,6 +382,8 @@ def doit_two(run1='py82i_181127',run2='py82i_181126',model='cv_kur',outdir=''):
         pylab.subplot(613)
         pylab.title('Old (2) - New (1)')
         pylab.semilogx(spec1['Freq.'],diff_created,label='Created')
+#        if iboth:
+#            pylab.semilogx(spec1['Freq.'],diff_wcreated,label='WCreated')
         pylab.semilogx(spec1['Freq.'],diff_emitted,label='Emitted')
         pylab.semilogx(spec1['Freq.'],diff_CenSrc,label='CenSrc')
         pylab.semilogx(spec1['Freq.'],diff_disk,label='Disk')
@@ -372,10 +407,42 @@ def doit_two(run1='py82i_181127',run2='py82i_181126',model='cv_kur',outdir=''):
 
         pylab.subplot(614)
         flux1=xsmooth(spec1['Created'],21)
+        try:
+            wind=xsmooth(spec1['WCreated'],21)
+            flux1=flux1+wind
+        except:
+            pass
+
         flux2=xsmooth(spec2['Created'],21)
+        try:
+            wind=xsmooth(spec2['WCreated'],21)
+            flux2=flux2+wind
+        except:
+            pass
+
+
+
+
         diff_created=flux2-flux1
         pylab.plot(spec1['Lambda'],flux1,label='Created1')
         pylab.plot(spec2['Lambda'],flux2,label='Created2')
+
+        
+#        iboth=True
+#        try:
+#            flux1=xsmooth(spec1['WCreated'],21)
+#            pylab.plot(spec1['Lambda'],flux1,label='WCreated1')
+#        except:
+#            iboth=False
+
+#        try:
+#            flux2=xsmooth(spec2['WCreated'],21)
+#            pylab.plot(spec2['Lambda'],flux2,label='WCreated2')
+#        except:
+#            iboth=False
+
+#        if iboth:
+#            diff_wcreated=flux2-flux1
 
         flux1=xsmooth(spec1['Emitted'],21)
         flux2=xsmooth(spec2['Emitted'],21)
@@ -416,6 +483,8 @@ def doit_two(run1='py82i_181127',run2='py82i_181126',model='cv_kur',outdir=''):
         pylab.subplot(616)
         pylab.title('Old (2) - New (1)')
         pylab.plot(spec1['Lambda'],diff_created,label='Created')
+#        if iboth:
+#            pylab.semilogx(spec1['Lambda'],diff_wcreated,label='WCreated')
         pylab.plot(spec1['Lambda'],diff_emitted,label='Emitted')
         pylab.plot(spec1['Lambda'],diff_spec,label=name)
         pylab.legend(loc='best')
