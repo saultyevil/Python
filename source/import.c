@@ -58,6 +58,17 @@ import_wind (ndom)
 
   rdstr ("Wind.model2import", filename);
 
+  import_wind2 (ndom, filename);
+
+  return (0);
+}
+
+int
+import_wind2 (ndom, filename)
+     int ndom;
+     char *filename;
+{
+
   calloc_import (zdom[ndom].coord_type, ndom);
 
   if (zdom[ndom].coord_type == SPHERICAL)
@@ -82,8 +93,6 @@ import_wind (ndom)
 
   return (0);
 }
-
-
 
 
 /**********************************************************/

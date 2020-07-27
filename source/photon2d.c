@@ -606,10 +606,10 @@ smax_in_cell (PhotPtr p)
   smax += one->dfudge;          /* dfudge is to force the photon through the cell boundaries. */
 
   /* Set limits the distance a photon can travel.  There are
-  a good many photons which travel more than this distance without this
-  limitation, at least in the standard 30 x 30 instantiation.  It does
-  make small differences in the structure of lines in some cases.
-  The choice of SMAX_FRAC can affect execution time.*/
+     a good many photons which travel more than this distance without this
+     limitation, at least in the standard 30 x 30 instantiation.  It does
+     make small differences in the structure of lines in some cases.
+     The choice of SMAX_FRAC can affect execution time. */
 
   if (smax > SMAX_FRAC * length (p->x))
   {

@@ -274,8 +274,22 @@ A summary of the errors for this run of the program is shown below.  More inform
 can be found in the diag files directory.  This summary presents the total number of times an error message of a particularly 
 type was generated; many times the same error message will will occur in each of the threads.  
 '''
+
+tot_plot_description='''
+This plot is based on the .spec_tot file.  It shows the photons that were created and emitted in the last ionization cycle.  
+The photons created by a central object or disk (the external sources) are plotted separately from the wind (the internal source).
+For a simple atom model, the wind photons are generated based on physical conditions in  the wind at the beginning of the cycle.
+Ror a macro-atom models, the wind photons are generated as photons pass through the wind and interact with macro-atoms.  The observed
+flux from photons that escape to infinity and a subset of this, the emitted flux of photons arising in the wind are also shown.
+Finally, the flux of the photons that hit the disk or star is also shown (as they would be seen at a distance of 100 pc).
+'''
+
+spec_plot_description='''
+This plot is from the .spec file, and shows the expected spectra (at 100 pc) as a function of the various inclination angles requested. Note
+that the y-axis scale varies for different inclination angles.
+'''
     
-def make_html(root,converge_plot,te_plot,tr_plot,spec_tot_plot,spec_plot,complete_message=['test'],errors=['test','test2']):
+def make_html(root,converge_plot,te_plot,tr_plot,spec_tot_plot,spec_plot,nspectra=3,complete_message=['test'],errors=['test','test2']):
     '''
     Make an html file that collates all the results
     '''
@@ -310,14 +324,19 @@ def make_html(root,converge_plot,te_plot,tr_plot,spec_tot_plot,spec_plot,complet
     string+=xhtml.h2('What do the total spectra look like (somewhat smoothed)?')
 
     if os.path.isfile(spec_tot_plot):
-        string+=xhtml.image('file:%s' % (spec_tot_plot))
+        string+=xhtml.image('file:%s' % (spec_tot_plot),width=800)
+        string+=xhtml.paragraph(tot_plot_description)
     else:
         string+=xhtml.paragraph('There is no total spectrum plot. OK if no ionization cycles')
 
     string+=xhtml.hline()
     string+=xhtml.h2('What do the final spectra look like (somewhat smoothed)?')
     if spec_plot != 'None':
-        string+=xhtml.image('file:%s' % (spec_plot))
+        if nspectra==1:
+            string+=xhtml.image('file:%s' % (spec_plot),width=900,height=600)
+        else:
+            string+=xhtml.image('file:%s' % (spec_plot),width=900,height=nspectra*300)
+        string+=xhtml.paragraph(spec_plot_description)
     else:
         string+=xhtml.paragraph('There is no plot of a detailed spectrum, probably because detailed spectra were not created')
     string+=xhtml.hline()
@@ -414,13 +433,19 @@ def doit(root='ixvel',outputfile='out.txt'):
     plot_tot.doit(root)
     spec_tot_plot=root+'.spec_tot.png'
 
-    spec_plot=plot_spec.do_all_angles(root,wmin=0,wmax=0)
+    try:
+        spec_plot,nspectra=plot_spec.do_mosaic(root,wmin=0,wmax=0)
+    except:
+        print('Could not consturct detailed spectrum plot')
+        spec_plot='none'
+        nspectra=0
+
     # spec_plot=root+'.png'
 
     errors=py_error(root)
      
 
-    make_html(root,converge_plot,te_plot,tr_plot,spec_tot_plot,spec_plot,complete_message,errors)
+    make_html(root,converge_plot,te_plot,tr_plot,spec_tot_plot,spec_plot,nspectra,complete_message,errors)
 
 
     return

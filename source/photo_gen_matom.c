@@ -667,7 +667,7 @@ photo_gen_kpkt (p, weight, photstart, nphot)
     }
 
     p[n].istat = 0;
-    p[n].tau = p[n].nscat = p[n].nrscat = 0;
+    p[n].tau = p[n].nscat = p[n].nrscat = p[n].nmacro = 0;
     p[n].origin = PTYPE_WIND;   // Call it a wind photon
 
     switch (geo.reverb)
@@ -812,7 +812,6 @@ photo_gen_matom (p, weight, photstart, nphot)
 
     p[n].freq = pp.freq;
     p[n].nres = nres;
-    p[n].freq_orig_loc = p[n].freq;
     p[n].frame = F_LOCAL;
 
 
@@ -861,7 +860,7 @@ photo_gen_matom (p, weight, photstart, nphot)
     }
 
     p[n].istat = 0;
-    p[n].tau = p[n].nscat = p[n].nrscat = 0;
+    p[n].tau = p[n].nscat = p[n].nrscat = p[n].nmacro = 0;
     p[n].origin = PTYPE_WIND;   // Call it a wind photon
 
     switch (geo.reverb)

@@ -88,7 +88,6 @@ import_1d (ndom, filename)
   while (fgets (line, LINELENGTH, fptr) != NULL)
   {
     n = sscanf (line, " %d %le %le %le %le %le", &icell, &r, &v_r, &mass_rho, &t_e, &t_r);
-
     if (n < READ_NO_TEMP_1D)
     {
       continue;
