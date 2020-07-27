@@ -561,6 +561,7 @@ smax_in_cell (PhotPtr p)
 {
   int n, ndom, ndom_current;
   double s, smax;
+  int hit_disk;
 
   WindPtr one;
 
@@ -579,7 +580,7 @@ smax_in_cell (PhotPtr p)
     s = ds_to_wind (p, &ndom_current);  /* smax is set to be the distance to edge of the wind */
     if (s < smax)
       smax = s;
-    s = ds_to_disk (p, 0);      /* the 0 implies ds_to_disk can not return a negative distance */
+    s = ds_to_disk (p, 0, &hit_disk);      /* the 0 implies ds_to_disk can not return a negative distance */
     if (s > 0 && s < smax)
       smax = s;
   }

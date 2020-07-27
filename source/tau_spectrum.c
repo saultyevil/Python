@@ -9,16 +9,9 @@
  *
  * @details
  *
- * ### HOW TO ADD MORE OPTICAL DEPTHS ###
- *
- * In theory it should be relatively straight forwards to add more optical
- * depths to the photoionization edge diagnostics if desired. One should only
- * need to update the OPACITY_EDGES[] array with the relevant edge frequency
- * and name of that edge. Note that the frequency should actually be slightly
- * blueward of the actual edge frequency - this is mostly to take into account
- * any blueshifting.
- *
- * If none of this makes sense, just try to follow how everything else is done!
+ * To add more PI optical depths to evalulate, one has to add another entry
+ * to the PIEDGES array. The rest of the code should be able to cope with any
+ * new additions. Remember to put frequency to be slightly blue of the PI edge.
  *
  * ************************************************************************** */
 
@@ -35,27 +28,24 @@ struct sightlines
 {
   char name[50];
   double lmn[3];
-};
+} *SIGHTLINES;
+
+static int NSIGHTLINES;         // The number of inclination angles
 
 struct edges
 {
-  double nu;
   char name[50];
+  double freq;
+} PIEDGES[] = {
+  {"HLymanEdge", 3.387485e+15},
+  {"HBalmerEdge", 8.293014e+14},
+  {"HeIIEdge", 1.394384e+16}
 };
 
-static struct sightlines *SIGHTLINES;
-static const struct edges EDGES[] = {
-  {3.387485e+15, "HLymanEdge"},
-  {8.293014e+14, "HBalmerEdge"},
-  {1.394384e+16, "HeIIEdge"}
-};
-
-static int NANGLES;             // The number of inclination angles
-static const int NTAU = sizeof EDGES / sizeof *EDGES;   // The number of optical depths for the simple calculation
-
+static const int NPIEDGES = sizeof PIEDGES / sizeof *PIEDGES;   // The number of optical depths for the simple calculation
 
 #define LAUNCH_DOMAIN 0         // For now, assume we only care about photons starting in domain 0
-#define MAXDIFF VCHECK/VLIGHT   // The same as our old velocity requirement
+#define MAXDIFF VCHECK / VLIGHT // For linear velocity requirement for photon transport
 
 /* ************************************************************************** */
 /**
@@ -79,13 +69,11 @@ static const int NTAU = sizeof EDGES / sizeof *EDGES;   // The number of optical
  * ************************************************************************** */
 
 static void
-print_optical_depths (const double *optical_depths, const double *column_densities)
+print_optical_depths (const double *pi_optical_depths, const double *column_densities)
 {
-  int itau, ispec;
-  int line_len;
-  char tmp_str[LINELENGTH];
-  char observer_name[LINELENGTH];
-
+  int i, j;
+  int linelen;
+  char str[LINELENGTH];
   const int MAX_COL = 120;
 
   if (rank_global != 0)
@@ -93,22 +81,21 @@ print_optical_depths (const double *optical_depths, const double *column_densiti
 
   Log ("Optical depths along the defined line of sights for domain %i:\n\n", LAUNCH_DOMAIN);
 
-  for (ispec = 0; ispec < NANGLES; ispec++)
+  for (i = 0; i < NSIGHTLINES; i++)
   {
-    strcpy (observer_name, SIGHTLINES[ispec].name);
-    Log ("%s: Hydrogen column density: %3.2e cm^-2\n", observer_name, column_densities[ispec] / MPROT);
+    Log ("%s: Hydrogen column density: %3.2e cm^-2\n", SIGHTLINES[i].name, column_densities[i] / MPROT);
 
-    line_len = 0;
-    for (itau = 0; itau < NTAU; itau++)
+    linelen = 0;
+    for (j = 0; j < NPIEDGES; j++)
     {
-      line_len += sprintf (tmp_str, "tau_%-9s: %3.2e  ", EDGES[itau].name, optical_depths[ispec * NTAU + itau]);
-      if (line_len > MAX_COL)
+      linelen += sprintf (str, "tau_%-9s: %3.2e  ", PIEDGES[j].name, pi_optical_depths[i * NPIEDGES + j]);
+      if (linelen > MAX_COL)
       {
-        line_len = 0;
+        linelen = 0;
         Log ("\n");
       }
 
-      Log ("%s", tmp_str);
+      Log ("%s", str);
     }
 
     Log ("\n\n");
@@ -136,20 +123,20 @@ print_optical_depths (const double *optical_depths, const double *column_densiti
 static void
 write_optical_depth_spectrum (const double *tau_spectrum, const double freq_min, const double dfreq)
 {
-  int ispec, ifreq;
-  double wavelength, frequency;
+  int i, j;
+  double current_wavelength, current_freq;
   char filename[1024];
-  FILE *filep;
+  FILE *fp;
 
   if (rank_global != 0)
     return;
 
   sprintf (filename, "diag_%s/%s.tau_spec.diag", files.root, files.root);
 
-  if ((filep = fopen (filename, "w")) == NULL)
+  if ((fp = fopen (filename, "w")) == NULL)
   {
-    Error ("%s : %i : unable to open tau spectrum diag file\n", __FILE__, __LINE__);
-    Exit (1);
+    Error ("write_optical_depth_spectrum: unable to open tau spectrum diag file\n");
+    Exit (EXIT_FAILURE);
   }
 
   /*
@@ -157,33 +144,35 @@ write_optical_depth_spectrum (const double *tau_spectrum, const double freq_min,
    */
 
 
-  fprintf (filep, "%-12s %-12s ", "Freq.", "Lambda");
-  for (ispec = 0; ispec < NANGLES; ispec++)
-    fprintf (filep, "%-12s ", SIGHTLINES[ispec].name);
-  fprintf (filep, "\n");
+  fprintf (fp, "%-12s %-12s ", "Freq.", "Lambda");
+  for (j = 0; j < NSIGHTLINES; j++)
+    fprintf (fp, "%-12s ", SIGHTLINES[j].name);
+  fprintf (fp, "\n");
 
   /*
    * Write out the tau spectrum for each inclination angle
    */
 
-  frequency = freq_min;
+  current_freq = freq_min;
 
-  for (ifreq = 0; ifreq < NWAVE; ifreq++)
+  for (i = 0; i < NWAVE; i++)
   {
-    wavelength = VLIGHT / frequency / ANGSTROM; // TODO check correct conversion
-    fprintf (filep, "%-12e %-12e ", frequency, wavelength);
-    for (ispec = 0; ispec < NANGLES; ispec++)
-      fprintf (filep, "%-12e ", tau_spectrum[ispec * NWAVE + ifreq]);
-    fprintf (filep, "\n");
-    frequency += dfreq;
+    current_wavelength = VLIGHT / current_freq / ANGSTROM;
+    fprintf (fp, "%-12e %-12e ", current_freq, current_wavelength);
+
+    for (j = 0; j < NSIGHTLINES; j++)
+      fprintf (fp, "%-12e ", tau_spectrum[j * NWAVE + i]);
+    fprintf (fp, "\n");
+
+    current_freq += dfreq;
   }
 
-  fflush (filep);
+  fflush (fp);
 
-  if (fclose (filep))
+  if (fclose (fp))
   {
-    Error ("%s : %i : could not close tau spectrum diag file\n", __FILE__, __LINE__);
-    Exit (1);
+    Error ("write_optical_depth_spectrum: could not close tau spectrum diag file\n");
+    Exit (EXIT_FAILURE);
   }
 }
 
@@ -246,7 +235,7 @@ mpi_gather_spectra (double *const spec, const int nspec)
  * ************************************************************************** */
 
 static int
-calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
+calculate_tau_across_cell (WindPtr w, PhotPtr photon, double *current_col_den, double *current_tau)
 {
   int istat;
   int ndom, nplasma;
@@ -258,9 +247,9 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
   PlasmaPtr plasma_cell;
   struct photon p_start, p_stop, p_now;
 
-  if ((p->grid = where_in_grid (w[p->grid].ndom, p->x)) < 0)
+  if ((photon->grid = where_in_grid (w[photon->grid].ndom, photon->x)) < 0)
   {
-    Error ("%s : %i : pextract is not in grid\n", __FILE__, __LINE__);
+    Error ("calculate_tau_across_cell: pextract is not in grid\n");
     return EXIT_FAILURE;
   }
 
@@ -270,23 +259,23 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
    * photon can traverse across the cell
    */
 
-  wind_cell = &w[p->grid];
+  wind_cell = &w[photon->grid];
   ndom = wind_cell->ndom;
-  nplasma = w[p->grid].nplasma;
+  nplasma = w[photon->grid].nplasma;
   plasma_cell = &plasmamain[nplasma];
   density = plasma_cell->rho;
-  smax = smax_in_cell (p);
+  smax = smax_in_cell (photon);
   if (smax < 0)
   {
-    Error ("%s : %i : abnormal value of smax for photon\n", __FILE__, __LINE__);
+    Error ("calculate_tau_across_cell: abnormal value of smax for photon\n");
     return EXIT_FAILURE;
   }
 
   // Transform photon at starting location to local frame
-  observer_to_local_frame (p, &p_start);
+  observer_to_local_frame (photon, &p_start);
 
   // Move photon smax and transform to local frame
-  stuff_phot (p, &p_stop);
+  stuff_phot (photon, &p_stop);
   move_phot (&p_stop, smax);
   observer_to_local_frame (&p_stop, &p_stop);
 
@@ -299,7 +288,7 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
 
   while (smax > DFUDGE)
   {
-    stuff_phot (p, &p_now);
+    stuff_phot (photon, &p_now);
     move_phot (&p_now, smax * 0.5);
     observer_to_local_frame (&p_now, &p_now);
     diff = fabs (p_now.freq - 0.5 * (p_start.freq + p_stop.freq)) / p_start.freq;
@@ -329,7 +318,7 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
 
   if (geo.rt_mode == RT_MODE_2LEVEL)
   {
-    kappa_tot += radiation (p, smax);
+    kappa_tot += radiation (photon, smax);
   }
   else if (geo.rt_mode == RT_MODE_MACRO)
   {
@@ -347,10 +336,10 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
    * photon to the edge of the cell
    */
 
-  *col_den += smax * density;
-  *tau += smax * kappa_tot;
-  move_phot (p, smax);
-  istat = p->istat;
+  *current_col_den += smax * density;
+  *current_tau += smax * kappa_tot;
+  move_phot (photon, smax);
+  istat = photon->istat;
 
   return istat;
 }
@@ -379,18 +368,19 @@ calculate_tau_across_cell (WindPtr w, PhotPtr p, double *col_den, double *tau)
  * ************************************************************************** */
 
 static int
-extract_tau (WindPtr w, PhotPtr porig, double *col_den, double *tau)
+extract_tau (WindPtr w, PhotPtr photon, double *current_col_den, double *current_tau)
 {
-  int ierr, ndom, istat;
-  int nspace;
+  int err, ndom;
+  enum istat_enum istat;
+  int ninspace;
   const int max_space = 10;
   double norm[3];
   struct photon pextract;
 
   istat = P_INWIND;             // assume photon is in wind for initialisation reasons
-  stuff_phot (porig, &pextract);
+  stuff_phot (photon, &pextract);
 
-  nspace = 0;
+  ninspace = 0;
 
   while (istat == P_INWIND)
   {
@@ -398,17 +388,17 @@ extract_tau (WindPtr w, PhotPtr porig, double *col_den, double *tau)
     if (where_in_wind (pextract.x, &ndom) < 0)
     {
       translate_in_space (&pextract);
-      if (++nspace > max_space)
+      if (++ninspace > max_space)
       {
-        Error ("%s : %i : tau_extract photon transport ended due to too many translate_in_space\n", __FILE__, __LINE__);
+        Error ("extract_tau: tau_extract photon transport ended due to too many translate_in_space\n");
         return EXIT_FAILURE;
       }
     }
-      // Move the photon in the wind
+    // Move the photon in the wind
     else if ((pextract.grid = where_in_grid (ndom, pextract.x)) >= 0)
     {
-      ierr = calculate_tau_across_cell (w, &pextract, col_den, tau);
-      if (ierr)
+      err = calculate_tau_across_cell (w, &pextract, current_col_den, current_tau);
+      if (err)
       {
         pextract.istat = -1;
         return EXIT_FAILURE;
@@ -416,17 +406,17 @@ extract_tau (WindPtr w, PhotPtr porig, double *col_den, double *tau)
     }
     else
     {
-      Error ("%s : %i : photon in unknown location, grid stat %i\n", __FILE__, __LINE__, pextract.grid);
+      Error ("extract_tau: photon in unknown location, grid stat %i\n", pextract.grid);
       pextract.istat = P_ERROR;
       return EXIT_FAILURE;
     }
 
-    istat = walls (&pextract, porig, norm);
+    istat = walls (&pextract, photon, norm);
   }
 
   if (istat == P_HIT_STAR || istat == P_HIT_DISK)
   {
-    Error ("%s : %i : photon hit central source or disk incorrectly istat = %i\n", __FILE__, __LINE__, istat);
+    Error ("extract_tau: photon hit central source or disk incorrectly istat = %i\n", istat);
     return EXIT_FAILURE;
   }
 
@@ -454,12 +444,12 @@ extract_tau (WindPtr w, PhotPtr porig, double *col_den, double *tau)
 static void
 reposition_tau_photon (PhotPtr pout)
 {
-  int icell;
+  int i;
   int wind_index, plasma_index;
+  double xloc;
+  static double upward_xloc;
+  double current_density, max_density;
   static bool xloc_init = false;
-  double x_loc;
-  static double upward_x_loc;
-  double plasma_density, max_plasma_density;
 
   /*
    * Hacky code for when photon is pointing upwards - this photon will not
@@ -469,17 +459,17 @@ reposition_tau_photon (PhotPtr pout)
 
   if (xloc_init == false)
   {
-    max_plasma_density = 0;
-    for (icell = 0; icell < zdom[LAUNCH_DOMAIN].ndim - 1; icell++)
+    max_density = 0;
+    for (i = 0; i < zdom[LAUNCH_DOMAIN].ndim - 1; i++)
     {
-      wind_index = icell * zdom[LAUNCH_DOMAIN].mdim + zdom[LAUNCH_DOMAIN].mdim;
-      x_loc = wmain[wind_index].x[0];
+      wind_index = i * zdom[LAUNCH_DOMAIN].mdim + zdom[LAUNCH_DOMAIN].mdim;
+      xloc = wmain[wind_index].x[0];
       plasma_index = wmain[wind_index].nplasma;
-      plasma_density = plasmamain[plasma_index].rho;
-      if (plasma_density > max_plasma_density)
+      current_density = plasmamain[plasma_index].rho;
+      if (current_density > max_density)
       {
-        upward_x_loc = x_loc + wmain[wind_index].dfudge;
-        max_plasma_density = plasma_density;
+        upward_xloc = xloc + wmain[wind_index].dfudge;
+        max_density = current_density;
       }
     }
 
@@ -488,7 +478,7 @@ reposition_tau_photon (PhotPtr pout)
 
   if (pout->lmn[0] == 0 && pout->lmn[1] == 0 && pout->lmn[2] == 1)
   {
-    pout->x[0] = upward_x_loc;
+    pout->x[0] = upward_xloc;
     pout->x[2] = DFUDGE;
   }
 }
@@ -520,16 +510,16 @@ reposition_tau_photon (PhotPtr pout)
  * ************************************************************************** */
 
 static int
-create_tau_photon (PhotPtr pout, double nu, double *lmn)
+create_tau_photon (PhotPtr pout, double freq, double *lmn)
 {
-  if (nu < 0)
+  if (freq < 0)
   {
-    Error ("%s : %i : photon can't be created with negative nu\n", __FILE__, __LINE__);
+    Error ("create_tau_photon: photon can't be created with negative frequency\n");
     return EXIT_FAILURE;
   }
 
   stuff_v (lmn, pout->lmn);
-  pout->freq = pout->freq_orig = nu;
+  pout->freq = pout->freq_orig = freq;
   pout->origin = pout->origin_orig = PTYPE_DISK;
   pout->istat = P_INWIND;
   pout->w = pout->w_orig = geo.f_tot;
@@ -576,13 +566,13 @@ init_sightlines (void)
 
   if (geo.nangles > 0 && xxspec != NULL)
   {
-    NANGLES = geo.nangles;
+    NSIGHTLINES = geo.nangles;
     SIGHTLINES = calloc (geo.nangles, sizeof *SIGHTLINES);
     if (SIGHTLINES == NULL)
     {
       mem_req = geo.nangles * (int) sizeof *SIGHTLINES;
-      Error ("%s : %i : cannot allocate %d bytes for observers array\n", __FILE__, __LINE__, mem_req);
-      Exit (1);
+      Error ("init_sightlines: cannot allocate %d bytes for observers array\n", mem_req);
+      Exit (EXIT_FAILURE);
     }
     else                        // Use else to avoid compiler warning
     {
@@ -594,21 +584,21 @@ init_sightlines (void)
     }
   }
 
-    /*
-     * If no spectrum cycles are being run, or if the model is being restarted
-     * without initialising xxspec, then a default set of angles is used instead.
-     */
+  /*
+   * If no spectrum cycles are being run, or if the model is being restarted
+   * without initialising xxspec, then a default set of angles is used instead.
+   */
 
   else
   {
     Log_silent ("tau_spectrum: as there are no spectrum cycles or observers defined, a set of default angles will be used instead\n");
-    NANGLES = n_default_angles;
+    NSIGHTLINES = n_default_angles;
     SIGHTLINES = calloc (n_default_angles, sizeof *SIGHTLINES);
     if (SIGHTLINES == NULL)
     {
       mem_req = n_default_angles * (int) sizeof *SIGHTLINES;
-      Error ("%s : %i : cannot allocate %d bytes for observers array\n", __FILE__, __LINE__, mem_req);
-      Exit (1);
+      Error ("init_sightlines: cannot allocate %d bytes for observers array\n", mem_req);
+      Exit (EXIT_FAILURE);
     }
     else
     {
@@ -658,23 +648,21 @@ init_sightlines (void)
 static void
 create_optical_depth_spectrum (WindPtr w)
 {
-  int ierr;
-  int ispec, ifreq;
+  int i, j;
+  int err;
   int nbins, mpi_lower, mpi_upper;
   double tau, column;
-  double freq;
-  double freq_min, freq_max, dfreq;
-  double *current_observer;
   double *tau_spectrum;
-
-  struct photon ptau;
+  double current_freq;
+  double freq_min, freq_max, dfreq;
+  struct photon photon;
 
   Log ("Creating optical depth spectra:\n");
 
-  tau_spectrum = calloc (NANGLES * NWAVE, sizeof *tau_spectrum);
+  tau_spectrum = calloc (NSIGHTLINES * NWAVE, sizeof *tau_spectrum);
   if (tau_spectrum == NULL)
   {
-    Error ("%s : %i : cannot allocate %d bytes for tau_spectrum\n", __FILE__, __LINE__, NANGLES * NWAVE * sizeof *tau_spectrum);
+    Error ("create_optical_depth_spectrum: cannot allocate %d bytes for tau_spectrum\n", NSIGHTLINES * NWAVE * sizeof *tau_spectrum);
     return;
   }
 
@@ -684,9 +672,9 @@ create_optical_depth_spectrum (WindPtr w)
    * band.
    */
 
-  if (xxspec == NULL)
+  if ((geo.nangles == 0 && xxspec == NULL) || (geo.swavemax == 0 && geo.swavemin == 0))
   {
-    Error ("create_optical_depth_spectrum: xxspec is uninitialized, defaulting spectral wavelength to 100 - 10,000 Angstrom\n");
+    Error ("create_optical_depth_spectrum: xxspec is uninitialized, defaulting spectral wavelength range to 100 - 10,000 Angstrom\n");
     freq_min = VLIGHT / (10000 * ANGSTROM);
     freq_max = VLIGHT / (100 * ANGSTROM);
   }
@@ -694,6 +682,16 @@ create_optical_depth_spectrum (WindPtr w)
   {
     freq_min = VLIGHT / (geo.swavemax * ANGSTROM);
     freq_max = VLIGHT / (geo.swavemin * ANGSTROM);
+    if (sane_check (freq_min))
+    {
+      freq_min = VLIGHT / (10000 * ANGSTROM);
+      Error ("create_optical_depth_spectrum: freq_min has an invalid value setting to %e\n", freq_min);
+    }
+    if (sane_check (freq_max))
+    {
+      freq_max = VLIGHT / (100 * ANGSTROM);
+      Error ("create_optical_depth_spectrum: freq_min has an invalid value setting to %e\n", freq_max);
+    }
   }
 
   dfreq = (freq_max - freq_min) / NWAVE;
@@ -718,31 +716,28 @@ create_optical_depth_spectrum (WindPtr w)
    * Now create the optical depth spectra for each sightline
    */
 
-  for (ispec = 0; ispec < NANGLES; ispec++)
+  for (i = 0; i < NSIGHTLINES; i++)
   {
-    Log ("  - Creating spectrum: %s\n", SIGHTLINES[ispec].name);
-    current_observer = SIGHTLINES[ispec].lmn;
-    freq = mpi_lower * dfreq;
-    if (freq < freq_min)
-      freq = freq_min;
+    Log ("  - Creating spectrum: %s\n", SIGHTLINES[i].name);
+    current_freq = mpi_lower * dfreq;
 
-    for (ifreq = mpi_lower; ifreq < mpi_upper; ifreq++)
+    for (j = mpi_lower; j < mpi_upper; j++)
     {
       tau = 0.0;
       column = 0.0;
-      ierr = create_tau_photon (&ptau, freq, current_observer);
-      if (ierr == EXIT_FAILURE)
+      err = create_tau_photon (&photon, current_freq, SIGHTLINES[i].lmn);
+      if (err == EXIT_FAILURE)
       {
-        Log ("%s : %i : skipping photon of frequency %e when creating spectrum\n", __FILE__, __LINE__, freq);
+        Log ("create_optical_depth_spectrum: skipping photon of frequency %e when creating spectrum\n", current_freq);
         continue;
       }
 
-      ierr = extract_tau (w, &ptau, &column, &tau);
-      if (ierr == EXIT_FAILURE)
+      err = extract_tau (w, &photon, &column, &tau);
+      if (err == EXIT_FAILURE)
         continue;
 
-      tau_spectrum[ispec * NWAVE + ifreq] = tau;
-      freq += dfreq;
+      tau_spectrum[i * NWAVE + j] = tau;
+      current_freq += dfreq;
     }
   }
 
@@ -782,19 +777,19 @@ create_optical_depth_spectrum (WindPtr w)
  * ************************************************************************** */
 
 static void
-calculate_photoion_edge_optical_depth (WindPtr w)
+calculate_pi_optical_depth (WindPtr w)
 {
-  int ierr;
-  int itau, ispec;
-  double nu, tau, column;
-  double *current_observer;
-  double *optical_depths, *column_densities;
-  struct photon ptau;
+  int err;
+  int j, i;
+  double current_freq, current_tau, current_col_density;
+  double *pi_optical_depths, *column_densities;
+  struct photon photon;
 
-  optical_depths = calloc (NANGLES * NTAU, sizeof *optical_depths);
-  if (optical_depths == NULL)
+  pi_optical_depths = calloc (NSIGHTLINES * NPIEDGES, sizeof *pi_optical_depths);
+  if (pi_optical_depths == NULL)
   {
-    Error ("%s : %i : cannot allocate %d bytes for optical_depths\n", __FILE__, __LINE__, NANGLES * NTAU * sizeof *optical_depths);
+    Error ("calculate_photoion_edge_optical_depth: cannot allocate %d bytes for optical_depths\n",
+           NSIGHTLINES * NPIEDGES * sizeof *pi_optical_depths);
     return;
   }
 
@@ -802,11 +797,12 @@ calculate_photoion_edge_optical_depth (WindPtr w)
    * Allocate storage for the column densities for each edge and sight line
    */
 
-  column_densities = calloc (NANGLES, sizeof *optical_depths);
+  column_densities = calloc (NSIGHTLINES, sizeof *pi_optical_depths);
   if (column_densities == NULL)
   {
-    Error ("%s : %i : cannot allocate %d bytes for column_densities\n", __FILE__, __LINE__, NANGLES * sizeof *optical_depths);
-    free (optical_depths);
+    Error ("calculate_photoion_edge_optical_depth: cannot allocate %d bytes for column_densities\n",
+           NSIGHTLINES * sizeof *pi_optical_depths);
+    free (pi_optical_depths);
     return;
   }
 
@@ -814,32 +810,32 @@ calculate_photoion_edge_optical_depth (WindPtr w)
    * Now extract the optical depths and mass column densities
    */
 
-  for (ispec = 0; ispec < NANGLES; ispec++)
+  for (i = 0; i < NSIGHTLINES; i++)
   {
-    current_observer = SIGHTLINES[ispec].lmn;
-    for (itau = 0; itau < NTAU; itau++)
+    for (j = 0; j < NPIEDGES; j++)
     {
-      tau = 0.0;
-      column = 0.0;
-      nu = EDGES[itau].nu;
-      ierr = create_tau_photon (&ptau, nu, current_observer);
-      if (ierr == EXIT_FAILURE)
+      current_tau = 0.0;
+      current_col_density = 0.0;
+      current_freq = PIEDGES[j].freq;
+
+      err = create_tau_photon (&photon, current_freq, SIGHTLINES[i].lmn);
+      if (err == EXIT_FAILURE)
       {
-        Error ("%s : %i : skipping photon of frequency %e\n", __FILE__, __LINE__, nu);
+        Error ("calculate_photoion_edge_optical_depth: skipping photon of frequency %e\n", current_freq);
         continue;
       }
 
-      ierr = extract_tau (w, &ptau, &column, &tau);
-      if (ierr == EXIT_FAILURE) // Do not throw another "extra" error
+      err = extract_tau (w, &photon, &current_col_density, &current_tau);
+      if (err == EXIT_FAILURE)  // Do not throw another "extra" error
         continue;
 
-      optical_depths[ispec * NTAU + itau] = tau;
-      column_densities[ispec] = column;
+      pi_optical_depths[i * NPIEDGES + j] = current_tau;
+      column_densities[i] = current_col_density;
     }
   }
 
-  print_optical_depths (optical_depths, column_densities);
-  free (optical_depths);
+  print_optical_depths (pi_optical_depths, column_densities);
+  free (pi_optical_depths);
   free (column_densities);
 }
 
@@ -873,7 +869,7 @@ optical_depth_diagnostics (WindPtr w)
   xsignal (files.root, "%-20s Optical depth diagnostics beginning\n", "TAU");
 
   init_sightlines ();
-  calculate_photoion_edge_optical_depth (w);
+  calculate_pi_optical_depth (w);
   create_optical_depth_spectrum (w);
 
 #ifdef MPI_ON
