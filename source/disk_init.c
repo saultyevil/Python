@@ -23,10 +23,11 @@
 
 /**********************************************************/
 /**
- * @brief      calculates the total luminosity and the luminosity between freqqmin and freqmax
- * 	of the disk.  More importantly  divides the disk into annulae such that each
- * 	annulus contributes and equal amount to the lumionosity of the disk (within the frequency
- * 	limits).  Thus  initializes the structure "disk".
+ * @brief      calculates the total luminosity and the luminosity between
+ * freqmin and freqmax of the disk.  More importantly  divides the disk into
+ * annuli such that each annulus contributes and equal amount to the luminosity
+ * of the disk (within the frequency limits). Thus initializes the structure
+ * "disk".
  *
  * @param [in] double  rmin   The minimum radius of the disk
  * @param [in] double  rmax   The maximum radius of the disk
@@ -36,7 +37,7 @@
  * @param [in] double  freqmax   The maximum frequency
  * @param [in] int  ioniz_or_final   A flag indicating whether this is an ionization or
  * a detailed spectral cycle (used to determine the spectral type to use)
- * @param [out] double *  ftot   The band limited luminosity in the freqency interval
+ * @param [out] double *  ftot   The band limited luminosity in the frequency interval
  * @return     the total luminosity of the disk
  *
  * @details
@@ -45,8 +46,8 @@
  * the band limited luminosity of the disk.  Additionally, it divides
  * the disk in the rings of the same band-limited luminosity, so that
  * equal numbers of photons can be generated from each ring.  (The
- * reason the disk has to be initilaized mulitple times is because
- * the rings are different for different freqency intervals.)
+ * reason the disk has to be initialized multiple times is because
+ * the rings are different for different frequency intervals.)
  *
  * ### Notes ###
  * The information needed to generate photons from the disk is stored
@@ -62,15 +63,15 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
      double rmin, rmax, m, mdot, freqmin, freqmax, *ftot;
      int ioniz_or_final;
 {
-  double t, tref, teff (), tdisk ();
-  double log_g, gref, geff (), gdisk ();
+  double t, tref;
+  double log_g, gref;
   double dr, r;
   double logdr, logrmin, logrmax, logr;
   double f, ltot;
   double q1;
   int nrings, i, icheck;
   int spectype;
-  double emit, emittance_bb (), emittance_continuum ();
+  double emit;
 
   /* Calculate the reference temperature and luminosity of the disk */
   tref = tdisk (m, mdot, rmin);
@@ -78,7 +79,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
 
   q_test_count = 0;
   /* Now compute the apparent luminosity of the disk.  This is not actually used
-     to determine how annulae are set up.  It is just used to populate geo.ltot.
+     to determine how annuli are set up.  It is just used to populate geo.ltot.
      It can change if photons hitting the disk are allowed to raise the temperature
    */
 
@@ -99,9 +100,6 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
     disk.t_hit[nrings] = 0;
   }
 
-
-
-
   ltot = 0;
 
   for (logr = logrmin; logr < logrmax; logr += logdr)
@@ -113,25 +111,27 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
   }
   geo.lum_disk_init = ltot *= 2. * STEFAN_BOLTZMANN * PI;
 
-
   /* Now establish the type of spectrum to create */
 
   if (ioniz_or_final == 1)
+  {
     spectype = geo.disk_spectype;       /* type for final spectrum */
+  }
   else
+  {
     spectype = geo.disk_ion_spectype;   /*type for ionization calculation */
+  }
 
-/* Next compute the band limited luminosity ftot */
+  /* Next compute the band limited luminosity ftot */
 
-/* The area of an annulus is  PI*((r+dr)**2-r**2) = PI * (2. * r +dr) * dr.
-   The extra factor of two arises because the disk radiates from both of its sides.
+  /* The area of an annulus is  PI*((r+dr)**2-r**2) = PI * (2. * r +dr) * dr.
+     The extra factor of two arises because the disk radiates from both of its sides.
    */
 
   q1 = 2. * PI;
 
   (*ftot) = 0;
   icheck = 0;
-
 
   for (logr = logrmin; logr < logrmax; logr += logdr)
   {

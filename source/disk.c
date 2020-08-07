@@ -20,7 +20,7 @@
 
 /**********************************************************/
 /** 
- * @brief      Calculate the reference temperarure for a standard Shakura-Sunyaeev disk
+ * @brief      Calculate the reference for the accretion disc.
  *
  * @param [in] double  m   mass of the central object
  * @param [in] double  mdot   mass accretion rate of the disk
@@ -28,11 +28,15 @@
  * @return     The reference temperature for the disk
  *
  * @details
- * All of the inputs are in cgs units
+ * All of the inputs are in cgs units.
+ *
+ * The reference temperature is either calculated for a standard SS disc or for
+ * the temperature profile for a Eddington critical disc given in Strubbe and
+ * Quataert (2009).
  *
  * ### Notes ###
- * For an SS disk,  The maximum temperature
- *    actuallly seen in the disk is 0.488 tdisk
+ * For an SS disk, the maximum temperature actually seen in the disk is
+ * at 0.488 Tstar at 49/36 Rstar.
  *
  *
  **********************************************************/
@@ -42,8 +46,23 @@ tdisk (m, mdot, r)
      double m, mdot, r;
 {
   double t;
-  t = 3. * GRAV / (8. * PI * STEFAN_BOLTZMANN) * m * mdot / (r * r * r);
-  t = pow (t, 0.25);
+
+  if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
+  {
+    t = 3. * GRAV / (8. * PI * STEFAN_BOLTZMANN) * m * mdot / (r * r * r);
+    t = pow (t, 0.25);
+  }
+  else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
+  {
+    t = 3 * GRAV * m * mdot / (8 * PI * STEFAN_BOLTZMANN);
+    t - pow (t, 0.25);
+  }
+  else
+  {
+    Error ("Unknown disc temperature profile type %d for function tdisk\n", geo.disk_tprofile);
+    Exit (1);
+  }
+
   return (t);
 }
 
@@ -88,10 +107,7 @@ teff (t, x)
   double q = 0;
   double theat, r;
   double temp;
-  double pow ();
   int kkk;
-
-
 
   if (x < 1)
   {
@@ -99,12 +115,11 @@ teff (t, x)
     return (0.0);
   }
 
-
   if ((geo.disk_tprofile == DISK_TPROFILE_READIN) && ((x * geo.rstar) < blmod.r[blmod.n_blpts - 1]))
   {
     /* This is the case where the temperature profile is read in as an array, and so we
-       simply find the array elements that bracked the requested radius and do a linear
-       interpolation to calcualte the temperature at the requested radius. */
+       simply find the array elements that bracket the requested radius and do a linear
+       interpolation to calculate the temperature at the requested radius. */
     if ((r = (x * geo.rstar)) < blmod.r[0])
     {
       return (blmod.t[0]);
@@ -115,22 +130,25 @@ teff (t, x)
       return (temp);
     }
   }
-  else
+  else if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
   {
     /* This is a standard accretion disk */
 
     q = (1.e0 - pow (x, -0.5e0)) / (x * x * x);
     q = t * pow (q, 0.25e0);
 
-    if (geo.absorb_reflect == BACK_RAD_ABSORB_AND_HEAT && geo.wcycle > 0)       /* Absorb photons and increase t so that heat is radiated
-                                                                                   but only do this if there has been at least one
-                                                                                   ionization cycle */
+    /*
+     * Absorb photons and increase t so that heat is radiated but only do this
+     * if there has been at least one ionization cycle
+     */
+
+    if (geo.absorb_reflect == BACK_RAD_ABSORB_AND_HEAT && geo.wcycle > 0)
     {
-      /* qdisk is initialized only once (in init_qdisk) and does not generally have the same
-       * values for r as does the disk structure, whose annulae vary as the 
+      /*
+       * qdisk is initialized only once (in init_qdisk) and does not generally have the same
+       * values for r as does the disk structure, whose annuli vary as the
        * frequency limits are set. Here we just search for a radius that is just above
        * the requested r
-       * 
        */
       r = x * geo.rstar;        // 04aug -- Requires fix if disk does not extend to rstar
       kkk = 1;                  // photon cannot hit the disk at r<qdisk.r[0]
@@ -142,21 +160,26 @@ teff (t, x)
 
       /* T_eff is given by T_eff**4= T_disk**4+Heating/area/STEFAN_BOLTZMANN */
       q = pow (q * q * q * q + (theat / STEFAN_BOLTZMANN), 0.25);
-
     }
-//OLD    else if (geo.disk_tprofile == DISK_TPROFILE_YSO)    // Analytic approximation for disk heating by star; implemented for YSOs
-//OLD    {
-//OLD      disk_heating_factor = pow (geo.tstar / t, 4.0);
-//OLD      disk_heating_factor *= (asin (1. / x) - (pow ((1. - (1. / (x * x))), 0.5) / x));
-//OLD      disk_heating_factor /= PI;
-//OLD      disk_heating_factor *= x * x * x;
-//OLD      disk_heating_factor /= (1 - sqrt (1. / x));
-//OLD      disk_heating_factor += 1;
-
-//OLD      q *= pow (disk_heating_factor, (1. / 4.));
-
-//OLD    }
   }
+  else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
+  {
+    x *= geo.rstar;
+    double rg = GRAV * geo.mstar / VLIGHT / VLIGHT;
+    double risco = 6 * rg;
+    double fnt = 1 - sqrt (risco / x);
+    double ledd = 4 * PI * GRAV * geo.mstar * VLIGHT * MPROT / THOMPSON;
+    q = fnt / (x * x * x);
+    double q1 = 0.5 + pow (0.25 + 6 * fnt * pow (VLIGHT * VLIGHT * geo.disk_mdot / ledd, 2) * pow (x / rg, -0.5), 0.5);
+    q *= pow (q1, -1);
+    q = t * pow (q, 0.25);
+  }
+  else
+  {
+    Error ("Unknown disc temperature profile type %d or invalid temperature profile provided\n", geo.disk_tprofile);
+    Exit (1);
+  }
+
   return (q);
 }
 

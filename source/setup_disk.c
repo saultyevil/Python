@@ -102,9 +102,9 @@ get_disk_params ()
 //OLD  sprintf (values, "%d,%d,%d", DISK_TPROFILE_STANDARD, DISK_TPROFILE_READIN, DISK_TPROFILE_YSO);
 //OLD  geo.disk_tprofile = rdchoice ("Disk.temperature.profile(standard,readin,yso)", values, answer);
   sprintf (values, "%d,%d", DISK_TPROFILE_STANDARD, DISK_TPROFILE_READIN);
-  geo.disk_tprofile = rdchoice ("Disk.temperature.profile(standard,readin)", values, answer);
+  geo.disk_tprofile = rdchoice ("Disk.temperature.profile(standard,eddington,readin)", values, answer);
 
-  if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
+  if (geo.disk_tprofile == DISK_TPROFILE_STANDARD || geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
   {
     geo.disk_mdot /= (MSOL / YR);       // Convert to msol/yr to simplify input
     rddoub ("Disk.mdot(msol/yr)", &geo.disk_mdot);
