@@ -379,7 +379,7 @@ main (argc, argv)
 
   if (geo.tstar <= 0.0)
     geo.star_radiation = 0;
-  if (geo.disk_mdot <= 0.0 && geo.disk_tprofile == DISK_TPROFILE_STANDARD)
+  if (geo.disk_mdot <= 0.0 && (geo.disk_tprofile == DISK_TPROFILE_STANDARD || geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL))
     geo.disk_radiation = 0;
   if (geo.t_bl <= 0.0 || geo.lum_bl <= 0.0)
     geo.bl_radiation = 0;

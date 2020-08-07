@@ -164,10 +164,26 @@ bands_init (imode, band)
 
   if (geo.tstar > tmax)
     tmax = geo.tstar;
+
   if (geo.t_bl > tmax && geo.lum_bl > 0.0)
     tmax = geo.t_bl;
-  if ((0.488 * tdisk (geo.mstar, geo.disk_mdot, geo.rstar)) > tmax)
-    tmax = 0.488 * tdisk (geo.mstar, geo.disk_mdot, geo.rstar);
+
+  // XDISK this is problematic, even for read in temperature profiles
+
+  if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
+  {
+    if ((0.488 * tdisk (geo.mstar, geo.disk_mdot, geo.rstar)) > tmax)
+      tmax = 0.488 * tdisk (geo.mstar, geo.disk_mdot, geo.rstar);
+  }
+  else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
+  {
+    ;
+  }
+  else if (geo.disk_tprofile == DISK_TPROFILE_READIN)
+  {
+    ;
+  }
+
   freqmax = BOLTZMANN * tmax / PLANCK * 10.;
   if (freqmax < 2.0 * 54.418 / HEV)
   {

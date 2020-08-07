@@ -152,6 +152,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
     (*ftot) += emit * (2. * r + dr) * dr;
   }
 
+
   (*ftot) *= q1;
 
 

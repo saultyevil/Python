@@ -55,7 +55,7 @@ tdisk (m, mdot, r)
   else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
   {
     t = 3 * GRAV * m * mdot / (8 * PI * STEFAN_BOLTZMANN);
-    t - pow (t, 0.25);
+    t = pow (t, 0.25);
   }
   else
   {
@@ -165,14 +165,18 @@ teff (t, x)
   else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
   {
     x *= geo.rstar;
-    double rg = GRAV * geo.mstar / VLIGHT / VLIGHT;
+
+    double rg = GRAV * geo.mstar / (VLIGHT * VLIGHT);
     double risco = 6 * rg;
     double fnt = 1 - sqrt (risco / x);
     double ledd = 4 * PI * GRAV * geo.mstar * VLIGHT * MPROT / THOMPSON;
-    q = fnt / (x * x * x);
-    double q1 = 0.5 + pow (0.25 + 6 * fnt * pow (VLIGHT * VLIGHT * geo.disk_mdot / ledd, 2) * pow (x / rg, -0.5), 0.5);
-    q *= pow (q1, -1);
-    q = t * pow (q, 0.25);
+    double MSOL_PER_YEAR = 6.305286e25;
+    double mdot = geo.disk_mdot / MSOL_PER_YEAR;
+
+    double q1 = fnt / (x * x * x);
+    double q2 = 0.25 + 6 * fnt * pow (mdot * VLIGHT * VLIGHT / ledd, 2) * pow (x / rg, -2);
+    double q3 = pow (pow (q2, 0.5) + 0.5, -1);
+    q = t * pow (q1 * q3, 0.25);
   }
   else
   {
