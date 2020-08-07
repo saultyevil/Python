@@ -127,7 +127,6 @@ FILE *diagptr;
 int init_log = 0;
 int log_verbosity = 5;          // A parameter which can be used to suppress what would normally be logged or printed
 
-
 /**********************************************************/
 /** 
  * @brief      Open a log file 
@@ -873,7 +872,7 @@ Debug (char *format, ...)
  **********************************************************/
 
 void
-Exit_python(int error_code)
+Exit_python (int error_code)
 {
   if (error_code == 0)
   {
@@ -898,5 +897,3 @@ Exit_python(int error_code)
   exit (error_code);
 #endif
 }
-
-
