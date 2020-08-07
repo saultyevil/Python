@@ -873,7 +873,7 @@ Debug (char *format, ...)
  **********************************************************/
 
 void
-Exit (int error_code)
+Exit_python(int error_code)
 {
   if (error_code == 0)
   {
@@ -898,3 +898,5 @@ Exit (int error_code)
   exit (error_code);
 #endif
 }
+
+

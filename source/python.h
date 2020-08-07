@@ -16,23 +16,36 @@ int rank_global;
 
 int verbosity;                  /* verbosity level. 0 low, 10 is high */
 
-/* the functions contained in log., rdpar.c and lineio.c are
-   declare deparately from templates. This is because some functions
-   only use log.h and don't use python.h due to repeated definitions */
+/*
+ * the functions contained in xlog.c, rdpar.c and declared separately from
+ * templates. This is because some functions only use log.h and don't use
+ * python.h due to repeated definitions
+ * */
+
 #include "log.h"
 #include "strict.h"
+
+/*
+ * This macro was added to avoid compiler warnings as the compiler is unable
+ * to recognise that ExitPython will cause the program to abort. This fixes
+ * warnings where the compiler thinks an uninitialized value will be used or
+ * returned from a function.
+ */
+
+#define Exit(error_code) \
+{ \
+  Exit_python(error_code);\
+  exit(error_code);\
+}
 
 /* In python_43 the assignment of the WindPtr size has been moved from a fixed
 value determined by values in python.h to a values which are adjustable from
 within python */
 
-
 #define REL_MODE_LINEAR 0      /*Only make v/c corrections when doing frame transfers*/
 #define REL_MODE_FULL   1      /*Make full corrections for special relativity*/
 
-  int rel_mode;                 /* How doppler effects are treated */
-
-
+int rel_mode;                 /* How doppler effects are treated */
 
 /* With domains NDIM and MDIM need to be removed but NDIM2 is the total number of cells in wmain, and there
 are certain times we want to loop over everything.  The situation with NPLASMA is similar */
@@ -408,8 +421,9 @@ struct geometry
   int absorb_reflect;           /*Controls what happens when a photon hits the disk or star
                                  */
 
-#define DISK_TPROFILE_STANDARD          0       // This is a standard Shakura-Sunyaev disk. The profile depends on mstar and mdot_disk
-#define DISK_TPROFILE_READIN            1       // Here the temperature profile for the disk is simply read in as a function of radius
+#define DISK_TPROFILE_STANDARD           0       // This is a standard Shakura-Sunyaev disk. The profile depends on mstar and mdot_disk
+#define DISK_TPROFILE_READIN             1       // Here the temperature profile for the disk is simply read in as a function of radius
+#define DISK_TPROFILE_EDDINGTON_CRITICAL 2       // This is a basically the modified Shakura-Synyaev disk profile from Strubbe & Quataert (2009)
 //OLD #define DISK_TPROFILE_YSO               2       // The so-called YSO option was created for the YSO case
   int disk_tprofile;            /* This is an variable used to specify a standard accretion disk (0) or
                                    one that has been read in and stored. */

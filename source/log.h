@@ -41,7 +41,7 @@ int Log_flush(void);
 int Log_set_mpi_rank(int rank, int n_mpi);
 int Log_parallel(char *format, ...);
 int Debug(char *format, ...);
-void Exit(int error_code);
+void Exit_python(int error_code);
 /* synonyms.c */
 int get_question_name_length(char question[]);
 int are_synonym_lists_valid(void);
