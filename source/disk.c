@@ -47,7 +47,11 @@ tdisk (m, mdot, r)
 {
   double t;
 
-  if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
+  if (geo.disk_tprofile == DISK_TPROFILE_READIN)
+  {
+    return 0;
+  }
+  else if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
   {
     t = 3. * GRAV / (8. * PI * STEFAN_BOLTZMANN) * m * mdot / (r * r * r);
     t = pow (t, 0.25);
@@ -59,7 +63,7 @@ tdisk (m, mdot, r)
   }
   else
   {
-    Error ("Unknown disc temperature profile type %d for function tdisk\n", geo.disk_tprofile);
+    Error ("tdisk: unknown disc temperature profile of type %d\n", geo.disk_tprofile);
     Exit (1);
   }
 
@@ -104,10 +108,12 @@ double
 teff (t, x)
      double t, x;
 {
-  double q = 0;
+  double q;
   double theat, r;
   double temp;
   int kkk;
+  double rg, risco, fnt, ledd, mdot;
+  double q1, q2, q3;
 
   if (x < 1)
   {
@@ -174,21 +180,29 @@ teff (t, x)
   {
     x *= geo.rstar;
 
-    double rg = GRAV * geo.mstar / (VLIGHT * VLIGHT);
-    double risco = 6 * rg;
-    double fnt = 1 - sqrt (risco / x);
-    double ledd = 4 * PI * GRAV * geo.mstar * VLIGHT * MPROT / THOMPSON;
-    double MSOL_PER_YEAR = 6.305286e25;
-    double mdot = geo.disk_mdot / MSOL_PER_YEAR;
+    /*
+     * Calculate the constants within the equation
+     */
 
-    double q1 = fnt / (x * x * x);
-    double q2 = 0.25 + 6 * fnt * pow (mdot * VLIGHT * VLIGHT / ledd, 2) * pow (x / rg, -2);
-    double q3 = pow (pow (q2, 0.5) + 0.5, -1);
+    rg = GRAV * geo.mstar / (VLIGHT * VLIGHT);
+    risco = 6 * rg;
+    fnt = 1 - sqrt (risco / x);
+    ledd = 4 * PI * GRAV * geo.mstar * VLIGHT * MPROT / THOMPSON;
+    mdot = geo.disk_mdot / (MSOL / YR);  // Needs to be converted from msol/yr into g/s
+
+    /*
+     * Now calculate the effective temperature given all the parameters and
+     * constants
+     */
+
+    q1 = fnt / (x * x * x);
+    q2 = sqrt (0.25 + 6 * fnt * pow (mdot * VLIGHT * VLIGHT / ledd, 2) * pow (x / rg, -2));
+    q3 = 1 / (0.5 + q2);
     q = t * pow (q1 * q3, 0.25);
   }
   else
   {
-    Error ("Unknown disc temperature profile type %d or invalid temperature profile provided\n", geo.disk_tprofile);
+    Error ("teff: unknown disc temperature profile of type %d\n", geo.disk_tprofile);
     Exit (1);
   }
 

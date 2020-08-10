@@ -69,7 +69,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
   double logdr, logrmin, logrmax, logr;
   double f, ltot;
   double q1;
-  int nrings, i, icheck;
+  int nrings, i;
   int spectype;
   double emit;
 
@@ -131,7 +131,6 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
   q1 = 2. * PI;
 
   (*ftot) = 0;
-  icheck = 0;
 
   for (logr = logrmin; logr < logrmax; logr += logdr)
   {
@@ -154,8 +153,6 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
 
 
   (*ftot) *= q1;
-
-
 
   /* If *ftot is 0 in this energy range then all the photons come elsewhere, e. g. the star or BL  */
 
