@@ -436,7 +436,7 @@ int matom_emiss_report(void);
 double disk_init(double rmin, double rmax, double m, double mdot, double freqmin, double freqmax, int ioniz_or_final, double *ftot);
 int qdisk_init(double rmin, double rmax, double m, double mdot);
 int qdisk_save(char *diskfile, double ztot);
-int read_non_standard_disk_profile(char *tprofile);
+int read_non_standard_disk_profile(char *filename);
 /* direct_ion.c */
 int compute_di_coeffs(double T);
 double q_ioniz_dere(int nion, double t_e);

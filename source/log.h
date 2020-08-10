@@ -47,15 +47,4 @@ int get_question_name_length(char question[]);
 int are_synonym_lists_valid(void);
 int is_input_line_synonym_for_question(char question[], char input_line[]);
 
-/*
- * This macro was added to avoid compiler warnings as the compiler is unable
- * to recognise that ExitPython will cause the program to abort. This fixes
- * warnings where the compiler thinks an uninitialized value will be used or
- * returned from a function.
- */
 
-#define Exit(error_code) \
-{ \
-  Exit_python(error_code);\
-  exit(error_code);\
-}

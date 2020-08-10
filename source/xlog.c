@@ -81,7 +81,7 @@
  ***********************************************************/
 
 #ifdef MPI_ON
-#include <mpi.h>
+  #include <mpi.h>
 #endif
 
 #include <stdio.h>
@@ -120,12 +120,12 @@ typedef struct error_log
 
 ErrorPtr errorlog;
 
-
 int nerrors;
 
 FILE *diagptr;
 int init_log = 0;
 int log_verbosity = 5;          // A parameter which can be used to suppress what would normally be logged or printed
+
 
 /**********************************************************/
 /** 
@@ -876,7 +876,7 @@ Exit_python (int error_code)
 {
   if (error_code == 0)
   {
-    Log_parallel ("!!Exit: error codes should be non-zero!\n", my_rank);
+    Log_parallel ("!!Exit %04i: programming error! Error codes should be non-zero!\n", my_rank);
     error_code = EXIT_FAILURE;
   }
 
@@ -888,9 +888,13 @@ Exit_python (int error_code)
   error_summary_parallel ("summary prior to abort");
 
   if (n_mpi_procs > 1)
-    MPI_Abort (MPI_COMM_WORLD, error_code);
+  {
+    MPI_Abort(MPI_COMM_WORLD, error_code);
+  }
   else
-    exit (error_code);
+  {
+    exit(error_code);
+  }
 #else
   Log ("--------------------------------------------------------------------------\n" "Aborting: exiting with error %i\n", error_code);
   error_summary ("summary prior to abort");

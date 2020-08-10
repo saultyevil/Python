@@ -393,67 +393,58 @@ qdisk_save (diskfile, ztot)
 /** 
  * @brief      Read the temperature profile from a file
  *
- * @param [in, out] char *  tprofile   Name of the input file
+ * @param [in, out] char *filename   Name of the input file
  * @return     Always returns 0
  *
- * The input format for the file to be read in is quite spefic
- * The first line should contina the number of points n
- * the profile
- *
- * Subsequent lines should contian a radius and a temperarue
- *
- * The radius values shoule be in units of 1e11 cm
- * The temperature should be in units of 1000K
- *
  * ###Notes###
- *
- * @bug This routine which was written for the YSO study
- *  needs to be made less YSO centric. It should also be
- *  retested.
  *
  **********************************************************/
 
 int
-read_non_standard_disk_profile (tprofile)
-     char *tprofile;
+read_non_standard_disk_profile (filename)
+     char *filename;
 {
 
-  FILE *fopen (), *fptr;
+  FILE *fptr;
   int n;
-  float dumflt1, dumflt2;
+  float radius, temperature;
 
   char *line;
   size_t buffsize = LINELENGTH;
 
-  if ((fptr = fopen (tprofile, "r")) == NULL)
+  if ((fptr = fopen(filename, "r")) == NULL)
   {
-    Error ("Could not open filename %s\n", tprofile);
-    Exit (0);
+    Error("Could not open filename %s\n", filename);
+    Exit(1);
   }
 
   line = (char *) malloc (buffsize * sizeof (char));
-  blmod.n_blpts = 0;
+  if (line == NULL)
+  {
+    Error("read_non_standard_disk_profile: unable to allocate memory to read in temperature profile\n");
+    Exit(1);
+  }
 
+  blmod.n_blpts = 0;
 
   while (getline (&line, &buffsize, fptr) > 0)
   {
-    n = sscanf (line, "%g %g", &dumflt1, &dumflt2);
+    n = sscanf(line, "%g %g", &radius, &temperature);
     if (n == 2)
     {
-      blmod.r[blmod.n_blpts] = dumflt1;
-      blmod.t[blmod.n_blpts] = dumflt2;
+      blmod.r[blmod.n_blpts] = radius;
+      blmod.t[blmod.n_blpts] = temperature;
       blmod.n_blpts += 1;
     }
     else
     {
-      Error ("read_non_standard_disk_file: could not convert a line in %s, OK if comment\n", tprofile);
+      Error("read_non_standard_disk_file: could not convert a line in %s, OK if comment\n", filename);
     }
 
     if (blmod.n_blpts == NBLMODEL)
     {
-      Error ("read_non_standard_disk_file: More than %d points in %s; increase NBLMODEL\n", NBLMODEL, tprofile);
+      Error("read_non_standard_disk_file: More than %d points in %s; increase NBLMODEL\n", NBLMODEL, filename);
       Exit (1);
-
     }
   }
 
@@ -465,19 +456,7 @@ read_non_standard_disk_profile (tprofile)
     Log ("read_non_standard_disk_profile: Portions of the disk outside are treated as part of a steady state disk\n");
   }
 
-
-
-//OLD  result = fscanf (fptr, "%d\n", &dumint);
-//OLD  blmod.n_blpts = dumint;
-
-
-//OLD  for (n = 0; n < blmod.n_blpts; n++)
-//OLD  {
-//OLD    result = fscanf (fptr, "%g %g", &dumflt1, &dumflt2);
-//OLD    blmod.r[n] = dumflt1 * 1.e11;
-//OLD    blmod.t[n] = dumflt2 * 1.e3;
-//OLD  }
-
+  free(line);
   fclose (fptr);
 
   return (0);

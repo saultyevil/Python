@@ -115,11 +115,19 @@ teff (t, x)
     return (0.0);
   }
 
-  if ((geo.disk_tprofile == DISK_TPROFILE_READIN) && ((x * geo.rstar) < blmod.r[blmod.n_blpts - 1]))
+  if (geo.disk_tprofile == DISK_TPROFILE_READIN)
   {
+    if (x * geo.rstar > blmod.r[blmod.n_blpts - 1])
+    {
+      Error("teff: the provided radius R = %e is outside the read in temperature profile of max radius %e\n", x * geo.rstar,
+            blmod.r[blmod.n_blpts - 1]);
+      Exit(1);
+    }
+
     /* This is the case where the temperature profile is read in as an array, and so we
        simply find the array elements that bracket the requested radius and do a linear
        interpolation to calculate the temperature at the requested radius. */
+
     if ((r = (x * geo.rstar)) < blmod.r[0])
     {
       return (blmod.t[0]);

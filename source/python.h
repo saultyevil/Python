@@ -25,6 +25,18 @@ int verbosity;                  /* verbosity level. 0 low, 10 is high */
 #include "log.h"
 #include "strict.h"
 
+/*
+ * This macro was added to avoid compiler warnings as the compiler is unable
+ * to recognise that ExitPython will cause the program to abort. This fixes
+ * warnings where the compiler thinks an uninitialized value will be used or
+ * returned from a function.
+ */
+
+#define Exit(error_code) \
+{ \
+  Exit_python(error_code);\
+  exit(error_code);\
+}
 
 /* In python_43 the assignment of the WindPtr size has been moved from a fixed
 value determined by values in python.h to a values which are adjustable from
