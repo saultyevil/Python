@@ -1077,41 +1077,50 @@ photo_gen_disk (p, weight, f1, f2, spectype, istart, nphot)
 /**
  * @brief      write information about the disk to a file
  *
- * @param [in out] char  filename[]   The name of the file
- * @param [in out] char  mode[]   A switch to determine whther to
- * write a new file or append to an existing file
+ * @param [in] char  filename[]   The name of the file
+ * @param [in] char  mode[]       A switch to determine whether to write a new
+ *                                file or append to an existing file
  * @return     Always returns 0
  *
  * @details
- * The routine normal writes the disk.diag file.  It provides
- * infomration not only about the rings used, but also about
- * the number of photons that hit each ring,
+ * The routine normally writes the python.phot file. It provides
+ * information not only about the disk rings used, but also about
+ * the number of photons which hit each ring.
  *
  * ### Notes ###
- *
- * This routine is now well-named
  *
  **********************************************************/
 
 int
-phot_gen_sum (filename, mode)
+disk_phot_gen_sum (filename, mode)
      char filename[], mode[];
 {
-  FILE *fopen (), *ptr;
+  FILE *ptr;
   int n;
   double x;
+
   if (mode[0] == 'a')
+  {
     ptr = fopen (filename, "a");
+  }
   else
+  {
     ptr = fopen (filename, "w");
-  fprintf (ptr, "Ring     r      t      nphot   dN/dr\n");
+  }
+
+  fprintf (ptr, "ring     r      t      nphot   dN/dr     nhit\n");
+
   for (n = 0; n < NRINGS; n++)
   {
     if (n == 0)
+    {
       x = 0;
+    }
     else
+    {
       x = disk.nphot[n] / (disk.r[n] - disk.r[n - 1]);
-    fprintf (ptr, "%d %8.2e %8.2e %8d %8.2e %8d\n", n, disk.r[n], disk.t[n], disk.nphot[n], x, disk.nhit[n]);
+    }
+    fprintf (ptr, "%d %8.7e %8.7e %8d %8.7e %8d\n", n, disk.r[n], disk.t[n], disk.nphot[n], x, disk.nhit[n]);
   }
 
   fclose (ptr);

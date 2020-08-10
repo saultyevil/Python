@@ -325,8 +325,7 @@ calculate_ionization (restart_stat)
       spectrum_summary (files.lwspec, 0, 6, SPECTYPE_RAW, 1., 1, 0);    /* .log_spec_tot */
       spectrum_summary (files.wspec_wind, 0, 6, SPECTYPE_RAW, 1., 0, 1);        /* .spec_tot_wind  */
       spectrum_summary (files.lwspec_wind, 0, 6, SPECTYPE_RAW, 1., 1, 1);       /* .log_spec_tot_wind */
-      phot_gen_sum (files.phot, "w");   /* Save info about the way photons are created and absorbed
-                                           by the disk */
+      disk_phot_gen_sum (files.phot, "w");      /* Save info about the way photons are created and absorbed by the disk */
 #ifdef MPI_ON
     }
     MPI_Barrier (MPI_COMM_WORLD);
@@ -625,7 +624,7 @@ make_spectra (restart_stat)
   if (rank_global == 0)
   {
 #endif
-    phot_gen_sum (files.phot, "a");
+    disk_phot_gen_sum (files.phot, "a");
 #ifdef MPI_ON
   }
 #endif

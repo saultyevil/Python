@@ -238,6 +238,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
     disk.t_hit[nrings] = 0;
   }
   geo.lum_disk = ltot;
+
   return (ltot);
 }
 
@@ -409,42 +410,46 @@ read_non_standard_disk_profile (filename)
   char *line;
   size_t buffsize = LINELENGTH;
 
-  if ((fptr = fopen(filename, "r")) == NULL)
+  if ((fptr = fopen (filename, "r")) == NULL)
   {
-    Error("Could not open filename %s\n", filename);
-    Exit(1);
+    Error ("Could not open filename %s\n", filename);
+    Exit (1);
   }
 
   line = (char *) malloc (buffsize * sizeof (char));
   if (line == NULL)
   {
-    Error("read_non_standard_disk_profile: unable to allocate memory to read in temperature profile\n");
-    Exit(1);
+    Error ("read_non_standard_disk_profile: unable to allocate memory to read in temperature profile\n");
+    Exit (1);
   }
 
   blmod.n_blpts = 0;
 
   while (getline (&line, &buffsize, fptr) > 0)
   {
-    n = sscanf(line, "%g %g", &radius, &temperature);
+    n = sscanf (line, "%g %g", &radius, &temperature);
     if (n == 2)
     {
       blmod.r[blmod.n_blpts] = radius;
       blmod.t[blmod.n_blpts] = temperature;
       blmod.n_blpts += 1;
+      if (blmod.n_blpts > 2 && blmod.r[blmod.n_blpts - 1] < blmod.r[blmod.n_blpts - 2])
+      {
+        Error ("read_non_standard_disk_profile: radii in temperature profile should be increasing in size\n");
+        Exit (1);
+      }
     }
     else
     {
-      Error("read_non_standard_disk_file: could not convert a line in %s, OK if comment\n", filename);
+      Error ("read_non_standard_disk_file: could not convert a line in %s, OK if comment\n", filename);
     }
 
     if (blmod.n_blpts == NBLMODEL)
     {
-      Error("read_non_standard_disk_file: More than %d points in %s; increase NBLMODEL\n", NBLMODEL, filename);
+      Error ("read_non_standard_disk_file: More than %d points in %s; increase NBLMODEL\n", NBLMODEL, filename);
       Exit (1);
     }
   }
-
 
   if (geo.diskrad > blmod.r[blmod.n_blpts - 1])
   {
@@ -453,7 +458,7 @@ read_non_standard_disk_profile (filename)
     Log ("read_non_standard_disk_profile: Portions of the disk outside are treated as part of a steady state disk\n");
   }
 
-  free(line);
+  free (line);
   fclose (fptr);
 
   return (0);

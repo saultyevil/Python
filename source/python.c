@@ -572,15 +572,8 @@ main (argc, argv)
   }
 
 
-
-
-
-
   /* Now define the wind cones generically. modifies the global windcone structure */
   setup_windcone ();
-
-
-
 
   /* initialize the random number generator */
   /* By default, the random number generator start with fixed seeds (differnt
@@ -606,8 +599,16 @@ main (argc, argv)
      sets the push through distance depending on the size of the system.
    */
 
-//  DFUDGE = setup_dfudge ();
   DFUDGE = setup_dfudge ();
+
+  /*
+   * If required, read in a non-standard disk temperature profile
+   * NOTE THAT THIS HAS TO BE DONE BEFORE THE WIND IS SETUP
+   */
+  if (geo.disk_tprofile == DISK_TPROFILE_READIN)
+  {
+    read_non_standard_disk_profile (files.tprofile);
+  }
 
   /* Next line finally defines the wind if this is the initial time this model is being run */
 
@@ -638,11 +639,6 @@ main (argc, argv)
 
 
 
-  /* If required, read in a non-standard disk temperature profile */
-  if (geo.disk_tprofile == 1)
-  {
-    read_non_standard_disk_profile (files.tprofile);
-  }
 
 
 

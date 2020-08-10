@@ -121,15 +121,13 @@ teff (t, x)
     return (0.0);
   }
 
-  if (geo.disk_tprofile == DISK_TPROFILE_READIN)
-  {
-    if (x * geo.rstar > blmod.r[blmod.n_blpts - 1])
-    {
-      Error("teff: the provided radius R = %e is outside the read in temperature profile of max radius %e\n", x * geo.rstar,
-            blmod.r[blmod.n_blpts - 1]);
-      Exit(1);
-    }
+  /*
+   *  For points which exceed the maximum radius in the temperature profile, a
+   *  steady state disk will be used instead
+   */
 
+  if (geo.disk_tprofile == DISK_TPROFILE_READIN && x * geo.rstar < blmod.r[blmod.n_blpts - 1])
+  {
     /* This is the case where the temperature profile is read in as an array, and so we
        simply find the array elements that bracket the requested radius and do a linear
        interpolation to calculate the temperature at the requested radius. */
@@ -144,7 +142,31 @@ teff (t, x)
       return (temp);
     }
   }
-  else if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
+  else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
+  {
+    x *= geo.rstar;
+
+    /*
+     * Calculate the constants within the equation
+     */
+
+    rg = GRAV * geo.mstar / (VLIGHT * VLIGHT);
+    risco = 6 * rg;
+    fnt = 1 - sqrt (risco / x);
+    ledd = 4 * PI * GRAV * geo.mstar * VLIGHT * MPROT / THOMPSON;
+    mdot = geo.disk_mdot / (MSOL / YR); // Needs to be converted from msol/yr into g/s
+
+    /*
+     * Now calculate the effective temperature given all the parameters and
+     * constants
+     */
+
+    q1 = fnt / (x * x * x);
+    q2 = sqrt (0.25 + 6 * fnt * pow (mdot * VLIGHT * VLIGHT / ledd, 2) * pow (x / rg, -2));
+    q3 = 1 / (0.5 + q2);
+    q = t * pow (q1 * q3, 0.25);
+  }
+  else
   {
     /* This is a standard accretion disk */
 
@@ -175,35 +197,6 @@ teff (t, x)
       /* T_eff is given by T_eff**4= T_disk**4+Heating/area/STEFAN_BOLTZMANN */
       q = pow (q * q * q * q + (theat / STEFAN_BOLTZMANN), 0.25);
     }
-  }
-  else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
-  {
-    x *= geo.rstar;
-
-    /*
-     * Calculate the constants within the equation
-     */
-
-    rg = GRAV * geo.mstar / (VLIGHT * VLIGHT);
-    risco = 6 * rg;
-    fnt = 1 - sqrt (risco / x);
-    ledd = 4 * PI * GRAV * geo.mstar * VLIGHT * MPROT / THOMPSON;
-    mdot = geo.disk_mdot / (MSOL / YR);  // Needs to be converted from msol/yr into g/s
-
-    /*
-     * Now calculate the effective temperature given all the parameters and
-     * constants
-     */
-
-    q1 = fnt / (x * x * x);
-    q2 = sqrt (0.25 + 6 * fnt * pow (mdot * VLIGHT * VLIGHT / ledd, 2) * pow (x / rg, -2));
-    q3 = 1 / (0.5 + q2);
-    q = t * pow (q1 * q3, 0.25);
-  }
-  else
-  {
-    Error ("teff: unknown disc temperature profile of type %d\n", geo.disk_tprofile);
-    Exit (1);
   }
 
   return (q);

@@ -43,7 +43,7 @@ int xmake_phot(PhotPtr p, double f1, double f2, int ioniz_or_final, int iwind, d
 int star_init(double freqmin, double freqmax, int ioniz_or_final, double *f);
 int photo_gen_star(PhotPtr p, double r, double t, double weight, double f1, double f2, int spectype, int istart, int nphot);
 int photo_gen_disk(PhotPtr p, double weight, double f1, double f2, int spectype, int istart, int nphot);
-int phot_gen_sum(char filename[], char mode[]);
+int disk_phot_gen_sum(char filename[], char mode[]);
 double bl_init(double lum_bl, double t_bl, double freqmin, double freqmax, int ioniz_or_final, double *f);
 int photon_checks(PhotPtr p, double freqmin, double freqmax, char *comment);
 /* parse.c */
