@@ -81,7 +81,7 @@
  ***********************************************************/
 
 #ifdef MPI_ON
-  #include <mpi.h>
+#include <mpi.h>
 #endif
 
 #include <stdio.h>
@@ -91,6 +91,7 @@
 #include <math.h>
 
 #include "log.h"
+#include "macros.h"
 
 #define LINELENGTH 256
 #define NERROR_MAX 500          // Number of different errors that are recorded
@@ -889,11 +890,11 @@ Exit_python (int error_code)
 
   if (n_mpi_procs > 1)
   {
-    MPI_Abort(MPI_COMM_WORLD, error_code);
+    MPI_Abort (MPI_COMM_WORLD, error_code);
   }
   else
   {
-    exit(error_code);
+    exit (error_code);
   }
 #else
   Log ("--------------------------------------------------------------------------\n" "Aborting: exiting with error %i\n", error_code);

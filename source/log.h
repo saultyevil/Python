@@ -46,5 +46,3 @@ void Exit_python(int error_code);
 int get_question_name_length(char question[]);
 int are_synonym_lists_valid(void);
 int is_input_line_synonym_for_question(char question[], char input_line[]);
-
-

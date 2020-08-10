@@ -16,6 +16,7 @@
 
 #include "atomic.h"
 #include "log.h"
+
 // If routines are added cproto > atomic_proto.h should be run
 #include "atomic_proto.h"
 
@@ -2664,7 +2665,7 @@ or zero so that simple checks of true and false can be used for them */
   if (ierr)
   {
     Error ("atomicdata: Exiting because of inconsistencies in atomic data\n");
-    Exit (0);
+    exit (0);
   }
 
 

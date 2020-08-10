@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include "log.h"
+#include "macros.h"
 
 
 /**********************************************************/
