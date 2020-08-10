@@ -1,9 +1,9 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 '''
                     Space Telescope Science Institute
 
-Synopsis:  
+Synopsis:
 
 Indent in a controlled manner the .c files used by Python
 
@@ -15,7 +15,7 @@ Command line usage (if any):
            run_indent.py *.h to indent all of the .h files
            run_indent -all to indent all of the c and .h files
 
-Description:  
+Description:
 
 Primary routines:
 
@@ -26,9 +26,9 @@ Primary routines:
 Notes:
 
     Files are not updated unless indent produces a new result
-    
+
     If gnuindent is not found the program will do nothing
-                                       
+
 History:
 
 180913 ksl Coding begun
@@ -99,7 +99,7 @@ def doit(filename='lines.c'):
 
     The indented version is first written to another
     file.  Then we check to see if the indented file
-    is different from the original.  
+    is different from the original.
 
     If the newly indented version is differnt from the
     original, then it is copied back to the original.
@@ -112,13 +112,27 @@ def doit(filename='lines.c'):
 
 
     '''
+
     indent=get_gnu()
     if indent=='':
         return
 
+    # This checks that the line endings are correct, as indent expects Unix
+    # line endings. If they are CRLF (Windows), then the indent has undefined
+    # behavior and results
+
+    with open(filename, "r") as f:
+        line = f.readline()
+
+    if line.find("\r\n") != -1:
+        print("Converting %s from CRLF to Unix LF line endings" % (filename))
+        copyfile(filename, filename + ".bak")
+        with open(filename, "U") as f:
+            text = f.read()  # Automatic ("Universal read") conversion of newlines to "\n"
+        with open(filename, "w") as f:
+            f.write(text)  # Writes newlines for the platform running the program, which should be Unix based
+
     indent_command='%s -gnu -l140 -bli0 -nut -o foo.txt %s' % (indent,filename)
-
-
 
     print(indent_command)
     proc = subprocess.Popen(indent_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -152,9 +166,9 @@ def do_all(ignore_list=None):
     '''
     Indent all of the .c and .h files in a directory in a standard way
 
-    ignore_list     list of file strings to ignore 
+    ignore_list     list of file strings to ignore
                     if NoneType or blank array then nothing is ignored
-                    gets converted to numpy array inside function 
+                    gets converted to numpy array inside function
     '''
     if get_gnu()=='':
         return
@@ -163,8 +177,8 @@ def do_all(ignore_list=None):
     ignore_list = numpy.array(ignore_list)
 
     for one in files:
-        # test if the file is in the "ignore" list 
-        # np.array() ensures this works even if ignore_list is Nonetype 
+        # test if the file is in the "ignore" list
+        # np.array() ensures this works even if ignore_list is Nonetype
         # or has zero length (prevents TypeError)
         ignore = (one == ignore_list).any()
 
@@ -226,7 +240,7 @@ def steer(argv):
         if argv[i]=='-all':
             do_all()
             return
-        # exclude python prototype files 
+        # exclude python prototype files
         if argv[i]=='-all_no_headers':
             do_all(ignore_list=["atomic_proto.h", "templates.h", "log.h"])
             return
