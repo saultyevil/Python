@@ -202,7 +202,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
       nrings++;
       if (nrings >= NRINGS)
       {
-//        Error_silent ("disk_init: Got to ftot %e at r %e < rmax %e. OK if freqs are high\n", f, r, rmax);             Not *really* an error, the error below deals with a *real* problem.
+        /* Not *really* an error, the error below deals with a *real* problem. */
         break;
       }
     }
@@ -238,7 +238,6 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
     disk.t_hit[nrings] = 0;
   }
   geo.lum_disk = ltot;
-
   return (ltot);
 }
 

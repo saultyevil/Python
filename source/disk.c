@@ -112,7 +112,7 @@ teff (t, x)
   double theat, r;
   double temp;
   int kkk;
-  double rg, risco, fnt, ledd, mdot;
+  double rg, risco, fnt, ledd;
   double q1, q2, q3;
 
   if (x < 1)
@@ -154,7 +154,6 @@ teff (t, x)
     risco = 6 * rg;
     fnt = 1 - sqrt (risco / x);
     ledd = 4 * PI * GRAV * geo.mstar * VLIGHT * MPROT / THOMPSON;
-    mdot = geo.disk_mdot / (MSOL / YR); // Needs to be converted from msol/yr into g/s
 
     /*
      * Now calculate the effective temperature given all the parameters and
@@ -162,7 +161,7 @@ teff (t, x)
      */
 
     q1 = fnt / (x * x * x);
-    q2 = sqrt (0.25 + 6 * fnt * pow (mdot * VLIGHT * VLIGHT / ledd, 2) * pow (x / rg, -2));
+    q2 = sqrt (0.25 + 6 * fnt * pow ((geo.disk_mdot * VLIGHT * VLIGHT / ledd), 2) * pow (x / rg, -2));
     q3 = 1 / (0.5 + q2);
     q = t * pow (q1 * q3, 0.25);
   }
@@ -170,8 +169,8 @@ teff (t, x)
   {
     /* This is a standard accretion disk */
 
-    q = (1.e0 - pow (x, -0.5e0)) / (x * x * x);
-    q = t * pow (q, 0.25e0);
+    q = (1 - pow (x, -0.5)) / (x * x * x);
+    q = t * pow (q, 0.25);
 
     /*
      * Absorb photons and increase t so that heat is radiated but only do this
