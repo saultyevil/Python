@@ -102,18 +102,6 @@ ion_abundances (PlasmaPtr xplasma, int mode)
     exit (EXIT_FAILURE);        // avoids compiler warnings about return being uninitialized
   }
 
-  /* If we want the Auger effect deal with it now. Initially, this is
-     put in here, right at the end of the ionization calculation -
-     the assumption is that the Auger effect is only for making minor
-     ions so that the ionization balance of the other ions is not
-     affected in an important way. */
-
-//OLD    if (geo.auger_ionization == 1)
-//OLD    {
-//OLD      auger_ionization (xplasma);
-//OLD    }
-
-
   return (ireturn);
 
 }
