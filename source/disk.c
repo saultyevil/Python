@@ -47,25 +47,16 @@ tdisk (m, mdot, r)
 {
   double t;
 
-  if (geo.disk_tprofile == DISK_TPROFILE_READIN)
-  {
-    return 0;
-  }
-  else if (geo.disk_tprofile == DISK_TPROFILE_STANDARD)
-  {
-    t = 3. * GRAV / (8. * PI * STEFAN_BOLTZMANN) * m * mdot / (r * r * r);
-    t = pow (t, 0.25);
-  }
-  else if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
+  if (geo.disk_tprofile == DISK_TPROFILE_EDDINGTON_CRITICAL)
   {
     t = 3 * GRAV * m * mdot / (8 * PI * STEFAN_BOLTZMANN);
-    t = pow (t, 0.25);
   }
   else
   {
-    Error ("tdisk: unknown disc temperature profile of type %d\n", geo.disk_tprofile);
-    Exit (1);
+    t = 3 * GRAV / (8 * PI * STEFAN_BOLTZMANN) * m * mdot / (r * r * r);
   }
+
+  t = pow (t, 0.25);
 
   return (t);
 }
