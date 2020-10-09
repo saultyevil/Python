@@ -32,9 +32,9 @@ double xexp_temp, xexp_w;
  * @brief      int calculates the photoionization rate coefficient for an ion in a given cell
  *
  * @param [in] int  nion   The ion being ionized (or the index to an inner shell cross section)
- * @param [in] PlasmaPtr  xplasma   The cell in question - note that the details of the model is stored in this structure
- * @param [in] int  mode says whether to use a piecewise model (1) or a blackbody model (2) for J_nu
- * @param [in, out] type says whether we are computing an outer shell (1) or inner shell (2) rate
+ * @param [in] PlasmaPtr  xplasma   The cell for which rates are calulated
+ * @param [in] int  mode Use either a piecewise model (1) or a blackbody model (2) for J_nu
+ * @param [in] type Compute either an outer shell (1) or inner shell (2) rate
  * @return     The photioinization rate coefficient for the ion.
  *
  * @details

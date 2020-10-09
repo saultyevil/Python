@@ -45,7 +45,8 @@ History:
 
 import sys
 import numpy
-import pylab
+import matplotlib.pyplot as pylab
+import matplotlib.ticker as mtick
 from scipy.signal import boxcar
 from scipy.signal import convolve
 from scipy.optimize import leastsq
@@ -150,10 +151,15 @@ def do_all_angles_ev(rootname='sv',smooth=21,emin=1000,emax=9000,fmax=0,fig_no=1
 
     HEV=4.136e-15
 
-    # Now determine what the coluns containing real spectra are
+    # Now determine what the columns containing real spectra are
     # while makeing the manes simpler
+    # Find where to start
+    i=0
+    while i<len(data.colnames):
+        if data.colnames[i][0]=='A':
+            break
+        i+=1
     cols=[]
-    i=9
     while i<len(data.colnames):
         one=data.colnames[i]
         # print 'gotcha',one 
@@ -222,7 +228,13 @@ def do_all_angles(rootname='sv',smooth=21,wmin=850,wmax=1850,fmax=0,fig_no=1, ti
     # Now determine what the coluns containing real spectra are
     # while makeing the manes simpler
     cols=[]
-    i=9
+    # Find where to start
+    i=0
+    while i<len(data.colnames):
+        if data.colnames[i][0]=='A':
+            break
+        i+=1
+    # i=9
     while i<len(data.colnames):
         one=data.colnames[i]
         # print 'gotcha',one 
@@ -277,6 +289,122 @@ def do_all_angles(rootname='sv',smooth=21,wmin=850,wmax=1850,fmax=0,fig_no=1, ti
     plotfile=root+'.png'
     pylab.savefig(plotfile)
     return plotfile
+
+
+def do_mosaic(rootname='sv',smooth=21,wmin=850,wmax=1850,fmax=0,fig_no=1, title=None):
+    '''
+    Plot each of the spectra where
+
+    smooth is the number of bins to boxcar smooth
+    fmax sets the ylim of the plot, assuming it is not zero
+
+    and other values should be obvious.
+
+    140907    ksl    Updated to include fmax
+    140912    ksl    Updated so uses rootname 
+    141124    ksl    Updated for new formats which use astropy
+    '''
+
+    filename=rootname+'.spec'
+
+    try:
+        data=ascii.read(filename)
+    except IOError:
+        print('Error: Could not find %s' % filename)
+        return 'None'
+
+    # print(data.colnames)
+
+    # Now determine what the coluns containing real spectra are
+    # while makeing the manes simpler
+    cols=[]
+    # Find where to start
+    i=0
+    while i<len(data.colnames):
+        if data.colnames[i][0]=='A':
+            break
+        i+=1
+    # i=9
+    while i<len(data.colnames):
+        one=data.colnames[i]
+        # print 'gotcha',one 
+        new_name=one.replace('P0.50','')
+        new_name=new_name.replace('A','')
+        data.rename_column(one,new_name)
+        cols.append(new_name)
+        i=i+1
+
+
+
+    root=rootname
+
+        # if wmin and wmax are not specified, use wmin and wmax from input file
+
+    if wmin==0 or wmax==0:
+        xwave=numpy.array(data['Lambda'])
+        xmin=numpy.min(xwave)
+        xmax=numpy.max(xwave)
+        if wmin==0:
+            wmin=xmin
+        if wmax==0:
+            wmax=xmax
+
+
+    nspectra=len(cols)
+
+    print(nspectra)
+
+
+
+
+
+    fig=pylab.figure(fig_no)
+    if nspectra>1:
+        fig.set_figheight(3*nspectra)
+    else:
+        fig.set_figheight(6)
+
+    fig.set_figwidth(9)
+
+    pylab.clf()
+
+    ax=fig.add_subplot(1,1,1,frame_on=False)
+    pylab.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+    pylab.grid(False)
+    ax.set_xlabel(r'Wavelength ($\AA$)',size=14)
+    ax.set_ylabel(r'Flux (ergs cm$^{-2}$ s$^{-1}$ $\AA^{-1}$)',size=14)
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%5.1e'))
+
+    if title == None:
+        title = root
+    ax.set_title(title,size=14)
+
+    # print(cols)
+
+    i=1
+    for col in cols:
+        # pylab.subplot(nspectra,1,i)
+        xx=fig.add_subplot(nspectra,1,i)
+        xx.yaxis.set_major_formatter(mtick.FormatStrFormatter('%5.1e'))
+        flux=data[col]
+        # print(flux)
+        xlabel=col+'$^{\circ}$'
+        q=convolve(flux,boxcar(smooth)/float(smooth),mode='same')
+        pylab.plot(data['Lambda'],q,'-',label=xlabel)
+        z=pylab.axis()
+        if fmax==0:
+            pylab.axis((wmin,wmax,0,z[3]))
+        else:
+            pylab.axis((wmin,wmax,0,fmax))
+        pylab.legend(loc='best')
+        pylab.tight_layout()
+        i+=1
+
+    # pylab.tight_layout()
+    plotfile=root+'.png'
+    pylab.savefig(plotfile)
+    return plotfile,nspectra
+
 
 
 def steer(argv):

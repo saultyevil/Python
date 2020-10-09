@@ -109,6 +109,7 @@ main (argc, argv)
   set_max_time (files.root, time_max);
 
   rel_mode = REL_MODE_LINEAR;
+  run_xtest = FALSE;
 
 
   /* Set the verbosity level for logging.  To get more info raise the verbosity level to a higher number. To
@@ -412,6 +413,22 @@ main (argc, argv)
   else
     Log ("There is no BH \n");
 
+  if (geo.rt_mode == RT_MODE_MACRO)
+  {
+    if (nlevels_macro == 0)
+    {
+      Error ("THIS IS A MACROATOM CALCULATION WITH NO MACROLEVELS\n");
+    }
+    else
+    {
+      Log ("This is a macro-atom calculation\n");
+    }
+  }
+  else
+  {
+    Log ("This is a simple atom calculation\n");
+  }
+
   /* Describe the spectra which will be extracted and the way it will be extracted */
 
   /* First initialise things to semi-reasonable values */
@@ -645,6 +662,14 @@ main (argc, argv)
   qdisk_init (geo.rstar, geo.diskrad, geo.mstar, geo.disk_mdot);        /* Initialize a disk qdisk to store the information about photons impinging on the disk */
   xsignal (files.root, "%-20s Finished initialization for %s\n", "NOK", files.root);
   check_time (files.root);
+
+  /* Allow for the possibility of running a special diagnostic mode in
+     a stand alone routine xtest. This will happen with the command line
+     option -xtest.  */
+  if (run_xtest)
+  {
+    xtest ();
+  }
 
 /* XXXX - THE CALCULATION OF THE IONIZATION OF THE WIND */
   geo.ioniz_or_extract = 1;     //SS July 04 - want to compute MC estimators during ionization cycles

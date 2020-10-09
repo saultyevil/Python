@@ -212,7 +212,7 @@ walls (p, pold, normal)
 
     s_disk = ds_to_disk (pold, 0, &hit_disk);   /* The 0 imples that s cannot be negative */
 
-    if (s_disk > 0 && p->ds > s_disk)
+    if (s_disk > 0 && s_disk < VERY_BIG && p->ds > s_disk)
     {
       /* This is the case where the photon hits the disk along 
          the line of sight between pold and p

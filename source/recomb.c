@@ -110,9 +110,9 @@ fb_topbase_partial (freq)
 
   /* JM -- below lines to address bug #195 */
   gn = 1;
-  if (ion[nion].phot_info > 0)  // it's a topbase record
+  if (ion[nion].phot_info > 0)// it's a topbase record
     gn = config[fb_xtop->nlev].g;
-  else if (ion[nion].phot_info == 0)    // it's a VFKY record, so shouldn't really use levels
+  else if (ion[nion].phot_info == 0)// it's a VFKY record, so shouldn't really use levels
     gn = ion[nion].g;
   else
   {

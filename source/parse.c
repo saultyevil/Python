@@ -155,6 +155,12 @@ parse_command_line (argc, argv)
         Log ("Using only full special relativity for Doppler shifts, etc.\n");
         j = i;
       }
+      else if (strcmp (argv[i], "-xtest") == 0)
+      {
+        run_xtest = TRUE;
+        Log ("Run xstest, usually instead of normal Python.\n");
+        j = i;
+      }
       else if (strcmp (argv[i], "-f") == 0)
       {
         modes.fixed_temp = 1;

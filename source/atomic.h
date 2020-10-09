@@ -124,8 +124,8 @@ typedef struct ions
                                    the same as first_nlte_level  (Name changed 080810 -- 62 */
   int nlte;                     /* Actual number of nlte levels for this ion */
   int phot_info;                /*-1 means there are no photoionization cross sections for this ion, 
-				 0  means the photoionization is given on an ion basis (e.g. for the 
-					ground state using VFKY and the xphot structure
+				   0  means the photoionization is given on an ion basis (e.g. for the 
+				   ground state using VFKY and the xphot structure
 				   1 means photoionization is given on a level basis, using topbase value
                                    Topbase photoinization trumps VFKY photoionization
 				  */
@@ -320,7 +320,7 @@ typedef struct topbase_phot
   int n_elec_yield;             /*Index to the electron yield array - only used for inner shell ionizations */
 //  int n_fluor_yield;            /*Inder to the fluorescent photon yield array - only used for inner shell ionizations */
   int macro_info;               /* Identifies whether line is to be treated using a Macro Atom approach.
-                                   set to -1 initially
+ u                                 set to -1 initially
                                    set to 0 if not a macro atom line  
                                    set to 1 if a macro atom line  (ksl 04 apr)
                                    Note: Program will exit before leaving get_atomicdata if not initallized to 0 or 1

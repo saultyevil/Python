@@ -93,7 +93,7 @@
  **********************************************************/
 
 char windsave2table_help[] = "Usage: windsave2table [-r or -s] [-h] [--version] rootname \n\
--d return denisities instead of ion fraction in ion tables \n\
+-d return densities instead of ion fraction in ion tables \n\
 -s return number of scatters per unit volume of an ion instead if ion fractions \n\
 -all creates a number of tables describing recombination, ionization rates etc. \n\
 --version return version info and quit \n\
@@ -148,7 +148,7 @@ parse_arguments (int argc, char *argv[], char root[], int *ion_switch)
       else if (!strncmp (argv[i], "-a", 2))
       {
         *ion_switch = 99;
-        printf ("Various files detailing inormation about each ion in a cell will be created");
+        printf ("Various files detailing information about each ion in a cell will be created");
       }
       else if (!strncmp (argv[i], "-h", 2))
       {

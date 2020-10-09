@@ -506,17 +506,8 @@ return and record an error */
 
     if (geo.ioniz_or_extract == 1)
     {
-      xplasma->ntot++;          // EP 11-19: Moved so only increments during ionisation cycles
-
-      /* For an ionization cycle */
+      /* Increment the bound-free estimators for macro-atoms */
       bf_estimators_increment (one, p, ds_current);
-
-      /*photon weight times distance in the shell is proportional to the mean intensity */
-      xplasma->j += p->w * ds_current;
-
-      /* frequency weighted by the weights and distance in the shell.  See eqn 2 ML93 */
-      xplasma->ave_freq += p->freq * p->w * ds_current;
-
     }
   }
   else

@@ -383,16 +383,17 @@ ds_to_disk (p, allow_negative, hit)
    * boundary.
    */
 
-  double s_disk, s_top, s_bot, s_cyl, s_cyl2, s;
+  double s_diskplane, s_top, s_bot, s_cyl, s_cyl2, s;
   double z_cyl, z_cyl2;
 
-  double r_disk, r_top, r_bot;
-  //rho at various positions
+  /* A variable used to describe whether the photon is inside a vertically extended disk */
+  double delta_z;
+
+  /* The next set of variables represent rho at various positions */
+  double r_diskplane, r_top, r_bot, r_hit;
   double r_phot;
-  //rho of the photon
 
   double smin, smax;
-  double delta;
 
   struct photon phit;
 
@@ -400,17 +401,18 @@ ds_to_disk (p, allow_negative, hit)
   smin = smax = 0.0;
 
 
+  /* Simply return is there is no disk */
   if (geo.disk_type == DISK_NONE)
   {
 
     *hit = DISK_MISSED;
-    return (VERY_BIG);          /* There is no disk! */
+    return (VERY_BIG);
   }
 
 
   /*
    * Initialize 3 structures that define the plane of the disk, and two
-   * other planes that encompass the disk
+   * other planes that encompass the disk.  
    */
 
   if (ds_to_disk_init == 0)
@@ -431,23 +433,25 @@ ds_to_disk (p, allow_negative, hit)
     diskbottom.lmn[2] = 1.0;
 
     ds_to_disk_init++;
-    //Only initialize once
 
   }
-  s_disk = ds_to_plane (&diskplane, p);
+
+  /* Find where the photon would hit the disk for the case of a FLAT disk */
+
+  s_diskplane = ds_to_plane (&diskplane, p);
   stuff_phot (p, &phit);
-  move_phot (&phit, s_disk);
-  r_disk = sqrt (phit.x[0] * phit.x[0] + phit.x[1] * phit.x[1]);
+  move_phot (&phit, s_diskplane);
+  r_diskplane = sqrt (phit.x[0] * phit.x[0] + phit.x[1] * phit.x[1]);
 
 
   if (geo.disk_type == DISK_FLAT)
   {
-    if (r_disk > geo.diskrad)
+    if (r_diskplane > geo.diskrad)
     {
       *hit = DISK_MISSED;
       return (VERY_BIG);
     }
-    else if (s_disk > 0 || allow_negative)
+    else if (s_diskplane > 0 || allow_negative)
     {
       if (p->x[2] > 0)
       {
@@ -457,7 +461,7 @@ ds_to_disk (p, allow_negative, hit)
       {
         *hit = DISK_HIT_BOT;
       }
-      return (s_disk);
+      return (s_diskplane);
     }
     else
     {
@@ -465,20 +469,22 @@ ds_to_disk (p, allow_negative, hit)
       return (VERY_BIG);
     }
   }
+
+
   /*
-   * At this point, we have completed the case of the flat disk.  It is simple
-   * because there is only one possible intersection with the disk
-   * boundary
+   * Begin the calculation for a VERTICALLY EXTENDED DISK. 
    * 
    * For the vertically extended disk we have to keep track of the
    * smallest positive value and the smallest (in absolute terms
    * negative value).
    * 
    * We would like to avoid actually having to calculate the intercept to
-   * the disk if we can because this is likely time consuming. So we
-   * first determine this, by checking where the ray hits a pill box that
-   * just encompasses the disk.
+   * the disk if we can because is time consuming.  So we first try
+   * various checks to see if the photons misses the disk.  
+   * The first check we make is to see whether the photon misses 
+   * the pill box that surrounds the disk.
    */
+
   r_phot = sqrt (p->x[0] * p->x[0] + p->x[1] * p->x[1]);
 
   s_top = ds_to_plane (&disktop, p);
@@ -510,6 +516,7 @@ ds_to_disk (p, allow_negative, hit)
 
   z_cyl2 = VERY_BIG;
   s_cyl2 = VERY_BIG;
+
   if (r_phot > geo.diskrad)
   {
     move_phot (&phit, DFUDGE);
@@ -525,37 +532,43 @@ ds_to_disk (p, allow_negative, hit)
    * So now we know the distances to the top and bottom planes, as well
    * as to the disk plane, and we also know the distance to the
    * cylinder.  There are going to be two possibilites that we want to
-   * deal with, the normal one where the photons is outside of the
+   * deal with, the normal one where the photon is outside of the
    * disk, and the slightly perverse one where the photon is already
    * inside the disk
+   *
+   * Note that if delta_z below is positive the photon is inside the 
+   * disk
    */
 
-  delta = zdisk (r_phot) - fabs (p->x[2]);
-  if ((r_phot < geo.diskrad) && (fabs (delta) < 1.0))
+  delta_z = zdisk (r_phot) - fabs (p->x[2]);
+
+  /* We assume if we are within a cm of the disk surface we don't need 
+   * do anything.
+   */
+
+  if ((r_phot < geo.diskrad) && (fabs (delta_z) < 1.0))
   {
-    /* We assume if we are within a cm of the disk surface we don't need 
-       do anything.
-     */
     return (0);
   }
 
-  if ((r_phot < geo.diskrad) && delta > 0)
-  {
-    /*
-     * This is the case where the photon is already inside the
-     * disk.  The main issue here is we want to push the
-     * photon back where it came from now allow it to go
-     * forward.
-     *  
-     * We will make the assumption that if you are moving away from 
-     * the disk plane (z=0) you want to go
-     * forward, but if you are moving towards the plane you want to go backwards
-     *
-     * Note that for all of these cases we are ultimately going to solve
-     * for where we hit the disk, and so what is done in this section
-     * is to resolve what the minimum and maximum distance possiblities are.
-     */
+  /*
+   * Handle the case where the photon is already inside the
+   * disk.  The main issue here is we want to push the
+   * photon back where it came from now allow it to go
+   * forward.
+   *  
+   * We will make the assumption that if you are moving away from 
+   * the disk plane (z=0) you want to go
+   * forward, but if you are moving towards the plane you want to go backwards
+   *
+   * Note that for all of these cases we are ultimately going to solve
+   * for where we hit the disk, and so what is done in this section
+   * is to resolve what the minimum and maximum distance possiblities are.
+   */
 
+
+  if ((r_phot < geo.diskrad) && delta_z > 0)
+  {
 
     if (p->x[2] * p->lmn[2] > 0)
     {
@@ -615,57 +628,70 @@ ds_to_disk (p, allow_negative, hit)
 
   }
 
+  /* At this point we haave settled on the limits for solving
+     for the intercept for the case where the photon was inside 
+     the disk.  We now address the case where the 
+     This is the case where the photon location is outside 
+     the disk.  
+
+     Begin work on case where the photon is OUTSIDE the 
+     disk
+
+     The strategy here is to first try to eliminate the 
+     possibility that the photon hits the disk and 
+     to return a large value.  Only if we cannot do this
+     will we actually set limits for where the photon might hit
+     and calculate the intersection.
+   */
 
   else if (r_phot > geo.diskrad || fabs (p->x[2]) > zdisk (r_phot))
   {
-    /*
-     * This is the case where the photon location is outside 
-     * the disk.  
-     *
-     * The strategy here is to first try to eliminate the 
-     * possibility that the photon hits the disk and 
-     * to return a large value.  Only if we cannot do this
-     * will we actually calculate the intersection.
-     */
 
-    if (s_disk < 0 && fabs (z_cyl) > disktop.x[2])
+    /* Identify photons moving away from the disk that do not hit 
+       the edge of the disk */
+
+    if (s_diskplane < 0 && fabs (z_cyl) > disktop.x[2])
     {
-      /* The photon is moving away from the disk and does not hit 
-         the edge of the disk */
       *hit = DISK_MISSED;
       return (VERY_BIG);
     }
+
+    /* Identify photons that are outside the pill box, and 
+       never even hit the cylinder that encloses the disk
+     */
     else if (s_cyl == VERY_BIG)
     {
-      /* This is the case that one is outside the pill box, and 
-         never even hit the cylinder that encloses the disk
-       */
       *hit = DISK_MISSED;
       return (VERY_BIG);
     }
-    else if (r_disk > geo.diskrad && fabs (z_cyl) < disktop.x[2])
+
+    /* Identify photons that are soutside the disk radius and the photon hits 
+       the outer cylindrical edge of the disk */
+    else if (r_diskplane > geo.diskrad && fabs (z_cyl) < disktop.x[2])
     {
-      /* This is the case where one is outside the disk radius and the photon hits 
-         the outer edge of the disk */
       *hit = DISK_HIT_EDGE;
       return (s_cyl);
     }
-    else if (r_disk > geo.diskrad && fabs (z_cyl) > disktop.x[2] && fabs (z_cyl2) > disktop.x[2])
+
+    /* Identify photons outside the pill box, and do not  hit either
+       the disk or the edges of the disk
+     */
+    else if (r_diskplane > geo.diskrad && fabs (z_cyl) > disktop.x[2] && fabs (z_cyl2) > disktop.x[2])
     {
-      /* This is the case that one is outside the pill box, and and the photon does not  hit either
-         the disk or the edges of the disk
-       */
       *hit = DISK_MISSED;
       return (VERY_BIG);
     }
+
+    /* Finally set limits for photons that we could not eliminate
+     * simply.
+     *
+     * Set limits smin and smax on what the possibilities are. The
+     * maximum is the distance to the disk or cylinder
+     * whichever is smaller.  The minimum is the current
+     * position if we are inside the pillbox.
+     */
     else
     {
-      /*
-       * Set limits smin and smax on what the possibilities are. The
-       * maximum is the distance to the disk or cylinder
-       * whichever is smaller.  The minimum is the current
-       * position if we are inside the pillbox.
-       */
 
       location = 0;
 
@@ -676,9 +702,9 @@ ds_to_disk (p, allow_negative, hit)
        */
 
       smax = VERY_BIG;
-      if (s_disk > 0)
+      if (s_diskplane > 0)
       {
-        smax = s_disk;
+        smax = s_diskplane;
       }
       else if (r_phot < geo.diskrad && s_cyl < smax)
       {
@@ -690,13 +716,12 @@ ds_to_disk (p, allow_negative, hit)
       }
 
       /* For the minimum, we need to either to be inside the
-         pill box, or we can take correct boundary of the
+         pill box (in which case smin is 0), or we can take correct boundary of the
          pill box
        */
 
       if (fabs (p->x[2]) < disktop.x[2] && r_phot < geo.diskrad)
       {
-        /* We are inside the pill box so */
         smin = 0;
       }
       else
@@ -719,14 +744,19 @@ ds_to_disk (p, allow_negative, hit)
     }
 
   }
+
+  /* This is a failure bexause it implies we have a case we have not accounted for */
   else
   {
     Error ("ds_to_disk: Unknnown situation\n");
 
   }
 
-  /* So now we should have smin and smax for all cases and we can calculate the
-     intersection with the disk.
+  /* If we have reached this point in the program we have to SOLVE FOR 
+     THE INTERCEPT.  Note that we can have arrived here if the photon
+     was inside the disk, or if the photon was outside the disk, but
+     we could not eliminate the possibility that it actually hit the
+     disk.
    */
 
 
@@ -738,7 +768,7 @@ ds_to_disk (p, allow_negative, hit)
    * passed through the disk) and we must locate it. There are two
    * possibilities.  It hit the disk edge, or it hit the face of the
    * disk.  Most of the time it will hit the disk face so we will
-   * calculate this first, and then check if s is less than s_diskrad.
+   * calculate this first, and then check if s is less than s_diskplanerad.
    * 
    * To setup rtsafe, we have to find distances which bracket what we
    * want.  smax should be no more than the distance to the disk_plane
@@ -747,8 +777,6 @@ ds_to_disk (p, allow_negative, hit)
    * Note that the next little section is intended to select between the
    * top and bottom face of the disk
    */
-
-
 
 
   stuff_phot (p, &ds_to_disk_photon);
@@ -764,10 +792,28 @@ ds_to_disk (p, allow_negative, hit)
     s = zero_find (disk_height, smax - smin, 0.0, 1e-8);
   }
 
+  /* Check if our solution is the maxium or the minimum distance.
+     This could mean that we have not selected smin or smax
+     correctly, but (see #763) there are instances where we
+     do have this condition where we are intersecting the outer
+     edge of the disk
+   */
+
   if (s == smin || s == smax)
   {
-    Log ("ZZXX Time to worry, at limit for %d %d smin %e smax %e s %e r_phot %e zdisk %e\n", p->np, location, smin, smax, s, r_phot,
-         zdisk (r_phot));
+    stuff_phot (p, &phit);
+    move_phot (&phit, s);
+    r_hit = sqrt (phit.x[0] * phit.x[0] + phit.x[1] * phit.x[1]);
+
+
+    Error ("ds_to_disk: Phot %d loc %d smin %e smax %e s at limit %e r_phot %e z_phot %e zdisk %e r_hit %e z_hit %e zdisk_hit %e\n",
+           p->np, location, smin, smax, s, r_phot, fabs (p->x[2]), zdisk (r_phot), r_hit, fabs (phit.x[2]), zdisk (r_hit));
+    if (modes.save_photons)
+    {
+      save_photons (p, "ds_to_disk");
+      Diag ("ds_to_disk: Phot %d loc %d smin %e smax %e s at limit %e r_phot %e z_phot %e zdisk %e r_hit %e z_hit %e zdisk_hit %e\n",
+            p->np, location, smin, smax, s, r_phot, fabs (p->x[2]), zdisk (r_phot), r_hit, fabs (phit.x[2]), zdisk (r_hit));
+    }
   }
 
   if (p->x[2] > 0)
@@ -782,7 +828,6 @@ ds_to_disk (p, allow_negative, hit)
 
   s += smin;
 
-  /* Note that s can still be negative */
 
 
   return (s);

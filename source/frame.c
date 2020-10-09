@@ -142,7 +142,7 @@ observer_to_local_frame (p_in, p_out)
 
   // beta=length(v)/VLIGHT;
 
-  gamma = sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT)));
+  gamma = 1. / (sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT))));
 
   f_out = p_out->freq = f_in * gamma * (1. - vel / VLIGHT);
 
@@ -224,7 +224,7 @@ local_to_observer_frame (p_in, p_out)
     f_out = p_out->freq = f_in / (1. - vel / VLIGHT);
     return (ierr);
   }
-  gamma = sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT)));
+  gamma = 1. / (sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT))));
   f_out = p_out->freq = f_in * gamma * (1. + vel / VLIGHT);
 
 
@@ -307,7 +307,7 @@ observer_to_local_frame_disk (p_in, p_out)
 
   // beta=length(v)/VLIGHT;
 
-  gamma = sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT)));
+  gamma = 1. / (sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT))));
 
   f_out = p_out->freq = f_in * gamma * (1. - vel / VLIGHT);
 
@@ -378,7 +378,6 @@ local_to_observer_frame_disk (p_in, p_out)
   vdisk (p_in->x, v);
   vel = dot (p_in->lmn, v);
 
-//OLD  f_in = p_in->freq_orig_loc;
   f_in = p_in->freq;
 
 
@@ -389,7 +388,7 @@ local_to_observer_frame_disk (p_in, p_out)
     return (ierr);
   }
 
-  gamma = sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT)));
+  gamma = 1. / (sqrt (1 - (dot (v, v) / (VLIGHT * VLIGHT))));
   f_out = p_out->freq = f_in * gamma * (1. + vel / VLIGHT);
 
 /* Need to worry about sign changes, etc. here */

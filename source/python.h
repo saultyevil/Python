@@ -32,6 +32,8 @@ within python */
 
   int rel_mode;                 /* How doppler effects are treated */
 
+  int run_xtest;               /* Variable if TRUE causes a special test mode to be run */
+
 
 
 /* With domains NDIM and MDIM need to be removed but NDIM2 is the total number of cells in wmain, and there
@@ -826,7 +828,13 @@ typedef struct plasma
 
   double kpkt_abs;              /* k-packet equivalent of matom_abs. (SS) */
 
-  int *kbf_use;                 /* List of the indices of the photoionization processes to be used for kappa_bf. (SS) */
+  /* kbf_use and kbf_nuse are set by the routine kbf_need, and they provide indices into the photoinization processes
+   * that are "significant" in a plasma cell, based on the density of a particular ion in a cell and the x-section 
+   * at the photoinization edge.  This process was introduced as a means to speed the program up by ignoring those
+   * bf processes that would contribute negligibly to the bf opacity
+  */
+
+  int *kbf_use;                 /* List of the indices of the photoionization processes to be used for kappa_bf.  */
   int kbf_nuse;                 /* Total number of photoionization processes to be used for kappa_bf. (SS) */
 
 /* End of macro information */
@@ -1125,7 +1133,7 @@ typedef struct photon
 {
   double x[3];                                  /* The position of packet */
   double lmn[3];                                /* Direction cosines of the packet */
-  double freq, freq_orig, freq_orig_loc;        /* current, original frequency redshifted and unredshifted) of this packet */
+  double freq, freq_orig;        /* current, original frequency (redshifted) of this packet */
   double w, w_orig;                             /* current and original weight of this packet */
   double tau;                                   /* optical depth of the photon since its creation or last interaction */
 
@@ -1154,6 +1162,9 @@ typedef struct photon
   } frame;
 
   int nscat;                    /*Number of scatters for this photon */
+  int nrscat;                   /* number of resonance scatterings */
+  int nmacro;                   /* number of macro atom interactions */
+
   int nres;                     /*For line scattering, indicates the actual transition; 
                                    for continuum scattering, meaning 
                                    depends on matom vs non-matom. See headers of emission.c 
@@ -1162,7 +1173,6 @@ typedef struct photon
                                    anisotropic scattering to carry the number of
                                    scattering to "extract" when needed for wind
                                    generated photons SS05. */
-  int nrscat;                   /* number of resonance scatterings */
   int grid;                     /*grid position of the photon in the wind, if
                                    the photon is in the wind.  If the photon is not
                                    in the wind, then -1 implies inside the wind cone and  
@@ -1236,15 +1246,16 @@ int nspectra;                   /* After create_spectrum, the number of elements
                                    general s[0],s[1] and s[2] are the escaping, scattered and absorbed photons,
                                    while elements higher than this will contain spectra as seen by different observers */
 
-#define MSPEC               7   /* The number of standard spectra - i.e. not user defined angles */
-#define SPEC_CREATED        0   /* The spectrum of the original weight before transmission through the wind */
-#define SPEC_EMITTED        1   /* The emitted spectrum - i.e. photons with their weights changed by transmission through the wind */
-#define SPEC_CENSRC         2   /* The emitted spectrum from photons emitted from the central source (if there is one) */
-#define SPEC_DISK           3   /* The emitted spectrum from photons emitted from the disk (if there is one) */
-#define SPEC_WIND           4   /* The emitted spectrum from photons emitted from the wind itself */
-#define SPEC_HITSURF        5   /* The spectrum for photons which hit the a surface and were absorbed - should be zero for when reflection
+#define MSPEC               8   /* The number of standard spectra - i.e. not user defined angles */
+#define SPEC_CREATED        0   /* The spectrum of from external sources with  weights before transmission through the wind */
+#define SPEC_CWIND          1   /* The spectrum created in the wind with rheir original weights*/
+#define SPEC_EMITTED        2   /* The emitted spectrum - i.e. photons with their weights changed by transmission through the wind */
+#define SPEC_CENSRC         3   /* The emitted spectrum from photons emitted from the central source (if there is one) */
+#define SPEC_DISK           4   /* The emitted spectrum from photons emitted from the disk (if there is one) */
+#define SPEC_WIND           5   /* The emitted spectrum from photons emitted from the wind itself */
+#define SPEC_HITSURF        6   /* The spectrum for photons which hit the a surface and were absorbed - should be zero for when reflection
                                  * is turned on */
-#define SPEC_SCATTERED      6   /* The spectrum of photons which were scattered at least once in the wind - the weight used is the final
+#define SPEC_SCATTERED      7   /* The spectrum of photons which were scattered at least once in the wind - the weight used is the final
                                  * weight after transmission through the wind */
 
 int nscat[MAXSCAT + 1], nres[MAXSCAT + 1], nstat[NSTAT];

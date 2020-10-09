@@ -8,8 +8,11 @@ double planck_d(double alpha, void *params);
 double planck_d_2(double alpha, void *params);
 double emittance_bb(double freqmin, double freqmax, double t);
 double check_fmax(double fmax, double temp);
-/* get_atomicdata.c */
+/* atomicdata.c */
 int get_atomic_data(char masterfile[]);
+/* atomicdata_init.c */
+int init_atomic_data(void);
+/* atomicdata_sub.c */
 int atomicdata2file(void);
 int index_lines(void);
 int index_phot_top(void);
@@ -57,7 +60,8 @@ int fix_concentrations(PlasmaPtr xplasma, int mode);
 double get_ne(double density[]);
 /* spectra.c */
 int spectrum_init(double f1, double f2, int nangle, double angle[], double phase[], int scat_select[], int top_bot_select[], int select_extract, double rho_select[], double z_select[], double az_select[], double r_select[]);
-int spectrum_create(PhotPtr p, double f1, double f2, int nangle, int select_extract);
+int spectrum_create(PhotPtr p, int nangle, int select_extract);
+int spec_add_one(PhotPtr p, int spec_type);
 int spectrum_summary(char filename[], int nspecmin, int nspecmax, int select_spectype, double renorm, int loglin, int iwind);
 int spectrum_restart_renormalise(int nangle);
 /* wind2d.c */
@@ -483,6 +487,7 @@ double *get_ion(int ndom, int element, int istate, int iswitch, char *name);
 double *get_one(int ndom, char variable_name[]);
 /* import.c */
 int import_wind(int ndom);
+int import_wind2(int ndom, char *filename);
 int import_set_wind_boundaries(int ndom);
 int import_make_grid(WindPtr w, int ndom);
 double import_velocity(int ndom, double *x, double *v);
@@ -554,6 +559,8 @@ int are_synonym_lists_valid(void);
 int is_input_line_synonym_for_question(char question[], char input_line[]);
 /* walls.c */
 int walls(PhotPtr p, PhotPtr pold, double *normal);
+/* xtest.c */
+int xtest(void);
 /* setup_reverb.c */
 int get_meta_params(void);
 /* setup_line_transfer.c */

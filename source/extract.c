@@ -201,8 +201,6 @@ photons.
 
       if (itype == PTYPE_DISK)
       {
-//OLD        pp.freq = pp.freq_orig;
-//OLD        pp.frame = F_LOCAL;
         local_to_observer_frame_disk (&pp, &pp);
 
       }
@@ -214,12 +212,6 @@ photons.
    we make the assumption which seems explicit in the old doppler routine that we 
    are in the observe frame
  */
-//OLD Lines below look like belt and suspenders, but we should already be in the local
-//OLD and so we should trust.
-//OLD       if (pp.nres > -1 && pp.nres < nlines)
-//OLD        {
-//OLD          pp.freq = lin_ptr[pp.nres]->freq;
-//OLD        }
         local_to_observer_frame (&pp, &pp);
 
       }
