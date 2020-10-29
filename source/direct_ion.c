@@ -170,30 +170,31 @@ q_ioniz_dere (nion, t_e)
  * @return     The total di cooling
  *
  * @details
- * This routine computes the total cooling rate in a cell due to collisional
+ * This routine computes the total CMF cooling rate in a cell due to collisional
  * ionization. This is just the rate, times the ionization thereshold of the
  * state being recombined into.
  *
  * ### Notes ###
- * ??? NOTES ???
+ *
+ * This calculation is a CMF calculation.
  *
  **********************************************************/
 
 double
 total_di (one, t_e)
-     WindPtr one;               // Pointer to the current wind cell - we need the cell volume, this is not in the plasma structure
-     double t_e;                //Current electron temperature of the cell
+     WindPtr one;
+     double t_e;
 
 {
-  double x;                     //The returned variable
-  int nplasma;                  //The cell number in the plasma array
-  PlasmaPtr xplasma;            //pointer to the relevant cell in the plasma structure
-  int n;                        //loop pointers
+  double cooling_rate;
+  int nplasma;
+  PlasmaPtr xplasma;
+  int n;
 
 
-  nplasma = one->nplasma;       //Get the correct plasma cell related to this wind cell
-  xplasma = &plasmamain[nplasma];       //copy the plasma structure for that cell to local variable
-  x = 0;                        //zero the luminosity
+  nplasma = one->nplasma;
+  xplasma = &plasmamain[nplasma];
+  cooling_rate = 0;
 
 
   compute_di_coeffs (t_e);      //Calculate the DI rate coefficients for this cell
@@ -201,17 +202,12 @@ total_di (one, t_e)
 
   for (n = 0; n < nions; n++)
   {
-    //We have no DI data for this ion
-    if (ion[n].dere_di_flag == 0)
+    if (ion[n].dere_di_flag)
     {
-      x += 0.0;                 //Add nothing to the sum of coefficients
-    }
-    else                        //Multiply the rate coeff by the density of electrons and ions, by the ionization potential (in eV), the volume and convert to ergs
-    {
-      x += xplasma->vol * xplasma->ne * xplasma->density[n] * di_coeffs[n] * dere_di_rate[ion[n].nxderedi].xi * EV2ERGS;
+      cooling_rate += xplasma->vol * xplasma->ne * xplasma->density[n] * di_coeffs[n] * dere_di_rate[ion[n].nxderedi].xi * EV2ERGS;
     }
   }
-  return (x);
+  return (cooling_rate);
 }
 
 

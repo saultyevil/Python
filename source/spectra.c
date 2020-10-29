@@ -534,14 +534,6 @@ spectrum_create (p, nangle, select_extract)
     }
     else if (istat == P_HIT_STAR || istat == P_HIT_DISK)
     {
-//OLD Removed as part of effort related to #739, unclear if last line should be moved also
-//OLD      xxspec[SPEC_HITSURF].f[k] += p[nphot].w;  /*absorbed spectrum */
-//OLD      xxspec[SPEC_HITSURF].lf[k1] += p[nphot].w;        /*logarithmic absorbed spectrum */
-//OLD      if (iwind)
-//OLD      {
-//OLD        xxspec[SPEC_HITSURF].f_wind[k] += p[nphot].w;   /* emitted spectrum */
-//OLD        xxspec[SPEC_HITSURF].lf_wind[k1] += p[nphot].w; /* logarithmic emitted spectrum */
-//OLD      }
       xxspec[SPEC_HITSURF].nphot[istat]++;
     }
 

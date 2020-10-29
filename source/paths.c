@@ -393,8 +393,8 @@ r_draw_from_path_histogram (Wind_Paths_Ptr PathPtr)
 int
 wind_paths_gen_phot (WindPtr wind, PhotPtr pp)
 {
-  if (geo.ioniz_or_extract == 1)
-  {                             //If this is the ionisation cycle, simple path
+  if (geo.ioniz_or_extract == CYCLE_IONIZ)
+  {
     simple_paths_gen_phot (pp);
   }
   else if (wind->paths->i_num == 0)
@@ -428,15 +428,13 @@ wind_paths_gen_phot (WindPtr wind, PhotPtr pp)
  * @see wind_paths_gen_phot()
  *
  * ###Notes###
- * 26/2/15	-	Written by SWM
- * 24/7/15	-	Removed frequency
 ***********************************************************/
 int
 line_paths_gen_phot (WindPtr wind, PhotPtr pp, int nres)
 {
   int i;
-  if (geo.ioniz_or_extract == 1)
-  {                             //If this is the ionisation cycle, simple path
+  if (geo.ioniz_or_extract == CYCLE_IONIZ)
+  {
     simple_paths_gen_phot (pp);
   }
   else if (wind->paths->i_num == 0)
@@ -445,7 +443,7 @@ line_paths_gen_phot (WindPtr wind, PhotPtr pp, int nres)
     //         wind->nwind, sqrt(wind->x[0]*wind->x[0] + wind->x[1]*wind->x[1]), wind->x[2]);
     simple_paths_gen_phot (pp);
   }
-  else if (nres < 0 || nres >= nlines || lin_ptr[nres]->macro_info == 0)
+  else if (nres < 0 || nres >= nlines || lin_ptr[nres]->macro_info == FALSE)
   {                             //If this line is invalid, continuum or non-matom then default to wind
     pp->path = r_draw_from_path_histogram (wind->paths);
   }

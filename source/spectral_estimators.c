@@ -4,9 +4,11 @@
  * @author ksl
  * @date   January, 2018
  *
- * @brief  The routines in this file are all associated with the process of modelling the spectrum in a cell.
+ * @brief  The routines in this file are all associated with 
+ * the process of modelling the spectrum in a cell based
+ * on information that was accrued during an ionization
+ * cycle.  
  *
- * ???
  ***********************************************************/
 
 #include <stdio.h>

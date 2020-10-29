@@ -110,9 +110,9 @@ fb_topbase_partial (freq)
 
   /* JM -- below lines to address bug #195 */
   gn = 1;
-  if (ion[nion].phot_info > 0)// it's a topbase record
+  if (ion[nion].phot_info > 0)  // it's a topbase record
     gn = config[fb_xtop->nlev].g;
-  else if (ion[nion].phot_info == 0)// it's a VFKY record, so shouldn't really use levels
+  else if (ion[nion].phot_info == 0)    // it's a VFKY record, so shouldn't really use levels
     gn = ion[nion].g;
   else
   {
@@ -372,6 +372,8 @@ integ_fb (t, f1, f2, nion, fb_choice, mode)
  *
  * Question: What is preventing us from calculating a dielectronic emission rate?
  *
+ * Total free bound emission in this function is calculated in the CMF. 
+ * 
  **********************************************************/
 
 double
@@ -392,9 +394,8 @@ total_fb (one, t, f1, f2, fb_choice, mode)
   if (t < 100. || f2 < f1)
     t = 100.;                   /* Set the temperature to 100 K so that if there are free electrons emission by this process continues */
 
-// Initialize the free_bound structures if that is necessary
   if (mode == OUTER_SHELL)
-    init_freebound (100., 1.e9, f1, f2);        //NSH 140121 increased limit to take account of hot plasmas NSH 1706 -
+    init_freebound (100., 1.e9, f1, f2);
 
 
 // Calculate the number of recombinations whenever calculating the fb_luminosities
@@ -814,7 +815,7 @@ fb (xplasma, t, freq, ion_choice, fb_choice)
       fb_xtop = &phot_top[n];   /*Externally transmited to fb_topbase_partial */
       /* We don't want to include fb transitions associated with macro atoms here
          - they are separated out for now. (SS, Apr 04). "If" statement added. */
-      if (fb_xtop->macro_info == 0 || geo.macro_simple == 1 || geo.rt_mode == RT_MODE_2LEVEL)
+      if (fb_xtop->macro_info == FALSE || geo.macro_simple == TRUE || geo.rt_mode == RT_MODE_2LEVEL)
       {
         x += fb_topbase_partial (freq);
       }
@@ -893,7 +894,6 @@ init_freebound (t1, t2, f1, f2)
   double xinteg_fb ();
   int nput;
 
-//OLD  Log ("init_freebound %10.3e %10.3e %10.3e %10.3e\n", t1, t2, f1, f2);
 
 
   if (nfb == 0)
@@ -939,7 +939,6 @@ been calculated for these conditions, and if so simply return.
   while ((freebound[i].f1 != f1 || freebound[i].f2 != f2) && i < nfb)
   {
 
-//OLD    Log ("init_freebound: test: %d %10.3e %10.3e Want  %10.3e %10.3e\n", i, freebound[i].f1, freebound[i].f2, f1, f2);
     i++;
   }
 
@@ -1123,7 +1122,7 @@ get_fb (t, nion, narray, fb_choice, mode)
  *
  * @details
  *
- * The routine preforms a numberical integration over the partial emissivities
+ * The routine performs a numerical integration over the partial emissivities
  *
  *
  * ### Notes ###
@@ -1197,7 +1196,7 @@ xinteg_fb (t, f1, f2, nion, fb_choice)
 
     /* Adding an if statement here so that photoionization that's part of a macro atom is
        not included here (these will be dealt with elsewhere). (SS, Apr04) */
-    if (fb_xtop->macro_info == 0 || geo.macro_simple == 1 || geo.rt_mode == RT_MODE_2LEVEL)     //Macro atom check. (SS)
+    if (fb_xtop->macro_info == FALSE || geo.macro_simple == TRUE || geo.rt_mode == RT_MODE_2LEVEL)      //Macro atom check. (SS)
     {
       fthresh = fb_xtop->freq[0];
       fmax = fb_xtop->freq[fb_xtop->np - 1];    // Argues that this should be part of structure
@@ -1305,7 +1304,7 @@ xinteg_inner_fb (t, f1, f2, nion, fb_choice)
 
       /* Adding an if statement here so that photoionization that's part of a macro atom is
          not included here (these will be dealt with elsewhere). (SS, Apr04) */
-      if (fb_xtop->macro_info == 0 || geo.macro_simple == 1 || geo.rt_mode == RT_MODE_2LEVEL)   //Macro atom check. (SS)
+      if (fb_xtop->macro_info == FALSE || geo.macro_simple == TRUE || geo.rt_mode == RT_MODE_2LEVEL)    //Macro atom check. (SS)
       {
         fthresh = fb_xtop->freq[0];
         fmax = fb_xtop->freq[fb_xtop->np - 1];  // Argues that this should be part of structure

@@ -116,7 +116,7 @@ randwind_thermal_trapping (p, nnscat)
        safety net (as dvds_max is worked out with a sample of directions) */
     ztest = random_number (0.0, 1.0) * p_norm;
 
-    dvds = dvwind_ds (p);
+    dvds = dvwind_ds_cmf (p);
     tau = sobolev (one, p->x, -1.0, lin_ptr[p->nres], dvds);
 
     if (tau < tau_min)

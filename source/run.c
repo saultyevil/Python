@@ -95,12 +95,9 @@ calculate_ionization (restart_stat)
 
 /* THE CALCULATION OF THE IONIZATION OF THE WIND */
 
-  geo.ioniz_or_extract = 1;     //SS July 04 - want to compute MC estimators during ionization cycles
-  //1 simply implies we are in the ionization section of the code
-  //and allows routines to act accordinaly.
+  geo.ioniz_or_extract = CYCLE_IONIZ;
 
 
-/* BEGINNING OF CYCLE TO CALCULATE THE IONIZATION OF THE WIND */
 
   if (geo.wcycle == geo.wcycles)
     xsignal (files.root, "%-20s No ionization needed: wcycles(%d)==wcyeles(%d)\n", "COMMENT", geo.wcycle, geo.wcycles);
@@ -120,13 +117,15 @@ calculate_ionization (restart_stat)
   }
 
 
+/* BEGINNING OF CYCLE TO CALCULATE THE IONIZATION OF THE WIND */
+
   while (geo.wcycle < geo.wcycles)
   {                             /* This allows you to build up photons in bunches */
 
     xsignal (files.root, "%-20s Starting %3d of %3d ionization cycles \n", "NOK", geo.wcycle + 1, geo.wcycles);
 
     Log ("!!Python: Beginning cycle %d of %d for defining wind\n", geo.wcycle + 1, geo.wcycles);
-    Log_flush ();               /* Flush the log file (so that we know where are if there are problems */
+    Log_flush ();
 
     /* Initialize all of the arrays, etc, that need initialization for each cycle
      */
@@ -447,7 +446,7 @@ make_spectra (restart_stat)
      Next lines turns off macro atom estimators and other portions of the code that are
      unnecessary during spectrum cycles.  */
 
-  geo.ioniz_or_extract = 0;
+  geo.ioniz_or_extract = CYCLE_EXTRACT;
 
 /* Next steps to speed up extraction stage */
   if (!modes.keep_photoabs)

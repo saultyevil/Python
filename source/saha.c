@@ -239,7 +239,7 @@ concentrations (xplasma, mode)
        densities which is wrong. Fortunately, macro_pops is called again in lucy() and converges on the 
        correct value, but this should be fixed. I am not sure if it even needs to be called at all. */
 
-    if (geo.macro_ioniz_mode == 1)
+    if (geo.macro_ioniz_mode == MACRO_IONIZ_MODE_ESTIMATORS)
     {
       macro_pops (xplasma, xne);
     }
@@ -355,7 +355,7 @@ saha (xplasma, ne, t)
          probabilities that are calculated in macro_pops. The exception to this is prior
          to the first ionization cycle when we need to populate saha densities as a first guess */
 
-      if ((ion[nion].macro_info == 0) || (geo.macro_ioniz_mode == 0))
+      if ((ion[nion].macro_info == FALSE) || (geo.macro_ioniz_mode == MACRO_IONIZ_MODE_NO_ESTIMATORS))
       {
         b = xsaha * partition[nion] * exp (-ion[nion - 1].ip / (BOLTZMANN * t)) / (ne * partition[nion - 1]);
         if (b > big)
@@ -384,7 +384,7 @@ saha (xplasma, ne, t)
          probabilities that are calculated in macro_pops. The exception to this is prior
          to the first ionization cycle when we need to populate saha densities as a first guess */
 
-      if ((ion[nion].macro_info == 0) || (geo.macro_ioniz_mode == 0))
+      if ((ion[nion].macro_info == FALSE) || (geo.macro_ioniz_mode == MACRO_IONIZ_MODE_NO_ESTIMATORS))
       {
 
         density[nion] *= a;
@@ -475,7 +475,7 @@ lucy (xplasma)
        structure for those ions which are being treated as macro ions. This means that the
        the newden array will contain wrong values for these particular macro ions, but due
        to the if loop at the end of this subroutine they are never passed to xplasma */
-    if (geo.macro_ioniz_mode == 1)
+    if (geo.macro_ioniz_mode == MACRO_IONIZ_MODE_ESTIMATORS)
     {
       macro_pops (xplasma, xne);
     }
@@ -485,7 +485,7 @@ lucy (xplasma)
     {
 
       /* if the ion is being treated by macro_pops then use the populations just computed */
-      if ((ion[nion].macro_info == 1) && (geo.macro_simple == 0) && (geo.macro_ioniz_mode == 1))
+      if ((ion[nion].macro_info == TRUE) && (geo.macro_simple == FALSE) && (geo.macro_ioniz_mode == MACRO_IONIZ_MODE_ESTIMATORS))
       {
         newden[nion] = xplasma->density[nion];
       }
@@ -520,7 +520,7 @@ lucy (xplasma)
   for (nion = 0; nion < nions; nion++)
   {
     /* If statement added here to suppress interference with macro populations (SS Apr 04) */
-    if (ion[nion].macro_info == 0 || geo.macro_ioniz_mode == 0 || geo.macro_simple == 1)
+    if (ion[nion].macro_info == FALSE || geo.macro_ioniz_mode == MACRO_IONIZ_MODE_NO_ESTIMATORS || geo.macro_simple == TRUE)
     {
       xplasma->density[nion] = newden[nion];
     }

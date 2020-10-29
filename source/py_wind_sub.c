@@ -323,7 +323,7 @@ abs_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     x = 0.0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       switch (c)
@@ -405,7 +405,6 @@ shock_heating_summary (w, rootname, ochoice)
   double tot;
   double shock_heating ();
   char filename[LINELENGTH];
-//OLD  double t_e;
 
 
 
@@ -413,7 +412,7 @@ shock_heating_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       tot += aaa[n] = shock_heating (&w[n]);
     }
@@ -480,7 +479,7 @@ adiabatic_cooling_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       t_e = plasmamain[w[n].nplasma].t_e;
       // ksl - I could not determine what the next line was supposed to do
@@ -603,7 +602,7 @@ lum_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     x = 0.0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       switch (c)
@@ -701,7 +700,7 @@ photo_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].ioniz[ion] * plasmamain[nplasma].density[ion];
@@ -760,7 +759,7 @@ recomb_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       num_recomb (&plasmamain[nplasma], plasmamain[nplasma].t_e, 1);
@@ -817,7 +816,7 @@ electron_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0.0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].ne;
@@ -872,7 +871,7 @@ rho_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0.0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].rho;
@@ -931,7 +930,7 @@ plasma_cell (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0.0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = nplasma;
@@ -985,7 +984,7 @@ freq_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].ave_freq;
@@ -1053,7 +1052,7 @@ nphot_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         if (ichoice == 0)
@@ -1143,7 +1142,7 @@ temp_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].t_e;
@@ -1194,7 +1193,7 @@ temp_rad (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].t_r;
@@ -1244,7 +1243,7 @@ weight_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].w;
@@ -1317,7 +1316,7 @@ velocity_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       x = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         if (ichoice == 0)
           x = sqrt (w[n].v[0] * w[n].v[0] + w[n].v[1] * w[n].v[1] + w[n].v[2] * w[n].v[2]);
@@ -1422,7 +1421,7 @@ mo_summary (w, rootname, ochoice)
     {
       xplasma = &plasmamain[w[n].nplasma];
       x = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         if (ichoice == 0)
           x =
@@ -1510,7 +1509,7 @@ vol_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       aaa[n] = w[n].vol;
     }
@@ -1737,7 +1736,7 @@ tau_h_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = 6.e-18 * plasmamain[nplasma].density[0] * pow (w[n].vol, 0.333);
@@ -1783,7 +1782,7 @@ coolheat_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].lum_tot_ioniz / plasmamain[nplasma].heat_tot;
@@ -1920,7 +1919,7 @@ wind_reg_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = -9;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       aaa[n] = w[n].inwind;
 
@@ -1955,7 +1954,7 @@ dvds_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         aaa[n] = w[n].dvds_ave;
 
@@ -1977,7 +1976,7 @@ dvds_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         p.lmn[0] = 0.0;
         p.lmn[1] = 0.0;
@@ -1985,7 +1984,7 @@ dvds_summary (w, rootname, ochoice)
         stuff_v (w[n].xcen, p.x);
 
         p.lmn[ichoice - 1] = 1.0;
-        aaa[n] = dvwind_ds (&p);
+        aaa[n] = dvwind_ds_cmf (&p);
 
       }
     }
@@ -2024,7 +2023,7 @@ inner_shell_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0.0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].gamma_inshl[0];
@@ -2054,30 +2053,10 @@ IP_summary (w, rootname, ochoice)
   char filename[LINELENGTH];
   int nplasma;
 
-//OLD Ferland IP has been deleted 180516
-//OLD  for (n = 0; n < NDIM2; n++)
-//OLD  {
-//OLD    aaa[n] = 0;
-//OLD    if (w[n].vol > 0.0)
-//OLD    {
-//OLD      nplasma = w[n].nplasma;
-//OLD      aaa[n] = ((plasmamain[nplasma].ferland_ip));
-//OLD    }
-//OLD  }
-//OLD  display ("Ionization parameter (Ferland)");
-
-//OLD  if (ochoice)
-//OLD  {
-//OLD    strcpy (filename, rootname);
-//OLD    strcat (filename, ".f_IP");
-//OLD    write_array (filename, ochoice);
-//OLD
-//OLD  }
-
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = ((plasmamain[nplasma].ip));
@@ -2098,7 +2077,7 @@ IP_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = ((plasmamain[nplasma].xi));
@@ -2119,7 +2098,7 @@ IP_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = ((plasmamain[nplasma].ip_direct));
@@ -2138,7 +2117,7 @@ IP_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = ((plasmamain[nplasma].ip_scatt));
@@ -2188,7 +2167,7 @@ alpha_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].pl_alpha[m];
@@ -2212,7 +2191,7 @@ alpha_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].pl_log_w[m];
@@ -2237,7 +2216,7 @@ alpha_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].exp_temp[m];
@@ -2261,7 +2240,7 @@ alpha_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].exp_w[m];
@@ -2285,7 +2264,7 @@ alpha_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].spec_mod_type[m];
@@ -2311,7 +2290,7 @@ alpha_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].fmin_mod[m];
@@ -2335,7 +2314,7 @@ alpha_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].fmax_mod[m];
@@ -2425,7 +2404,7 @@ J_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         if (i == 0)
@@ -2482,7 +2461,7 @@ J_scat_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = (plasmamain[nplasma].j);
@@ -2500,7 +2479,7 @@ J_scat_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = (plasmamain[nplasma].j_direct);
@@ -2517,7 +2496,7 @@ J_scat_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = (plasmamain[nplasma].j_scatt);
@@ -2557,7 +2536,7 @@ phot_split (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = (plasmamain[nplasma].ntot_wind);
@@ -2575,7 +2554,7 @@ phot_split (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = (plasmamain[nplasma].ntot_agn);
@@ -2593,7 +2572,7 @@ phot_split (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = (plasmamain[nplasma].ntot_disk);
@@ -2611,7 +2590,7 @@ phot_split (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = (plasmamain[nplasma].ntot_star);
@@ -2644,7 +2623,7 @@ thompson (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       ne = plasmamain[nplasma].ne;
@@ -2679,7 +2658,7 @@ nscat_split (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].nscat_es;
@@ -2690,7 +2669,7 @@ nscat_split (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].nscat_res;
@@ -2727,7 +2706,7 @@ convergence_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].converge_whole;
@@ -2769,7 +2748,7 @@ convergence_all (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].converge_t_e;
@@ -2787,7 +2766,7 @@ convergence_all (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].converge_hc;
@@ -2805,7 +2784,7 @@ convergence_all (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].converge_t_r;
@@ -2823,7 +2802,7 @@ convergence_all (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].converge_whole;
@@ -2865,7 +2844,7 @@ model_bands (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].nxtot[m];
@@ -2898,7 +2877,7 @@ model_bands (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].xj[m];
@@ -2925,7 +2904,7 @@ model_bands (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].xave_freq[m];
@@ -2952,7 +2931,7 @@ model_bands (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         aaa[n] = plasmamain[nplasma].nxtot[m];
@@ -2988,12 +2967,12 @@ heatcool_summary (w, rootname, ochoice)
   char filename[LINELENGTH];
   float x;
 
-  x = wind_luminosity (0.0, VERY_BIG);
+  x = wind_luminosity (0.0, VERY_BIG, MODE_CMF_TIME);
 
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].heat_tot;
@@ -3015,7 +2994,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].heat_lines;
@@ -3033,7 +3012,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].heat_ff;
@@ -3051,7 +3030,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].heat_comp;
@@ -3069,7 +3048,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].heat_ind_comp;
@@ -3087,7 +3066,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].heat_photo;
@@ -3105,7 +3084,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].lum_lines_ioniz;
@@ -3125,7 +3104,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].cool_adiabatic_ioniz;
@@ -3143,7 +3122,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].lum_ff_ioniz;
@@ -3161,7 +3140,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].cool_comp_ioniz;
@@ -3179,7 +3158,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].cool_dr_ioniz;
@@ -3197,7 +3176,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].cool_rr_ioniz;
@@ -3219,7 +3198,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] =
@@ -3244,7 +3223,7 @@ heatcool_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = plasmamain[nplasma].lum_tot_ioniz;
@@ -3345,7 +3324,7 @@ ionH1\tionH2\tionHe1\tionHe2\tionHe3\tionC3\tionC4\tionC5\tionN5\tionO6\tionSi4\
   {
     wind_n_to_ij (ndom, n, &ii, &jj);
 
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       np = w[n].nplasma;
 
@@ -3664,7 +3643,7 @@ get_los_dvds (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       aaa[n] = 0;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
 
         stuff_v (w[n].xcen, p.x);
@@ -3676,7 +3655,7 @@ get_los_dvds (w, rootname, ochoice)
         move_phot (&ptest, ds);
 
         if (vchoice == 0)
-          dvds = dvwind_ds (&p);
+          dvds = dvwind_ds_cmf (&p);
 
         /* next choice is for turning off rotational velocity */
         else if (vchoice == 1)
@@ -3851,7 +3830,7 @@ flux_summary (w, rootname, ochoice)
   {
     wind_n_to_ij (ndom, n, &ii, &jj);
 
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       np = w[n].nplasma;
       xplasma = &plasmamain[np];

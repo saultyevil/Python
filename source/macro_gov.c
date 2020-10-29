@@ -70,7 +70,7 @@ macro_gov (p, nres, matom_or_kpkt, which_out)
     {
 
       /* Make a bb transition of a full macro atom (macro_simple==FALSE). */
-      if (*nres > (-1) && *nres < NLINES && geo.macro_simple == 0 && lin_ptr[*nres]->macro_info == 1)
+      if (*nres > (-1) && *nres < NLINES && geo.macro_simple == FALSE && lin_ptr[*nres]->macro_info == TRUE)
       {
 
         if (geo.matom_radiation == 1)
@@ -99,13 +99,13 @@ macro_gov (p, nres, matom_or_kpkt, which_out)
       }
 
       /*  Make a bb transition  without the full macro atom treatment. */
-      else if (*nres > (-1) && *nres < NLINES && (geo.macro_simple == 1 || lin_ptr[*nres]->macro_info == 0))
+      else if (*nres > (-1) && *nres < NLINES && (geo.macro_simple == TRUE || lin_ptr[*nres]->macro_info == FALSE))
       {
         fake_matom_bb (p, nres, &escape);
       }
 
       /* Make a transition to the bf continuum of a macro atom and we want the full treatment. */
-      else if (*nres > NLINES && phot_top[*nres - NLINES - 1].macro_info == 1 && geo.macro_simple == 0)
+      else if (*nres > NLINES && phot_top[*nres - NLINES - 1].macro_info == TRUE && geo.macro_simple == FALSE)
       {
 
         if (geo.matom_radiation == 1)
@@ -125,8 +125,8 @@ macro_gov (p, nres, matom_or_kpkt, which_out)
                computation of the k-packet emissivity needed for the final spectrum calculation. */
             *which_out = 1;
 
-            //SWM - If reverb is on, and this is the last ionisation cycle, then track the photon path
-            if (geo.reverb == REV_MATOM && geo.ioniz_or_extract && geo.fraction_converged > geo.reverb_fraction_converged)
+            //If reverb is on, and this is the last ionisation cycle, then track the photon path
+            if (geo.reverb == REV_MATOM && geo.ioniz_or_extract == CYCLE_IONIZ && geo.fraction_converged > geo.reverb_fraction_converged)
             {
               line_paths_add_phot (&(wmain[p->grid]), p, nres);
             }
@@ -145,7 +145,7 @@ macro_gov (p, nres, matom_or_kpkt, which_out)
          as caused the excitation.  In the old approach, escape will be set to 1, and we will escape.
          In the new "simple emissivity" approach, we should never satisfy the do loop, and so an error 
          is thrown and we exit. */
-      else if (*nres > NLINES && (phot_top[*nres - NLINES - 1].macro_info == 0 || geo.macro_simple == 1))
+      else if (*nres > NLINES && (phot_top[*nres - NLINES - 1].macro_info == FALSE || geo.macro_simple == TRUE))
       {
 #if BF_SIMPLE_EMISSIVITY_APPROACH
         Error ("Macro_go: Error - trying to access fake_matom_bf in alternate bf treatment.\n");
@@ -287,7 +287,7 @@ macro_pops (xplasma, xne)
 
     /* The check is against the first ion of the element. */
 
-    if (ion[ele[index_element].firstion].macro_info == 1 && geo.macro_simple == 0)
+    if (ion[ele[index_element].firstion].macro_info == TRUE && geo.macro_simple == FALSE)
     {
 
       sane_populations = 0;

@@ -85,7 +85,7 @@ ion_summary (w, element, istate, iswitch, rootname, ochoice)
   {
     aaa[n] = 0;
     nplasma = w[n].nplasma;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       if (iswitch == 0)
       {
@@ -128,7 +128,7 @@ ion_summary (w, element, istate, iswitch, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       nplasma = w[n].nplasma;
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         if (iswitch == 0)
           x /= ((plasmamain[nplasma].density[0] + plasmamain[nplasma].density[1]) * ele[nelem].abun);
@@ -245,7 +245,7 @@ tau_ave_summary (w, element, istate, freq, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
       aaa[n] = PI_E2_OVER_M * plasmamain[nplasma].density[nion] / freq / w[n].dvds_ave;
@@ -259,7 +259,7 @@ tau_ave_summary (w, element, istate, freq, rootname, ochoice)
   {
     for (n = 0; n < NDIM2; n++)
     {
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         w[n].x[1] = plasmamain[nplasma].density[nion] / (0.87 * plasmamain[nplasma].ne * ele[nelem].abun);
@@ -457,7 +457,7 @@ line_summary (w, rootname, ochoice)
   }
 
   strcpy (name, "");
-  if (lin_ptr[nline]->macro_info == 1)
+  if (lin_ptr[nline]->macro_info == TRUE)
   {
     sprintf (name, "%d Luminosity %d (%s) ion %d fractions\n", nline, element, ele[nelem].name, istate);
   }
@@ -471,11 +471,11 @@ line_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0.0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       nplasma = w[n].nplasma;
 
-      if (lin_ptr[nline]->macro_info == 1)
+      if (lin_ptr[nline]->macro_info == TRUE)
       {
         /* If this is a matom line */
         d2 = den_config (&plasmamain[nplasma], lin_ptr[nline]->nconfigu);
@@ -524,7 +524,7 @@ line_summary (w, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       // Here is the calculation of the effective collisions strength
-      if (w[n].vol > 0.0)
+      if (w[n].inwind >= 0)
       {
         nplasma = w[n].nplasma;
         omega = 5.13 * pow (plasmamain[nplasma].t_e / 1.e5, 0.18);
@@ -541,7 +541,7 @@ line_summary (w, rootname, ochoice)
     strcat (choice, ele[nelem].name);
     sprintf (iname, "%d", istate);
     strcat (choice, iname);
-    if (lin_ptr[nline]->macro_info == 1)
+    if (lin_ptr[nline]->macro_info == TRUE)
     {
       sprintf (iname, ".%d-%d", lin_ptr[nline]->levu, lin_ptr[nline]->levl);
       strcat (choice, iname);
@@ -588,7 +588,7 @@ total_emission_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       tot += aaa[n] = total_emission (&w[n], 0.0, VERY_BIG);
     }
@@ -646,7 +646,7 @@ modify_te (w, rootname, ochoice)
   {
     nplasma = w[n].nplasma;
     aaa[n] = 0;
-    if (w[n].vol > 0.0 && (x = plasmamain[nplasma].heat_tot) > 1.0)
+    if (w[n].inwind >= 0 && (x = plasmamain[nplasma].heat_tot) > 1.0)
     {
       aaa[n] = t_e = calc_te (&plasmamain[nplasma], MIN_TEMP, 1.2 * plasmamain[nplasma].t_r);
     }
@@ -723,7 +723,7 @@ partial_measure_summary (w, element, istate, rootname, ochoice)
   {
     aaa[n] = 0;
     nplasma = w[n].nplasma;
-    if (plasmamain[nplasma].ne > 1.0 && w[n].vol > 0.0)
+    if (plasmamain[nplasma].ne > 1.0 && w[n].inwind >= 0)
     {
       total += aaa[n] = plasmamain[nplasma].density[nion] * plasmamain[nplasma].ne * w[n].vol;
     }
@@ -739,7 +739,7 @@ partial_measure_summary (w, element, istate, rootname, ochoice)
     for (n = 0; n < NDIM2; n++)
     {
       nplasma = w[n].nplasma;
-      if (plasmamain[nplasma].ne > 1.0 && w[n].vol > 0.0)
+      if (plasmamain[nplasma].ne > 1.0 && w[n].inwind >= 0)
         w[n].x[1] = plasmamain[nplasma].density[nion] / (0.87 * plasmamain[nplasma].ne * ele[nelem].abun);
       else
         w[n].x[1] = 0;

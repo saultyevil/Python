@@ -47,17 +47,17 @@ In order to create your own model, there are a few important things to consider:
 
 * all units should be CGS (except for indices and flags, which are integers)
 * x and z for cylindrical (or r and theta for spherical polar) coordinates are
-supplied at the edges, rather than centres, of cells. Thus, a given cell is
-described by the location of it's bottom left hand corner in (x,z) space.
+  supplied at the edges, rather than centres, of cells. Thus, a given cell is
+  described by the location of it's bottom left hand corner in (x,z) space.
 * Ghost cells **must** be included. This means that additional rows and columns
-of cells must be included at the edges of the grid, and they must be excluded
-from the wind so that their temperatures and densities are set to zero, but
-have a velocity that python can interpolate with.
+  of cells must be included at the edges of the grid, and they must be excluded
+  from the wind so that their temperatures and densities are set to zero, but
+  have a velocity that python can interpolate with.
 * i and j correspond to rows and columns respectively, so that the first row of
-cells at the disk plane has i = 0.
+  cells at the disk plane has i = 0.
 * rho the density of the cell in cgs units
 * The t_e and t_r columns are optional and correspond to the electron and
-radiation temperature
+  radiation temperature
 
 Although :code:`cv_import.pf` is designed to closely match the
 :code:`cv_standard.pf` model, it does not match the model perfectly as

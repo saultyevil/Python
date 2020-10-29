@@ -163,6 +163,34 @@ renorm (a, scalar)
 }
 
 
+
+
+/**********************************************************/
+/** 
+ * @brief      muliply  a vector by a scalar
+ *
+ * @param [in] double  a[]  the input vector
+ * @param [in] double  scalar   the number to scale the vector by
+ * @param [out]double  b[]  the output vector      
+ * @return     Always returns 0 
+ *
+ *
+ * ###Notes###
+ *
+ *
+ **********************************************************/
+
+int
+rescale (a, scalar, b)
+     double a[], scalar, b[];
+{
+
+  b[0] = a[0] * scalar;
+  b[1] = a[1] * scalar;
+  b[2] = a[2] * scalar;
+  return (0);
+}
+
 /**********************************************************/
 /** 
  * @brief      the cross product of two 3 vectors

@@ -156,19 +156,21 @@ kappa_ind_comp (xplasma, freq)
  * to multiply by the total integrated mean indensity times the Thormpson
  * cross section.
  *
+ * Like other cooling routines, this function uses  quantities in the CMF
+ *
  **********************************************************/
 
 double
 total_comp (one, t_e)
-     WindPtr one;               // Pointer to the current wind cell - we need the cell volume, this is not in the plasma structure
-     double t_e;                //Current electron temperature of the cell
+     WindPtr one;
+     double t_e;
 {
-  double x, f1, f2;             //The returned variable
-  int nplasma, j;               //The cell number in the plasma array
+  double x, f1, f2;
+  int nplasma, j;
 
 
-  nplasma = one->nplasma;       //Get the correct plasma cell related to this wind cell
-  xplasma = &plasmamain[nplasma];       //reference the plasma structure for that cell to local variable
+  nplasma = one->nplasma;
+  xplasma = &plasmamain[nplasma];
 
   x = 0.0;
 
@@ -176,13 +178,13 @@ total_comp (one, t_e)
   {
     if (geo.spec_mod == 1)      //Check to see if we have generated a spectral model
     {
-      for (j = 0; j < geo.nxfreq; j++)  //We loop over all the bands
+      for (j = 0; j < geo.nxfreq; j++)
       {
         if (xplasma->spec_mod_type[j] != SPEC_MOD_FAIL) //Only bother doing the integrals if we have a model in this band
         {
-          f1 = xplasma->fmin_mod[j];    //Set the low frequency limit to the lowest frequency that the model applies to
-          f2 = xplasma->fmax_mod[j];    //Set the high frequency limit to the highest frequency that the model applies to
-          if (f1 > 1e18)        //If all the frequencies are lower than 1e18, then the cross section is constant at sigmaT
+          f1 = xplasma->fmin_mod[j];
+          f2 = xplasma->fmax_mod[j];
+          if (f1 > 1e18)
             x += num_int (comp_cool_integrand, f1, f2, 1e-6);
 
           else

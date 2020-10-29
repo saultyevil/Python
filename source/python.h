@@ -22,22 +22,16 @@ int verbosity;                  /* verbosity level. 0 low, 10 is high */
 #include "log.h"
 #include "strict.h"
 
-/* In python_43 the assignment of the WindPtr size has been moved from a fixed
-value determined by values in python.h to a values which are adjustable from
-within python */
 
 
 #define REL_MODE_LINEAR 0      /*Only make v/c corrections when doing frame transfers*/
-#define REL_MODE_FULL   1      /*Make full corrections for special relativity*/
+#define REL_MODE_FULL   1      /*Make full corrections for special relativity including co-moving frame effects*/
 
-  int rel_mode;                 /* How doppler effects are treated */
+int rel_mode;                 /* How doppler effects and co-moving frames are  */
 
-  int run_xtest;               /* Variable if TRUE causes a special test mode to be run */
+int run_xtest;               /* Variable if TRUE causes a special test mode to be run */
 
 
-
-/* With domains NDIM and MDIM need to be removed but NDIM2 is the total number of cells in wmain, and there
-are certain times we want to loop over everything.  The situation with NPLASMA is similar */
 
 int NDIM2;                      //The total number of wind cells in wmain
 int NPLASMA;                    //The number of cells with non-zero volume or the size of plasma structure
@@ -301,7 +295,7 @@ int current_domain;             // This integer is used by py_wind only
  * global information including how ionization calculations are caried out. 
  *
  * Information that is domain specific should be placed directly in the domain
- * structure.  ksl
+ * structure.  
  */
 
 #define SYSTEM_TYPE_STAR   0
@@ -324,9 +318,16 @@ int current_domain;             // This integer is used by py_wind only
 #define FALSE 0
 
 
+#define OBS_FRAME 0
+#define CMF_FRAME 1
+
+
+
 
 struct geometry
 {
+    int frame; //XFRAME this says what frame things like density and volumes are measured in
+    
   int system_type;              /* See allowed types above. system_type should only be used for setp */
   int binary;                   /* Indicates whether or not the system is a binary. TRUE or FALSE */
 
@@ -425,31 +426,31 @@ struct geometry
                                    if SYSTEM_TYPE_PREVIOUS it is an old run     */
   int star_radiation, disk_radiation;   /* 1 means consider radiation from star, disk,  bl, and/or wind */
   int bl_radiation, wind_radiation, agn_radiation;
-  int search_light_radiation;   /* 1605 - ksl - Added to implement 1d testing */
+
   int matom_radiation;          /* Added by SS Jun 2004: for use in macro atom computations of detailed spectra
                                    - 1 means use emissivities for BOTH macro atom levels and kpkts. 0 means don't
                                    (which is correct for the ionization cycles. */
   int ioniz_mode;               /* describes the type of ionization calculation which will
                                    be carried out.  The various ioniz_modes are defined by #defines IONMODE_MATRIX_BB
                                    etc.  See the documentation in this file for what these mean. */
-  int macro_ioniz_mode;         /* Added by SS Apr04 to control the use of macro atom populations and
-                                   ionization fractions. If it is set to 1 then macro atom populations
-                                   computed from estimators are used. If set to 0 then the macro atom
-                                   populations are computed as for minor ions. By default it is set to
-                                   0 initially and then set to 1 the first time that
+#define MACRO_IONIZ_MODE_NO_ESTIMATORS  0
+#define MACRO_IONIZ_MODE_ESTIMATORS     1
+  int macro_ioniz_mode;         /* Controls the use of macro atom populations and
+                                   ionization fractions. If it is set to MACRO_IONIZ_MODE_ESTIMATOR then macro atom populations
+                                   computed from estimators are used. If set to MACRO_IONIZ_MODE_NO_ESTIMATORS then the macro atom
+                                   populations are computed as for simple ions. By default it is set to
+                                   MACRO_IONIZ_MODE_NO_ESTIMATORS initially and then set to  MACRO_IONIZ_MODE_ESTIMATORS the first time that
                                    Monte Carlo estimators are normalised. */
-  int ioniz_or_extract;         /* Set to 1 (true) during ionization cycles, set to 0 (false) during calculation of
-                                   detailed spectrum.  Originally introduced by SS in July04 as he added
-                                   macro atoms.  Name changed by ksl (57h) since this variable can be used more
-                                   generally to speed up the extract portion of the calculation.
+#define CYCLE_IONIZ    1
+#define CYCLE_EXTRACT  0
+  int ioniz_or_extract;         /* Set to CYCLE_IONIZ during ionization cycles, set to CYCLE_EXTRACT during calculation of
+                                   detailed spectrum.  
                                  */
-  int macro_simple;             /* Added by SS May04 for diagnostics. As default this is set to 0. A full
-                                   Macro Atom calculation is performed in that case. If it is set to 1 it means
+  int macro_simple;             /* As default this is set to FALSE, in which case a full
+                                   Macro Atom calculation is performed. If it is set to TRUE it means
                                    that although Macro Atom data has been read in, all lines/continua are treated
                                    using the simplified two-level approximation. Such a calculation should reproduce
-                                   the same results as pre-Macro Atom versions of the code. */
-  int partition_mode;           /* Diagnostic to force the partition function to be calculated in
-                                   a specific way. */
+                                   similar results to the simple atom case.                 */
 
 #define LINE_MODE_ABSORB      0
 #define LINE_MODE_SCAT        1
@@ -771,21 +772,25 @@ typedef struct wind
   double dtheta, dr;            /* widths of bins, used in hydro import mode */
   struct cone wcone;            /* cone structure that defines the bottom edge of the cell in 
                                    CYLVAR coordinates */
-  double v[3];                  /*velocity at inner vertex of cell.  For 2d coordinate systems this
+  double v[3];                  /*velocity at inner vertex of cell in the observer frame.  For 2d coordinate systems this
                                    is defined in the xz plane */
-  double v_grad[3][3];          /*velocity gradient tensor  at the inner vertex of the cell NEW */
-  double div_v;                 /*Divergence of v at center of cell */
+  double v_grad[3][3];          /*velocity gradient tensor  at the inner vertex of the cell in the co-moving frame*/
+  double div_v;                 /*Divergence of v at center of cell in the co-moving frame*/
   double dvds_ave;              /* Average value of dvds */
   double dvds_max, lmn[3];      /*The maximum value of dvds, and the direction in a cell in cylindrical coords */
   double vol;                   /* valid volume of this cell (that is the volume of the cell that is considered
                                    to be in the wind.  This differs from the volume in the Plasma structure
-                                   where the volume is the volume that is actually filled with material. */
+                                   where the volume is the volume that is actually filled with material. 
+                                   The vol that is stored here after the progam has initialized itself is the
+                                   co-moving frame volume.
+                                 */
+  double xgamma,xgamma_cen;     /* 1./sqrt(1-beta**2) at x at edge and center of cell*/
   double dfudge;                /* A number which defines a push through distance for this cell, which replaces the
                                    global variable DFUDGE in many instances */
   enum inwind_enum
   { W_IN_DISK = -5, W_IN_STAR = -4, W_IGNORE = -2, W_NOT_INWIND = -1,
     W_ALL_INWIND = 0, W_PART_INWIND = 1, W_NOT_ASSIGNED = -999
-  } inwind;
+  } inwind;                      /* Basic information on the nature of a particular cell. */
   Wind_Paths_Ptr paths, *line_paths;    // SWM 6-2-15 Path data struct for each cell
 }
 wind_dummy, *WindPtr;
@@ -793,28 +798,24 @@ wind_dummy, *WindPtr;
 WindPtr wmain;
 
 /* Plasma is a structure that contains information about the properties of the
-plasma in regions of the geometry that are actually included n the wind */
-
-/* 70 - 1108 - Define wavelengths in which to record gross spectrum in a cell, see also xave_freq and xj in plasma structure */
-/* ksl - It would probably make more sense to define these in the same ways that bands are done for the generation of photons, or to
- * do both the same way at least.  Choosing to do this in two different ways makes the program confusing. The structure that has
- * the photon generation is called xband */
-/* 78 - 1407 - NSH - changed several elements (initially those of size nions) in the plasma array to by dynamically allocated.
-They are now pointers in the array. */
+ * plasma in regions of the geometry that are actually included in the wind 
+ * Note that a number of the arrays are dynamically allocated.
+ */
 
 
 typedef struct plasma
 {
-  int nwind;                    /*A cross reference to the corresponding cell in the  wind structure */
-  int nplasma;                  /*A self reference to this  in the plasma structure */
-  double ne;                    /* electron density in the shell */
-  double rho;                   /*density at the center of the cell. For clumped models, this is rho of the clump */
-  double vol;                   /* volume of this cell (more specifically the volume  that is filled with material
-                                   which can differe from the valid volume of the cell due to clumping. */
-  double *density;              /*The number density of a specific ion.  This needs to correspond
-                                   to the ion order obtained by get_atomic_data. 78 - changed to dynamic allocation */
-  double *partition;            /*The partition function for each  ion. 78 - changed to dynamic allocation */
-  double *levden;               /*The number density (occupation number?) of a specific level */
+  int nwind;                    /* A cross reference to the corresponding cell in the  wind structure */
+  int nplasma;                  /* A self reference to this  in the plasma structure */
+  double ne;                    /* Electron density in the shell (CMF) */
+  double rho;                   /* Density at the center of the cell. (CMF) For clumped models, this is rho of the clump */
+  double vol;                   /* Volume of this cell in CMF frame (more specifically the volume  that is filled with material
+                                   which can differs from the valid volume of the cell due to clumping.) */
+  double xgamma;                /* 1./sqrt(1-beta**2) at center of cell */
+  double *density;              /* The number density of a specific ion in the CMF.  The order of the ions is
+                                   the same as read in by the atomic data routines. */
+  double *partition;            /* The partition function for each  ion.  */
+  double *levden;               /* The number density (occupation number?) of a specific level */
 
   double kappa_ff_factor;       /* Multiplicative factor for calculating the FF heating for a photon. */
 
@@ -846,8 +847,8 @@ typedef struct plasma
   double heat_tot, heat_tot_old;        /* heating from all sources */
   double abs_tot;
   double heat_lines, heat_ff;
-  double heat_comp;             /* 1108 NSH The compton heating for the cell */
-  double heat_ind_comp;         /* 1205 NSH The induced compton heatingfor the cell */
+  double heat_comp;             /* The compton heating for the cell */
+  double heat_ind_comp;         /* The induced compton heatingfor the cell */
   double heat_lines_macro, heat_photo_macro;    /* bb and bf heating due to macro atoms. Subset of heat_lines 
                                                    and heat_photo. SS June 04. */
   double heat_photo, heat_z;    /*photoionization heating total and of metals */
@@ -871,8 +872,8 @@ typedef struct plasma
   int nscat_es;                 /* The number of electrons scatters in the cell */
   int nscat_res;                /* The number of resonant line scatters in the cell */
 
-  double mean_ds;               /* NSH 6/9/12 Added to allow a check that a thin shell is really optically thin */
-  int n_ds;                     /* NSH 6/9/12 Added to allow the mean ds to be computed */
+  double mean_ds;               /* Mean photon path length in a cell. */
+  int n_ds;                     /* Number of times a path lengyh was added; needed to compute mean_ds */
   int nrad;                     /* Total number of photons created within the cell */
   int nioniz;                   /* Total number of photon passages by photons capable of ionizing H */
   double *ioniz, *recomb;       /* Number of ionizations and recombinations for each ion.
@@ -891,15 +892,14 @@ typedef struct plasma
                                    by this ion via recombination. */
 
   double *cool_dr_ion;
-  double j, ave_freq;           /*Respectively mean intensity, intensity_averaged frequency, 
-                                   luminosity and absorbed luminosity of shell */
-  double xj[NXBANDS], xave_freq[NXBANDS];       /* 1108 NSH frequency limited versions of j and ave_freq */
-  double fmin[NXBANDS];         /* the minimum frequency photon seen in a band - this is incremented during photon flight */
-  double fmax[NXBANDS];         /* the maximum frequency photon seen in a band - this is incremented during photon flight */
-  double fmin_mod[NXBANDS];     /* the minimum freqneucy that the model should be applied for */
-  double fmax_mod[NXBANDS];     /* the maximum frequency that the model should be applied for */
+  double j, ave_freq;           /* Mean (angle-averaged) total intensity, intensity-averaged frequency */
+  double xj[NXBANDS], xave_freq[NXBANDS];       /* Frequency limited versions of j and ave_freq */
+  double fmin[NXBANDS];         /* Minimum frequency photon seen in a band - this is incremented during photon flight */
+  double fmax[NXBANDS];         /* Maximum frequency photon seen in a band - this is incremented during photon flight */
+  double fmin_mod[NXBANDS];     /* Minimum freqneucy that the model should be applied for */
+  double fmax_mod[NXBANDS];     /* Maximum frequency that the model should be applied for */
 
-  /* banded, directional fluxes - last element is used for the sum of magnitude of (flux)*/
+  /* directional fluxes (in observer frame) in 3 wavebands. - last element contains the  magnitude of flux)*/
   double F_vis[4];
   double F_UV[4];
   double F_Xray[4];
@@ -908,11 +908,11 @@ typedef struct plasma
      created by the central object, or the disk, or in the simple case the wind, but which have not undergone
      any kind of interaction which would change their direction
    */
-  double j_direct, j_scatt;     /* 1309 NSH mean intensity due to direct photons and scattered photons */
-  double ip_direct, ip_scatt;   /* 1309 NSH mean intensity due to direct photons and scattered photons */
-  double xsd_freq[NXBANDS];     /* 1208 NSH the standard deviation of the frequency in the band */
-  int nxtot[NXBANDS];           /* 1108 NSH the total number of photon passages in frequency bands */
-  double max_freq;              /* 1208 NSH The maximum frequency photon seen in this cell */
+  double j_direct, j_scatt;     /* Mean intensity due to direct photons and scattered photons */
+  double ip_direct, ip_scatt;   /* Mean intensity due to direct photons and scattered photons */
+  double xsd_freq[NXBANDS];     /* The standard deviation of the frequency in the band */
+  int nxtot[NXBANDS];           /* The total number of photon passages in frequency bands */
+  double max_freq;              /*  The maximum frequency photon seen in this cell */
   double cool_tot;              /*The total cooling in a cell */
   /* The total luminosity of all processes in the cell, basically the emissivity of the cell times it volume. Not the same 
      as what escapes the cell, since photons can interact within the cell and lose weight or even be destroyed */
@@ -933,14 +933,14 @@ typedef struct plasma
   double cool_rr_ioniz, cool_rr_metals_ioniz;   /*fb luminosity & fb of metals metals */
   double lum_tot_ioniz;         /* The specfic radiative luminosity in frequencies defined by freqmin
                                    and freqmax.  This will depend on the last call to total_emission */
-  double heat_shock;            /*1805 ksl - An extra heating term added to allow for shock heating of the plasma (Implementef for FU Ori Project */
+  double heat_shock;            /* An extra heating term added to allow for shock heating of the plasma (Implementef for FU Ori Project */
 
   /* JM 1807 -- these routines are for the BF_SIMPLE_EMISSIVITY_APPROACH
      they allow one to inspect the net flow of energy into and from the simple ion 
      ionization pool */
   double bf_simple_ionpool_in, bf_simple_ionpool_out;
 
-  double comp_nujnu;            /* 1701 NSH The integral of alpha(nu)nuj(nu) used to 
+  double comp_nujnu;            /* The integral of alpha(nu)nuj(nu) used to 
                                    compute compton cooling-  only needs computing once per cycle 
                                  */
 
@@ -1127,7 +1127,9 @@ int size_Jbar_est, size_gamma_est, size_alpha_est;
 #define NEBULARMODE_MATRIX_SPECTRALMODEL 9      // matrix solver spectral model
 #define NEBULARMODE_MATRIX_ESTIMATORS 10        // matrix solver spectral model
 
-
+// modes for the wind_luminosity routine 
+#define MODE_OBSERVER_FRAME_TIME 0
+#define MODE_CMF_TIME 1
 
 typedef struct photon
 {
@@ -1329,7 +1331,7 @@ typedef struct Cdf
   double limit1, limit2;        /* Limits (running from 0 to 1) that define a portion
                                    of the CDF to sample */
   double x1, x2;                /* limits if they exist on what is returned */
-  double norm;                  //The scaling factor which would renormalize the CDF
+  double norm;                  /* The scaling factor which would renormalize the CDF */
   int ncdf;                     /* Size of this CDF */
 }
  *CdfPtr, cdf_dummy;
@@ -1420,7 +1422,7 @@ int nfb;                        // Actual number of freqency intervals calculate
 
 
 
-#include "version.h"            /*54f -- Added so that version can be read directly */
+#include "version.h"            /* Added so that version can be read directly */
 #include "templates.h"
 #include "recipes.h"
 
@@ -1436,7 +1438,7 @@ double kap_bf[NLEVELS];
 
 // 12jun nsh - some commands to enable photon logging in given cells. There is also a pointer in the geo
 
-FILE *pstatptr;                 //NSH 120601 - pointer to a diagnostic file that will contain photon data for given cells
+FILE *pstatptr;                 // pointer to a diagnostic file that will contain photon data for given cells
 int cell_phot_stats;            //1=do  it, 0=dont do it
 #define  NCSTAT 10              //The maximum number of cells we are going to log
 int ncstat;                     // the actual number we are going to log

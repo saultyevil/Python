@@ -70,6 +70,7 @@ do_windsave2table (root, ion_switch)
     create_master_table (ndom, rootname);
     create_heat_table (ndom, rootname);
     create_convergence_table (ndom, rootname);
+    create_velocity_gradient_table (ndom, rootname);
 
     if (ion_switch != 99)
     {
@@ -424,57 +425,66 @@ create_heat_table (ndom, rootname)
   c[5] = get_one (ndom, "w");
   strcpy (column_name[5], "w");
 
-  c[6] = get_one (ndom, "heat_tot");
-  strcpy (column_name[6], "heat_tot");
+  c[6] = get_one (ndom, "ave_freq");
+  strcpy (column_name[6], "ave_freq");
 
-  c[7] = get_one (ndom, "heat_comp");
-  strcpy (column_name[7], "heat_comp");
+  c[7] = get_one (ndom, "j");
+  strcpy (column_name[7], "j");
 
-  c[8] = get_one (ndom, "heat_lines");
-  strcpy (column_name[8], "heat_lines");
+  c[8] = get_one (ndom, "lum_tot");
+  strcpy (column_name[8], "lum_tot");
 
-  c[9] = get_one (ndom, "heat_ff");
-  strcpy (column_name[9], "heat_ff");
+  c[9] = get_one (ndom, "heat_tot");
+  strcpy (column_name[9], "heat_tot");
 
-  c[10] = get_one (ndom, "heat_photo");
-  strcpy (column_name[10], "heat_photo");
+  c[10] = get_one (ndom, "heat_comp");
+  strcpy (column_name[10], "heat_comp");
 
-  c[11] = get_one (ndom, "heat_auger");
-  strcpy (column_name[11], "heat_auger");
+  c[11] = get_one (ndom, "heat_lines");
+  strcpy (column_name[11], "heat_lines");
 
-  c[12] = get_one (ndom, "cool_tot");
-  strcpy (column_name[12], "cool_tot");
+  c[12] = get_one (ndom, "heat_ff");
+  strcpy (column_name[12], "heat_ff");
 
-  c[13] = get_one (ndom, "cool_comp");
-  strcpy (column_name[13], "cool_comp");
+  c[13] = get_one (ndom, "heat_photo");
+  strcpy (column_name[13], "heat_photo");
 
-  c[14] = get_one (ndom, "lum_lines");
-  strcpy (column_name[14], "lum_lines");
+  c[14] = get_one (ndom, "heat_auger");
+  strcpy (column_name[14], "heat_auger");
 
-  c[15] = get_one (ndom, "cool_dr");
-  strcpy (column_name[15], "cool_dr");
+  c[15] = get_one (ndom, "cool_tot");
+  strcpy (column_name[15], "cool_tot");
 
-  c[16] = get_one (ndom, "lum_ff");
-  strcpy (column_name[16], "lum_ff");
+  c[16] = get_one (ndom, "cool_comp");
+  strcpy (column_name[16], "cool_comp");
+
+  c[17] = get_one (ndom, "lum_lines");
+  strcpy (column_name[17], "lum_lines");
+
+  c[18] = get_one (ndom, "cool_dr");
+  strcpy (column_name[18], "cool_dr");
+
+  c[19] = get_one (ndom, "lum_ff");
+  strcpy (column_name[19], "lum_ff");
 
 
-  c[17] = get_one (ndom, "cool_rr");
-  strcpy (column_name[17], "cool_rr");
+  c[20] = get_one (ndom, "cool_rr");
+  strcpy (column_name[20], "cool_rr");
 
-  c[18] = get_one (ndom, "cool_adiab");
-  strcpy (column_name[18], "cool_adiab");
+  c[21] = get_one (ndom, "cool_adiab");
+  strcpy (column_name[21], "cool_adiab");
 
-  c[19] = get_one (ndom, "heat_shock");
-  strcpy (column_name[19], "heat_shock");
+  c[22] = get_one (ndom, "heat_shock");
+  strcpy (column_name[22], "heat_shock");
 
-  c[20] = get_one (ndom, "heat_lines_macro");
-  strcpy (column_name[20], "heat_lines_macro");
+  c[23] = get_one (ndom, "heat_lines_macro");
+  strcpy (column_name[23], "heat_lines_macro");
 
-  c[21] = get_one (ndom, "heat_photo_macro");
-  strcpy (column_name[21], "heat_photo_macro");
+  c[24] = get_one (ndom, "heat_photo_macro");
+  strcpy (column_name[24], "heat_photo_macro");
 
   /* This should be the maxium number above +1 */
-  ncols = 22;
+  ncols = 25;
 
 
   converge = get_one (ndom, "converge");
@@ -773,6 +783,182 @@ create_convergence_table (ndom, rootname)
 
 
 
+/**********************************************************/
+/**
+ * @brief      writes a selected variables related to issues about
+ * velocity gratients to an ascii file which can be read as an astropy table
+ *
+ *
+ * @param [in] int  ndom   The domain of interest
+ * @param [in, out] char  rootname[]   The rootname of the windsave file
+ * @return     Always returns 0
+ *
+ * @details
+ *
+ * ### Notes ###
+ *
+ * To add a variable one just needs to define the column_name
+ * and send the appropriate call to either get_one or get_ion.
+ *
+ *
+ **********************************************************/
+
+int
+create_velocity_gradient_table (ndom, rootname)
+     int ndom;
+     char rootname[];
+{
+  char filename[132];
+  double *c[50], *converge;
+  char column_name[50][20];
+  char one_line[1024], start[1024], one_value[20];
+
+
+  int i, ii, jj;
+  int nstart, ndim2;
+  int n, ncols;
+  FILE *fptr;
+
+  strcpy (filename, rootname);
+  strcat (filename, ".gradient.txt");
+
+
+  fptr = fopen (filename, "w");
+
+  /* Get the variables that one needs */
+
+  c[0] = get_one (ndom, "dv_x_dx");
+  strcpy (column_name[0], "dv_x_dx");
+
+  c[1] = get_one (ndom, "dv_y_dx");
+  strcpy (column_name[1], "dv_y_dx");
+
+  c[2] = get_one (ndom, "dv_z_dx");
+  strcpy (column_name[2], "dv_z_dx");
+
+  c[3] = get_one (ndom, "dv_x_dy");
+  strcpy (column_name[3], "dv_x_dy");
+
+  c[4] = get_one (ndom, "dv_y_dy");
+  strcpy (column_name[4], "dv_y_dy");
+
+  c[5] = get_one (ndom, "dv_z_dy");
+  strcpy (column_name[5], "dv_z_dy");
+
+  c[6] = get_one (ndom, "dv_x_dz");
+  strcpy (column_name[6], "dv_x_dz");
+
+  c[7] = get_one (ndom, "dv_y_dz");
+  strcpy (column_name[7], "dv_y_dz");
+
+  c[8] = get_one (ndom, "dv_z_dz");
+  strcpy (column_name[8], "dv_z_dz");
+
+  c[9] = get_one (ndom, "div_v");
+  strcpy (column_name[9], "div_v");
+
+  c[10] = get_one (ndom, "gamma");
+  strcpy (column_name[10], "gamma");
+
+  /* This should be the maxium number above +1 */
+  ncols = 11;
+
+
+
+  /* At this point all of the data has been collected */
+
+
+  nstart = zdom[ndom].nstart;
+  ndim2 = zdom[ndom].ndim2;
+
+  converge = get_one (ndom, "converge");
+
+
+  if (zdom[ndom].coord_type == SPHERICAL)
+  {
+
+
+    /*
+     * First assemble the header line
+     */
+
+    sprintf (start, "%9s %4s %6s %6s %9s %9s %9s ", "r", "i", "inwind", "converge", "v_x", "v_y", "v_z");
+    strcpy (one_line, start);
+    n = 0;
+    while (n < ncols)
+    {
+      sprintf (one_value, "%9s ", column_name[n]);
+      strcat (one_line, one_value);
+
+      n++;
+    }
+    fprintf (fptr, "%s\n", one_line);
+
+
+    /* Now assemble the lines of the table */
+
+    for (i = 0; i < ndim2; i++)
+    {
+      //This line is different from the two d case
+      sprintf (start, "%9.3e %4d %6d %8.0f %9.2e %9.2e %9.2e ",
+               wmain[nstart + i].r, i, wmain[nstart + i].inwind,
+               converge[i], wmain[nstart + i].v[0], wmain[nstart + i].v[1], wmain[nstart + i].v[2]);
+      strcpy (one_line, start);
+      n = 0;
+      while (n < ncols)
+      {
+        sprintf (one_value, "%9.2e ", c[n][i]);
+        strcat (one_line, one_value);
+        n++;
+      }
+      fprintf (fptr, "%s\n", one_line);
+    }
+  }
+  else
+  {
+
+    /* First assemble the header line */
+
+    sprintf (start, "%8s %8s %4s %4s %6s %8s %9s %9s %9s ", "x", "z", "i", "j", "inwind", "converge", "v_x", "v_y", "v_z");
+    strcpy (one_line, start);
+    n = 0;
+    while (n < ncols)
+    {
+      sprintf (one_value, "%9s ", column_name[n]);
+      strcat (one_line, one_value);
+
+      n++;
+    }
+    fprintf (fptr, "%s\n", one_line);
+
+
+    /* Now assemble the lines of the table */
+
+    for (i = 0; i < ndim2; i++)
+    {
+      wind_n_to_ij (ndom, nstart + i, &ii, &jj);
+      sprintf (start,
+               "%8.2e %8.2e %4d %4d %6d %8.0f %9.2e %9.2e %9.2e ",
+               wmain[nstart + i].xcen[0], wmain[nstart + i].xcen[2], ii,
+               jj, wmain[nstart + i].inwind, converge[i], wmain[nstart + i].v[0], wmain[nstart + i].v[1], wmain[nstart + i].v[2]);
+      strcpy (one_line, start);
+      n = 0;
+      while (n < ncols)
+      {
+        sprintf (one_value, "%9.2e ", c[n][i]);
+        strcat (one_line, one_value);
+        n++;
+      }
+      fprintf (fptr, "%s\n", one_line);
+    }
+  }
+
+  fclose (fptr);
+
+  return (0);
+}
+
+
 
 /**********************************************************/
 /**
@@ -788,7 +974,7 @@ create_convergence_table (ndom, rootname)
  *
  * ### Notes ###
  *
- * The routine calls get_ion_density mulitiple times, once for
+ * The routine calls get_ion mulitiple times, once for
  * each ion of an atom
  *
  **********************************************************/
@@ -1005,7 +1191,7 @@ get_ion (ndom, element, istate, iswitch, name)
   {
     x[n] = 0;
     nplasma = wmain[nstart + n].nplasma;
-    if (wmain[nstart + n].vol > 0.0 && plasmamain[nplasma].rho > 0.0)
+    if (wmain[nstart + n].inwind >= 0 && plasmamain[nplasma].rho > 0.0)
     {
       if (iswitch == 0)
       {
@@ -1114,7 +1300,7 @@ get_one (ndom, variable_name)
   for (n = 0; n < ndim2; n++)
   {
     x[n] = 0;
-    if (wmain[n + nstart].vol > 0.0)
+    if (wmain[n + nstart].inwind >= 0)
     {
       nplasma = wmain[n + nstart].nplasma;
 
@@ -1154,6 +1340,14 @@ get_one (ndom, variable_name)
       else if (strcmp (variable_name, "dt_e_old") == 0)
       {
         x[n] = plasmamain[nplasma].dt_e_old;
+      }
+      else if (strcmp (variable_name, "j") == 0)
+      {
+        x[n] = plasmamain[nplasma].j;
+      }
+      else if (strcmp (variable_name, "ave_freq") == 0)
+      {
+        x[n] = plasmamain[nplasma].ave_freq;
       }
       else if (strcmp (variable_name, "converge") == 0)
       {
@@ -1210,6 +1404,10 @@ get_one (ndom, variable_name)
       else if (strcmp (variable_name, "cool_comp") == 0)
       {
         x[n] = plasmamain[nplasma].cool_comp;
+      }
+      else if (strcmp (variable_name, "lum_tot") == 0)
+      {
+        x[n] = plasmamain[nplasma].lum_tot;
       }
       else if (strcmp (variable_name, "lum_lines") == 0)
       {
@@ -1270,6 +1468,50 @@ get_one (ndom, variable_name)
       else if (strcmp (variable_name, "macro_bf_out") == 0)
       {
         x[n] = plasmamain[nplasma].bf_simple_ionpool_out;
+      }
+      else if (strcmp (variable_name, "dv_x_dx") == 0)
+      {
+        x[n] = wmain[n].v_grad[0][0];
+      }
+      else if (strcmp (variable_name, "dv_x_dy") == 0)
+      {
+        x[n] = wmain[n].v_grad[0][1];
+      }
+      else if (strcmp (variable_name, "dv_x_dz") == 0)
+      {
+        x[n] = wmain[n].v_grad[0][2];
+      }
+      else if (strcmp (variable_name, "dv_y_dx") == 0)
+      {
+        x[n] = wmain[n].v_grad[1][0];
+      }
+      else if (strcmp (variable_name, "dv_y_dy") == 0)
+      {
+        x[n] = wmain[n].v_grad[1][1];
+      }
+      else if (strcmp (variable_name, "dv_y_dz") == 0)
+      {
+        x[n] = wmain[n].v_grad[1][2];
+      }
+      else if (strcmp (variable_name, "dv_z_dx") == 0)
+      {
+        x[n] = wmain[n].v_grad[2][0];
+      }
+      else if (strcmp (variable_name, "dv_z_dy") == 0)
+      {
+        x[n] = wmain[n].v_grad[2][1];
+      }
+      else if (strcmp (variable_name, "dv_z_dz") == 0)
+      {
+        x[n] = wmain[n].v_grad[2][2];
+      }
+      else if (strcmp (variable_name, "div_v") == 0)
+      {
+        x[n] = wmain[n].div_v;
+      }
+      else if (strcmp (variable_name, "gamma") == 0)
+      {
+        x[n] = wmain[n].xgamma;
       }
       else
       {

@@ -54,7 +54,7 @@ xadiabatic_cooling_summary (w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       t_e = plasmamain[w[n].nplasma].t_e;
       num_recomb (&plasmamain[w[n].nplasma], t_e, 1);
@@ -410,11 +410,11 @@ depcoef_overview (icell)
     xdummy = &pdum;
 
     copy_plasma (x, xdummy);
-    geo.macro_ioniz_mode = 0;
+    geo.macro_ioniz_mode = MACRO_IONIZ_MODE_NO_ESTIMATORS;
 
     partition_functions (xdummy, NEBULARMODE_TE);
     saha (xdummy, xdummy->ne, xdummy->t_e);
-    geo.macro_ioniz_mode = 1;
+    geo.macro_ioniz_mode = MACRO_IONIZ_MODE_ESTIMATORS;
   }
   else
   {
@@ -563,7 +563,7 @@ depcoef_overview_specific (version, nconfig, w, rootname, ochoice)
   for (n = 0; n < NDIM2; n++)
   {
     aaa[n] = 0;
-    if (w[n].vol > 0.0)
+    if (w[n].inwind >= 0)
     {
       xden = -1;
 
@@ -571,12 +571,12 @@ depcoef_overview_specific (version, nconfig, w, rootname, ochoice)
       xdummy = &pdum;
 
       copy_plasma (xplasma, xdummy);
-      geo.macro_ioniz_mode = 0;
+      geo.macro_ioniz_mode = MACRO_IONIZ_MODE_NO_ESTIMATORS;
 
       partition_functions (xdummy, NEBULARMODE_TE);
       saha (xdummy, xdummy->ne, xdummy->t_e);
 
-      geo.macro_ioniz_mode = 1;
+      geo.macro_ioniz_mode = MACRO_IONIZ_MODE_ESTIMATORS;
 
       p = &config[nconfig];
       xden = den_config (xplasma, nconfig);
@@ -679,7 +679,7 @@ level_popsoverview (nplasma, w, rootname, ochoice)
   xdummy = &pdum;
 
   copy_plasma (xplasma, xdummy);
-  geo.macro_ioniz_mode = 0;
+  geo.macro_ioniz_mode = MACRO_IONIZ_MODE_NO_ESTIMATORS;
 
   Log ("# Level, Pops, Dep coefs\n");
   if (ochoice)
@@ -699,7 +699,7 @@ level_popsoverview (nplasma, w, rootname, ochoice)
     partition_functions (xdummy, NEBULARMODE_TE);
     saha (xdummy, xdummy->ne, xdummy->t_e);
 
-    geo.macro_ioniz_mode = 1;
+    geo.macro_ioniz_mode = MACRO_IONIZ_MODE_ESTIMATORS;
 
     //p = &config[i];
     xden = den_config (xplasma, i);
@@ -756,7 +756,7 @@ level_emissoverview (nlev, w, rootname, ochoice)
     aaa[n] = 0;
     nplasma = w[n].nplasma;
 
-    if (w[n].vol > 0.0 && plasmamain[nplasma].ne > 1.0)
+    if (w[n].inwind >= 0 && plasmamain[nplasma].ne > 1.0)
     {
       if (nlev != 0)
       {
@@ -859,7 +859,7 @@ level_escapeoverview (nlev, w, rootname, ochoice)
     aaa[n] = 0;
     nplasma = w[n].nplasma;
 
-    if (w[n].vol > 0.0 && plasmamain[nplasma].ne > 1.0)
+    if (w[n].inwind >= 0 && plasmamain[nplasma].ne > 1.0)
     {
       xplasma = &plasmamain[nplasma];
       aaa[n] = p_escape (lin_ptr[nline], xplasma);
@@ -952,7 +952,7 @@ level_tauoverview (nlev, w, rootname, ochoice)
     aaa[n] = 0;
     nplasma = w[n].nplasma;
 
-    if (w[n].vol > 0.0 && plasmamain[nplasma].ne > 1.0)
+    if (w[n].inwind >= 0 && plasmamain[nplasma].ne > 1.0)
     {
       xplasma = &plasmamain[nplasma];
       one = &wmain[xplasma->nwind];

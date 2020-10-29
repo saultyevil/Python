@@ -224,7 +224,7 @@ usually analytic expressions
  * 
  * This is a convenience function that allows one to obtain the velocity at
  * any point in space for a given domain. The routine uses the domain number
- * to decide what velocity law is appriate.  For models which are defined from 
+ * to decide what velocity law is appropriate.  For models which are defined from 
  * a set of parametric equations the velocity will sill be calculated. For models
  * that are read in as a grid, the models will be interpolated from the imported
  * grid
@@ -234,6 +234,10 @@ usually analytic expressions
  * This routine is used to set up the grid of velocities at the corners of
  * grid cells.  It is not used later on.
  *
+ * The routine works for imported models as well, even in the case
+ * the model velocity is actually one of the inputs.
+ *
+ * This routine calculates velocities in the observer frame.
  **********************************************************/
 
 double
@@ -281,6 +285,11 @@ model_velocity (ndom, x, v)
     Exit (0);
   }
 
+  if (speed > 0.99 * VLIGHT)
+  {
+    rescale (v, 0.99 * VLIGHT / speed, v);
+  }
+
   return (speed);
 }
 
@@ -290,23 +299,31 @@ model_velocity (ndom, x, v)
 
 /**********************************************************/
 /** 
- * @brief      calculate  the velocity gradient at positions in the flow based on
- * the analytic wind models and imported models.  
+ * @brief      calculate  the co-moving frame velocity gradient at 
+ * positions in the flow based on the analytic wind models and imported models.  
  *
- * @param [in] int  ndom   The domain of interest
- * @param [in] double  x[]   A position in the domain
- * @param [out] double  v_grad[][3]   The velocity gradient tensor at the postion
+ * @param [in]  int  ndom   The domain of interest
+ * @param [in]  double  x[]   A position in the domain
+ * @param [out] double  v_grad[][3]   The velocity gradient tensor at the position
  * @return   Always returns 0  
  *
  * @details
  * 
- * The routien calls model_velocity multiple times to calculate the velocity
- * gradient tensor at a particular position.
+ * The routine calls model_velocity multiple times to calculate the velocity
+ * gradient tensor in the co-moving frame at a particular position (in the
+ * observer frame..
  *
  * ### Notes ###
  *
  * This routine is normally used only during the initialization
  * of the wind
+ *
+ * This uses a symmetric calculation of the derivative but does 
+ * not adaptively adjust the length of the steps to check the
+ * accuracy of the calculation.  See issue #782
+ *
+ * Since the routine calls model_velocity directly, and not vwind_xyz
+ * it can be called before wmain.v has been populated.
  *
  **********************************************************/
 
@@ -316,41 +333,116 @@ model_vgrad (ndom, x, v_grad)
      int ndom;
 {
 
-  double v0[3], v1[3];
-  double dx[3], dv[3];
-  double ds;
+  double v[3], v_forward[3], v_reverse[3];
+  double dx_forward[3], dx_reverse[3];
+  double dv[3];
+  double ds_cmf;
   int i, j;
-  int vsub (), stuff_v ();
+  double zero_vector[3], dx[3], dx_obs[3];
 
-  model_velocity (ndom, x, v0);
+  zero_vector[0] = zero_vector[1] = zero_vector[2] = 0.0;
 
 
-  ds = 0.001 * length (x);
-  if (ds < 1.e7)
-    ds = 1.e7;
+
+
+  ds_cmf = 0.00001 * length (x);
+  if (ds_cmf == 0)
+  {
+    stuff_v (zero_vector, v_grad[0]);
+    stuff_v (zero_vector, v_grad[1]);
+    stuff_v (zero_vector, v_grad[1]);
+    return (0);
+  }
+
+  if (ds_cmf < 1.e6)
+    ds_cmf = 1.e6;
+
+  model_velocity (ndom, x, v);
 
   for (i = 0; i < 3; i++)
   {
-    stuff_v (x, dx);
-    dx[i] += ds;
+    /* first create vectors  which are offset by +-ds.  Note that
+       we want the observer frame velocities at a point which is ds away
+       in the cmf frame.  To do this, we have to find out how far away
+       that point would be in the observer frame. */
 
-    model_velocity (ndom, dx, v1);
+    stuff_v (zero_vector, dx);
+    dx[i] = ds_cmf;
+    local_to_observer_frame_ruler_transform (v, dx, dx_obs);
+    vadd (x, dx_obs, dx_forward);
+    vsub (x, dx_obs, dx_reverse);
 
-    if (sane_check (v1[0]) || sane_check (v1[1]) || sane_check (v1[2]))
+    /* calculate the velocity at these positions */
+    model_velocity (ndom, dx_reverse, v_reverse);
+    model_velocity (ndom, dx_forward, v_forward);
+
+
+
+    observer_to_local_frame_velocity (v_forward, v_reverse, dv);
+
+
+    for (j = 0; j < 3; j++)
+      dv[j] /= 2 * ds_cmf;
+
+    if (sane_check (dv[0]) || sane_check (dv[1]) || sane_check (dv[2]))
     {
-      Error ("model_vgrad:sane_check dx %f %f %f v0 %f %f %f\n", dx[0], dx[1], dx[2], v1[0], v1[1], v1[2]);
+      Error ("model_vgrad: x %12.4e %12.4e %12.4e dv %12.4e %12.4e %12.4e %12.4e\n", x[0], x[1], x[2], dv[0], dv[1], dv[2]);
     }
 
-    vsub (v1, v0, dv);
-    for (j = 0; j < 3; j++)
-      dv[j] /= ds;
-    stuff_v (dv, &v_grad[i][0]);
+
+    stuff_v (dv, v_grad[i]);
   }
 
   return (0);
 
 
+}
 
+
+
+/**********************************************************/
+/** 
+ * @brief      calculate  the diverernce of  the velocity at positions 
+ * in the flow based on  the analytic wind models and imported models.  
+ *
+ * @param [in] int  ndom   The domain of interest
+ * @param [in] double  x[]   A position in the domain
+ * @return   Always returns the divergence of the velocity in the co-moving
+ * frame
+ *
+ * @details
+ * 
+ * The routine calls model_velocity multiple times to calculate the velocity
+ * divergence at a particular postion
+ *
+ * ### Notes ###
+ *
+ * This routine is normally used only during the initialization
+ * of the wind
+ *
+ * Since the routine calls model_velocity directly, and not vwind_xyz
+ * it can be called before wmain.v has been populated.
+ *
+ **********************************************************/
+
+double
+get_div_v_in_cmf_frame (ndom, x)
+     int ndom;
+     double *x;
+{
+  int i;
+  double v[3][3];
+  double div_v = 0;
+
+  model_vgrad (ndom, x, v);
+
+  /* the trace of the velocity gradient tensor is the divergence */
+  for (i = 0; i < 3; i++)
+  {
+    div_v += v[i][i];
+  }
+
+  return (div_v);
 }
 
 

@@ -593,7 +593,7 @@ class TransferFunction:
             "Negative scaling factors make no sense!"
         assert limit is None or limit > 0,\
             "Limit must either be zero or a positive number!"
-        start = time.clock()
+        start = time.process_time()
 
         if verbose:
             if limit is not None:
@@ -688,7 +688,7 @@ class TransferFunction:
         # Scale to continuum luminosity
         self._emissivity /= self._continuum
 
-        print("'{}' successfully run ({:.1f}s)".format(self._filename, time.clock()-start))
+        print("'{}' successfully run ({:.1f}s)".format(self._filename, time.process_time()-start))
         # Make absolutely sure this data is wiped as it's *HUGE*
         del data
         return self
@@ -913,7 +913,7 @@ class TransferFunction:
         # matplotlib.rcParams["text.usetex"] = "True"
         matplotlib.rcParams.update({'font.size': 14})
 
-        start = time.clock()
+        start = time.process_time()
         if name is not None:
             print("Plotting to file '"+self._filename+"_"+name+".eps'...")
         else:
@@ -1184,10 +1184,10 @@ class TransferFunction:
 
         if name is None:
             plt.savefig("{}.{}".format(self._filename, format), bbox_inches='tight')
-            print("Successfully plotted '{}.eps'({:.1f}s)".format(self._filename, time.clock()-start))
+            print("Successfully plotted '{}.eps'({:.1f}s)".format(self._filename, time.process_time()-start))
         else:
             plt.savefig("{}_{}.{}".format(self._filename, name, format), bbox_inches='tight')
-            print("Successfully plotted '{}_{}.eps'({:.1f}s)".format(self._filename, name, time.clock()-start))
+            print("Successfully plotted '{}_{}.eps'({:.1f}s)".format(self._filename, name, time.process_time()-start))
 
         if show:
             fig.show()
@@ -1229,7 +1229,7 @@ def open_database(file_root: str, user: str = None, password: str = None, batch_
     session_maker = sqlalchemy.orm.sessionmaker(bind=db_engine)
     session = session_maker()
 
-    start = time.clock()
+    start = time.process_time()
 
     try:
         session.query(Photon.Weight).first()
@@ -1273,7 +1273,7 @@ def open_database(file_root: str, user: str = None, password: str = None, batch_
         session.commit()
         session.close()
         del session
-        print("Successfully read in ({:.1f}s)".format(time.clock()-start))
+        print("Successfully read in ({:.1f}s)".format(time.process_time()-start))
 
     return db_engine
 # ==============================================================================

@@ -771,8 +771,6 @@ rtheta_is_cell_in_wind (n)
   ndim = zdom[ndom].ndim;
   mdim = zdom[ndom].mdim;
 
-//OLD  if (i >= (ndim - 2) && j >= (mdim - 2))
-//OLD  if (i >= (ndim - 2) || j >= (mdim - 3))
   if (i >= (ndim - 2) || j >= (mdim - 2))
   {
     return (W_NOT_INWIND);

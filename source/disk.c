@@ -144,18 +144,6 @@ teff (t, x)
       q = pow (q * q * q * q + (theat / STEFAN_BOLTZMANN), 0.25);
 
     }
-//OLD    else if (geo.disk_tprofile == DISK_TPROFILE_YSO)    // Analytic approximation for disk heating by star; implemented for YSOs
-//OLD    {
-//OLD      disk_heating_factor = pow (geo.tstar / t, 4.0);
-//OLD      disk_heating_factor *= (asin (1. / x) - (pow ((1. - (1. / (x * x))), 0.5) / x));
-//OLD      disk_heating_factor /= PI;
-//OLD      disk_heating_factor *= x * x * x;
-//OLD      disk_heating_factor /= (1 - sqrt (1. / x));
-//OLD      disk_heating_factor += 1;
-
-//OLD      q *= pow (disk_heating_factor, (1. / 4.));
-
-//OLD    }
   }
   return (q);
 }

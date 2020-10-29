@@ -85,7 +85,6 @@ create_maps ()
   int i, j;
   j = 0;
 
-  /*The normal situation where there are fewer wind elements than plasma elements  */
   for (i = 0; i < NDIM2; i++)
   {
     wmain[i].nwind = i;

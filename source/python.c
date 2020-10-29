@@ -108,7 +108,7 @@ main (argc, argv)
   time_max = -1;
   set_max_time (files.root, time_max);
 
-  rel_mode = REL_MODE_LINEAR;
+  rel_mode = REL_MODE_FULL;
   run_xtest = FALSE;
 
 
@@ -216,7 +216,6 @@ main (argc, argv)
     strcpy (answer, "star");
     sprintf (values, "%d,%d,%d,%d,%d", SYSTEM_TYPE_STAR, SYSTEM_TYPE_CV, SYSTEM_TYPE_BH, SYSTEM_TYPE_AGN, SYSTEM_TYPE_PREVIOUS);
     geo.system_type = rdchoice ("System_type(star,cv,bh,agn,previous)", values, answer);
-//OLD    geo.system_type = rdchoice ("System_type(star,cv,bh,agn,previous)", "0,1,2,3", answer);
 
 
     if (geo.system_type == SYSTEM_TYPE_PREVIOUS)
@@ -295,12 +294,6 @@ main (argc, argv)
 
       rdpar_comment ("Parameters describing the various winds or coronae in the system");
 
-      //OLD strcpy (answer, "yes");
-      //OLD geo.wind_radiation = rdchoice ("Wind.radiation(yes,no)", "1,0", answer);
-
-      //OLD /* JM 1806 -- note that wind radiation will get "turned off" in indivisible packet/macro-atom
-      //OLD    mode when geo.rt_mode == RT_MODE_MACRO. This is done in get_line_transfer_mode () in
-      //OLD    setup_domains.c, see issue #390 */
 
       if (geo.run_type == RUN_TYPE_NEW)
       {
@@ -672,12 +665,9 @@ main (argc, argv)
   }
 
 /* XXXX - THE CALCULATION OF THE IONIZATION OF THE WIND */
-  geo.ioniz_or_extract = 1;     //SS July 04 - want to compute MC estimators during ionization cycles
-  //1 simply implies we are in the ionization section of the code
-  //and allows routines to act accordinaly.
-/* 67 -ksl- geo.wycle will start at zero unless we are completing an old run */
 
-/* XXXX -  CALCULATE THE IONIZATION OF THE WIND */
+  geo.ioniz_or_extract = CYCLE_IONIZ;
+
   calculate_ionization (restart_stat);
 
 /* XXXX - END OF CYCLE TO CALCULATE THE IONIZATION OF THE WIND */
@@ -699,7 +689,7 @@ main (argc, argv)
      Next lines turns off macro atom estimators and other portions of the code that are
      unnecessary during spectrum cycles.  */
 
-  geo.ioniz_or_extract = 0;
+  geo.ioniz_or_extract = CYCLE_EXTRACT;
 
 
 /* Next step speeds up extraction stage */

@@ -61,16 +61,14 @@ wind_update (w)
 WindPtr (w);
 {
   int n, i, j, ii;
-  double trad, nh;
 
-  /*1108 NSH csum added to sum compton heating 1204 NSH icsum added to sum induced compton heating */
-  double wtest, xsum, psum, fsum, lsum, csum, icsum, ausum, chexsum;
+  double xsum, psum, fsum, lsum, csum, icsum, ausum, chexsum;
   double cool_sum, lum_sum, rad_sum;    //1706 - the total cooling and luminosity of the wind
   double apsum, aausum, abstot; //Absorbed photon energy from PI and auger
   double c_rec, n_rec, o_rec, fe_rec;   //1701- NSH more outputs to show cooling from a few other elements
   double c_lum, n_lum, o_lum, fe_lum;   //1708- NSH and luminosities as well
   double cool_dr_metals;
-  int nn;                       //1701 - loop variable to compute recomb cooling
+  int nn;
 
   double volume;
   double vol;
@@ -170,7 +168,7 @@ WindPtr (w);
        terms) which were included during the monte carlo simulation so we want
        to be sure that the SAME temperatures are used here. (SS - Mar 2004). */
 
-    if (geo.rt_mode == RT_MODE_MACRO && geo.macro_simple == 0)  //test for macro atoms
+    if (geo.rt_mode == RT_MODE_MACRO && geo.macro_simple == FALSE)      //test for macro atoms
     {
       mc_estimator_normalise (nwind);
       macromain[n].kpkt_rates_known = -1;
@@ -188,96 +186,8 @@ WindPtr (w);
          n, w[nwind].ndom, volume, w[nwind].rcen, w[nwind].thetacen, plasmamain[n].ntot);
     }
 
-    if (plasmamain[n].ntot > 0)
-    {
-      wtest = plasmamain[n].ave_freq;
-      plasmamain[n].ave_freq /= plasmamain[n].j;        /* Normalization to frequency moment */
-      if (sane_check (plasmamain[n].ave_freq))
-      {
-        Error ("wind_update:sane_check %d ave_freq %e j %e ntot %d\n", n, wtest, plasmamain[n].j, plasmamain[n].ntot);
-      }
-
-      plasmamain[n].j /= (4. * PI * volume);
-      plasmamain[n].j_direct /= (4. * PI * volume);
-      plasmamain[n].j_scatt /= (4. * PI * volume);
-
-      plasmamain[n].t_r_old = plasmamain[n].t_r;        // Store the previous t_r in t_r_old immediately before recalculating
-      trad = plasmamain[n].t_r = PLANCK * plasmamain[n].ave_freq / (BOLTZMANN * 3.832);
-      plasmamain[n].w = PI * plasmamain[n].j / (STEFAN_BOLTZMANN * trad * trad * trad * trad);
-
-
-      if (plasmamain[n].w > 1e10)
-      {
-        Error ("wind_update: Huge w %8.2e in cell %d trad %10.2e j %8.2e\n", plasmamain[n].w, n, trad, plasmamain[n].j);
-      }
-      if (sane_check (trad) || sane_check (plasmamain[n].w))
-      {
-        Error ("wind_update:sane_check %d trad %8.2e w %8.2g\n", n, trad, plasmamain[n].w);
-        Error ("wind_update: ave_freq %8.2e j %8.2e\n", plasmamain[n].ave_freq, plasmamain[n].j);
-        Exit (0);
-      }
-    }
-    else
-    {                           /* It is not clear what to do with no photons in a cell */
-
-      plasmamain[n].j = plasmamain[n].j_direct = plasmamain[n].j_scatt = 0;
-      trad = plasmamain[n].t_r;
-      plasmamain[n].t_e *= 0.7;
-      if (plasmamain[n].t_e < MIN_TEMP)
-        plasmamain[n].t_e = MIN_TEMP;
-      plasmamain[n].w = 0;
-    }
-
-
-    /* Calculate the frequency banded j and ave_freq variables */
-
-    for (i = 0; i < geo.nxfreq; i++)
-    {                           /*loop over number of bands */
-      if (plasmamain[n].nxtot[i] > 0)
-      {                         /*Check we actually have some photons in the cell in this band */
-
-        plasmamain[n].xave_freq[i] /= plasmamain[n].xj[i];      /*Normalise the average frequency */
-        plasmamain[n].xsd_freq[i] /= plasmamain[n].xj[i];       /*Normalise the mean square frequency */
-        plasmamain[n].xsd_freq[i] = sqrt (plasmamain[n].xsd_freq[i] - (plasmamain[n].xave_freq[i] * plasmamain[n].xave_freq[i]));       /*Compute standard deviation */
-        plasmamain[n].xj[i] /= (4 * PI * volume);       /*Convert to radiation density */
-
-      }
-      else
-      {
-        plasmamain[n].xj[i] = 0;        /*If no photons, set both radiation estimators to zero */
-        plasmamain[n].xave_freq[i] = 0;
-        plasmamain[n].xsd_freq[i] = 0;  /*NSH 120815 and also the SD ???? */
-      }
-    }
-
-/* 1108 NSH End of loop */
-
-
-
-    nh = plasmamain[n].rho * rho2nh;
-
-/* 1110 NSH Normalise IP, which at this point should be
- * the number of photons in a cell by dividing by volume
- * and number density of hydrogen in the cell
- * */
-
-    plasmamain[n].ip /= (VLIGHT * volume * nh);
-    plasmamain[n].ip_direct /= (VLIGHT * volume * nh);
-    plasmamain[n].ip_scatt /= (VLIGHT * volume * nh);
-
-/* 1510 NSH Normalise xi, which at this point should be the luminosity of ionizing photons in a cell (just the sum of photon weights) */
-
-    plasmamain[n].xi *= 4. * PI;
-    plasmamain[n].xi /= (volume * nh);
-    for (i = 0; i < 4; i++)
-    {
-      plasmamain[n].rad_force_es[i] = plasmamain[n].rad_force_es[i] * (volume * plasmamain[n].ne) / (volume * VLIGHT);
-/* Normalise the computed flux in cells by band */
-      plasmamain[n].F_vis[i] = plasmamain[n].F_vis[i] / volume;
-      plasmamain[n].F_UV[i] = plasmamain[n].F_UV[i] / volume;
-      plasmamain[n].F_Xray[i] = plasmamain[n].F_Xray[i] / volume;
-    }
-
+    /* this routine normalises the unbanded and banded estimators for simple atoms in this cell */
+    normalise_simple_estimators (&plasmamain[n]);
 
     /* If geo.adiabatic is true, then calculate the adiabatic cooling using the current, i.e
      * previous value of t_e.  Note that this may not be  best way to determine the cooling.
@@ -342,6 +252,7 @@ WindPtr (w);
         MPI_Pack (&plasmamain[n].ne, 1, MPI_DOUBLE, commbuffer, size_of_commbuffer, &position, MPI_COMM_WORLD);
         MPI_Pack (&plasmamain[n].rho, 1, MPI_DOUBLE, commbuffer, size_of_commbuffer, &position, MPI_COMM_WORLD);
         MPI_Pack (&plasmamain[n].vol, 1, MPI_DOUBLE, commbuffer, size_of_commbuffer, &position, MPI_COMM_WORLD);
+        MPI_Pack (&plasmamain[n].xgamma, 1, MPI_DOUBLE, commbuffer, size_of_commbuffer, &position, MPI_COMM_WORLD);
         MPI_Pack (plasmamain[n].density, nions, MPI_DOUBLE, commbuffer, size_of_commbuffer, &position, MPI_COMM_WORLD);
         MPI_Pack (plasmamain[n].partition, nions, MPI_DOUBLE, commbuffer, size_of_commbuffer, &position, MPI_COMM_WORLD);
         MPI_Pack (plasmamain[n].levden, nlte_levels, MPI_DOUBLE, commbuffer, size_of_commbuffer, &position, MPI_COMM_WORLD);
@@ -485,6 +396,7 @@ WindPtr (w);
         MPI_Unpack (commbuffer, size_of_commbuffer, &position, &plasmamain[n].ne, 1, MPI_DOUBLE, MPI_COMM_WORLD);
         MPI_Unpack (commbuffer, size_of_commbuffer, &position, &plasmamain[n].rho, 1, MPI_DOUBLE, MPI_COMM_WORLD);
         MPI_Unpack (commbuffer, size_of_commbuffer, &position, &plasmamain[n].vol, 1, MPI_DOUBLE, MPI_COMM_WORLD);
+        MPI_Unpack (commbuffer, size_of_commbuffer, &position, &plasmamain[n].xgamma, 1, MPI_DOUBLE, MPI_COMM_WORLD);
         MPI_Unpack (commbuffer, size_of_commbuffer, &position, plasmamain[n].density, nions, MPI_DOUBLE, MPI_COMM_WORLD);
         MPI_Unpack (commbuffer, size_of_commbuffer, &position, plasmamain[n].partition, nions, MPI_DOUBLE, MPI_COMM_WORLD);
         MPI_Unpack (commbuffer, size_of_commbuffer, &position, plasmamain[n].levden, nlte_levels, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -705,10 +617,10 @@ WindPtr (w);
 
   /* Check the balance between the absorbed and the emitted flux */
 
-  //NSH 0717 - first we need to ensure the cooling and luminosities reflect the current temperature
+  /* NSH 0717 - ensure the cooling and luminosities reflect the current temperature */
 
-  cool_sum = wind_cooling ();   /*We call wind_cooling here to obtain an up to date set of cooling rates */
-  lum_sum = wind_luminosity (0.0, VERY_BIG);    /*and we also call wind_luminosity to get the luminosities */
+  cool_sum = wind_cooling ();   /* We call wind_cooling here to obtain an up to date set of cooling rates */
+  lum_sum = wind_luminosity (0.0, VERY_BIG, MODE_CMF_TIME);     /* and we also call wind_luminosity to get the luminosities */
 
 
 
@@ -805,7 +717,7 @@ WindPtr (w);
   {
     for (nwind = zdom[geo.hydro_domain_number].nstart; nwind < zdom[geo.hydro_domain_number].nstop; nwind++)
     {
-      if (wmain[nwind].vol > 0.0)
+      if (wmain[nwind].inwind >= 0)
       {
         nplasma = wmain[nwind].nplasma;
         wind_n_to_ij (geo.hydro_domain_number, plasmamain[nplasma].nwind, &i, &j);
@@ -862,7 +774,7 @@ WindPtr (w);
           stuff_v (plasmamain[nplasma].F_vis, fhat);
           renorm (fhat, 1.);    //A unit vector in the direction of the flux - this can be treated as the lmn vector of a pretend photon
           stuff_v (fhat, ptest.lmn);    //place our test photon at the centre of the cell            
-          t_opt = kappa_es * plasmamain[nplasma].rho * v_th / fabs (dvwind_ds (&ptest));
+          t_opt = kappa_es * plasmamain[nplasma].rho * v_th / fabs (dvwind_ds_cmf (&ptest));
         }
         else
           t_opt = 0.0;          //Essentually a flag that there is no way of computing t (and hence M) in this cell.
@@ -873,7 +785,7 @@ WindPtr (w);
           stuff_v (plasmamain[nplasma].F_UV, fhat);
           renorm (fhat, 1.);    //A unit vector in the direction of the flux - this can be treated as the lmn vector of a pretend photon
           stuff_v (fhat, ptest.lmn);    //place our test photon at the centre of the cell            
-          t_UV = kappa_es * plasmamain[nplasma].rho * v_th / fabs (dvwind_ds (&ptest));
+          t_UV = kappa_es * plasmamain[nplasma].rho * v_th / fabs (dvwind_ds_cmf (&ptest));
         }
         else
           t_UV = 0.0;           //Essentually a flag that there is no way of computing t (and hence M) in this cell.
@@ -885,7 +797,7 @@ WindPtr (w);
           stuff_v (plasmamain[nplasma].F_Xray, fhat);
           renorm (fhat, 1.);    //A unit vector in the direction of the flux - this can be treated as the lmn vector of a pretend photon
           stuff_v (fhat, ptest.lmn);    //place our test photon at the centre of the cell            
-          t_Xray = kappa_es * plasmamain[nplasma].rho * v_th / fabs (dvwind_ds (&ptest));
+          t_Xray = kappa_es * plasmamain[nplasma].rho * v_th / fabs (dvwind_ds_cmf (&ptest));
         }
         else
           t_Xray = 0.0;         //Essentually a flag that there is no way of computing t (and hence M) in this cell.                
@@ -923,10 +835,10 @@ WindPtr (w);
      lum_sum, geo.lum_rr, geo.lum_ff, geo.lum_lines);
 
 
-  rad_sum = wind_luminosity (xband.f1[0], xband.f2[xband.nbands - 1]);  /*and we also call wind_luminosity to get the luminosities */
+  rad_sum = wind_luminosity (xband.f1[0], xband.f2[xband.nbands - 1], MODE_CMF_TIME);
 
   Log
-    ("!!wind_update: Rad  luminosity  %8.2e (recomb %8.2e ff %8.2e lines %8.2e) after update\n",
+    ("!!wind_update: Rad luminosity  %8.2e (recomb %8.2e ff %8.2e lines %8.2e) after update\n",
      rad_sum, geo.lum_rr, geo.lum_ff, geo.lum_lines);
 
   Log
@@ -1295,11 +1207,7 @@ wind_rad_init ()
 
     for (i = 0; i < ntop_phot; i++)
     {
-      /* 57h -- recomb_simple is only required for we are using a macro atom approach, and only non-zero when
-         this particular phot_tob xsection is treated as a simple x-section. Stuart, is this correct?? I've added
-         checks so that macro_info is only 0 (false) or true (1), and so the logic of the next section can be
-         simplified.  0608-ksl */
-      if ((geo.macro_simple == 0 && phot_top[i].macro_info == 1) || geo.rt_mode == RT_MODE_2LEVEL)
+      if ((geo.macro_simple == FALSE && phot_top[i].macro_info == TRUE) || geo.rt_mode == RT_MODE_2LEVEL)
       {
         plasmamain[n].recomb_simple[i] = 0.0;
         plasmamain[n].recomb_simple_upweight[i] = 1.0;

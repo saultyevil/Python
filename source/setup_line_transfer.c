@@ -101,10 +101,10 @@ get_line_transfer_mode ()
   else if (user_line_mode == 6)
   {
     Log ("Line_transfer mode:  macro atoms, isotropic scattering  \n");
-    geo.scatter_mode = SCATTER_MODE_ISOTROPIC;  // isotropic
+    geo.scatter_mode = SCATTER_MODE_ISOTROPIC;
     geo.line_mode = LINE_MODE_ESC_PROB;
     geo.rt_mode = RT_MODE_MACRO;        // Identify macro atom treatment (SS)
-    geo.macro_simple = 0;       // We don't want the all simple case (SS)
+    geo.macro_simple = FALSE;   // We don't want the all simple case (SS)
   }
   else if (user_line_mode == 7)
   {
@@ -112,15 +112,15 @@ get_line_transfer_mode ()
     geo.scatter_mode = SCATTER_MODE_THERMAL;    // thermal trapping
     geo.line_mode = LINE_MODE_ESC_PROB;
     geo.rt_mode = RT_MODE_MACRO;        // Identify macro atom treatment (SS)
-    geo.macro_simple = 0;       // We don't want the all simple case (SS)
+    geo.macro_simple = FALSE;   // We don't want the all simple case (SS)
   }
   else if (user_line_mode == 8)
   {
     Log ("Line_transfer mode: simple macro atoms, isotropic  scattering  \n");
-    geo.scatter_mode = SCATTER_MODE_ISOTROPIC;  // isotropic
+    geo.scatter_mode = SCATTER_MODE_ISOTROPIC;
     geo.line_mode = LINE_MODE_ESC_PROB;
     geo.rt_mode = RT_MODE_MACRO;        // Identify macro atom treatment i.e. indivisible packets
-    geo.macro_simple = 1;       // This is for test runs with all simple ions (SS)
+    geo.macro_simple = TRUE;    // This is for test runs with all simple ions (SS)
   }
   else if (user_line_mode == 9)
   {
@@ -128,7 +128,7 @@ get_line_transfer_mode ()
     geo.scatter_mode = SCATTER_MODE_THERMAL;    // thermal trapping
     geo.line_mode = LINE_MODE_ESC_PROB;
     geo.rt_mode = RT_MODE_MACRO;        // Identify macro atom treatment i.e. indivisible packets
-    geo.macro_simple = 1;       // This is for test runs with all simple ions (SS)
+    geo.macro_simple = TRUE;    // This is for test runs with all simple ions (SS)
   }
   else
   {

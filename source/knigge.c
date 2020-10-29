@@ -115,10 +115,8 @@ To repeat, kn_dratio is the distance to the focus point in stellar radii!
   rddoub ("KWD.rmin(in_units_of_rstar)", &zdom[ndom].wind_rho_min);
   rddoub ("KWD.rmax(in_units_of_rstar)", &zdom[ndom].wind_rho_max);
 
-  // zdom[ndom].wind_thetamin = atan (1. / zdom[ndom].kn_dratio); (OLD)
-  zdom[ndom].wind_thetamin = atan (zdom[ndom].wind_rho_min/zdom[ndom].kn_dratio); /*units of r_min and d are now consistent (RG) correcting bug #760 */
-  // zdom[ndom].wind_thetamax = atan (geo.diskrad / (zdom[ndom].kn_dratio * geo.rstar)); (OLD)
-  zdom[ndom].wind_thetamax = atan (zdom[ndom].wind_rho_max/zdom[ndom].kn_dratio); /*units of r_max and d are now consistent (RG) correcting bug #760. Now using r_max and not disk radius */
+  zdom[ndom].wind_thetamin = atan (zdom[ndom].wind_rho_min / zdom[ndom].kn_dratio);     /*units of r_min and d are now consistent (RG) correcting bug #760 */
+  zdom[ndom].wind_thetamax = atan (zdom[ndom].wind_rho_max / zdom[ndom].kn_dratio);     /*units of r_max and d are now consistent (RG) correcting bug #760. Now using r_max and not disk radius */
   zdom[ndom].wind_rho_min *= geo.rstar;
   zdom[ndom].wind_rho_max *= geo.rstar;
 

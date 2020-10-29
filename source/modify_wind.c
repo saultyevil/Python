@@ -36,7 +36,7 @@
 
 
 char inroot[LINELENGTH], outroot[LINELENGTH], model_file[LINELENGTH];
-int model_flag, ksl_flag;
+int model_flag, ksl_flag, cmf2obs_flag, obs2cmf_flag;
 
 /**********************************************************/
 /**
@@ -72,7 +72,7 @@ xparse_command_line (argc, argv)
 
   sprintf (outroot, "%s", "new");
 
-  model_flag = ksl_flag = 0;
+  model_flag = ksl_flag = obs2cmf_flag = cmf2obs_flag = 0;
 
   if (argc == 1)
   {
@@ -125,6 +125,14 @@ xparse_command_line (argc, argv)
       {
         modes.quit_after_inputs = 1;
         j = i;
+      }
+      else if (strcmp (argv[i], "-cmf") == 0)
+      {
+        obs2cmf_flag = 1;
+      }
+      else if (strcmp (argv[i], "-obs") == 0)
+      {
+        cmf2obs_flag = 1;
       }
       else if (strncmp (argv[i], "-", 1) == 0)
       {
@@ -183,6 +191,7 @@ main (argc, argv)
   char infile[LINELENGTH], outfile[LINELENGTH];
   int put_ion ();
   int apply_model ();
+  int frame_transform ();
   int ndom;
   int i;
 
@@ -203,6 +212,11 @@ main (argc, argv)
   {
     apply_model (ndom, model_file);
   }
+  if (obs2cmf_flag || cmf2obs_flag)
+  {
+    printf ("BOOM - we are going to be converting from one frame to another\n");
+    frame_transform (ndom);
+  }
   if (ksl_flag)
   {
     den = get_ion (0, 1, 1, 1, name);
@@ -222,8 +236,8 @@ main (argc, argv)
      */
     put_ion (0, 1, 1, den);
   }
-  
-  
+
+
   printf ("outputting to %s\n", outfile);
 
 
@@ -339,5 +353,76 @@ apply_model (ndom, filename)
     printf ("The model doesnt match the current windsave aborting\n");
     exit (0);
   }
+  return (0);
+}
+
+
+int
+frame_transform (ndom)
+     int ndom;
+{
+  int n, nion;
+  double factor;                //This will either be gamma or 1/gamma
+  int nplasma;
+
+  printf ("BOOM got here - frame=%i\n", geo.frame);
+
+  if (cmf2obs_flag)
+  {
+    printf ("We are going from cmf to observer frame\n");
+    if (geo.frame == CMF_FRAME)
+    {
+      printf ("BOOM IN CMF frame - converting to OBS\n");
+      geo.frame = OBS_FRAME;
+    }
+    else if (geo.frame == OBS_FRAME)
+    {
+      printf ("BOOM IN OBS frame already - exiting\n");
+      exit (0);
+    }
+  }
+  else if (obs2cmf_flag)
+  {
+    printf ("We are going from observer to cmf frame\n");
+    if (geo.frame == CMF_FRAME)
+    {
+      printf ("BOOM IN CMF frame already - exiting\n");
+      exit (0);
+    }
+    else if (geo.frame == OBS_FRAME)
+    {
+      printf ("BOOM IN OBS frame - converting to CMF\n");
+      geo.frame = CMF_FRAME;
+    }
+
+  }
+  printf ("domain %i %i\n", zdom[ndom].ndim, zdom[ndom].mdim);
+
+  //First deal with wind quantities
+  printf ("looping over %i %i\n", zdom[ndom].nstart, zdom[ndom].nstop);
+  for (n = zdom[ndom].nstart; n < zdom[ndom].nstop; n++)
+  {
+    if (cmf2obs_flag)
+      factor = 1. / wmain[n].xgamma_cen;
+    else if (obs2cmf_flag)
+      factor = wmain[n].xgamma_cen;
+    wmain[n].vol *= factor;
+    if (wmain[n].inwind == W_ALL_INWIND || wmain[n].inwind == W_PART_INWIND)
+    {
+      printf ("This cell is in the wind - transforming plasma variables\n");
+      nplasma = wmain[n].nplasma;
+      plasmamain[nplasma].vol *= factor;
+      plasmamain[nplasma].rho /= factor;
+      plasmamain[nplasma].ne /= factor;
+      for (nion = 0; nion < nions; nion++)
+      {
+        plasmamain[nplasma].density[nion] /= factor;
+      }
+
+    }
+  }
+
+
+
   return (0);
 }

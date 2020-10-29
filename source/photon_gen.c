@@ -110,7 +110,7 @@ define_phot (p, f1, f2, nphot_tot, ioniz_or_final, iwind, freq_sampling)
     {                           // The reinitialization is required
       xdefine_phot (f1, f2, ioniz_or_final, iwind, PRINT_ON);
     }
-    /* The weight of each photon is designed so that all of the photons add up to the
+    /* The weight of each photon is designed §so that all of the photons add up to the
        luminosity of the photosphere.  This implies that photons must be generated in such
        a way that it mimics the energy distribution of the star. */
 
@@ -388,10 +388,12 @@ iwind = -1 	Don't generate any wind photons at all
     geo.f_wind = geo.lum_wind = 0.0;
 
   if (iwind == 1 || (iwind == 0))
-  {                             /* Then find the luminosity and flux of the wind */
-    geo.lum_wind = wind_luminosity (0.0, VERY_BIG);
+  {
+    /* Find the luminosity of the wind in the CMF, and the energy emerging in the simulation time step */
+
+    geo.lum_wind = wind_luminosity (0.0, VERY_BIG, MODE_CMF_TIME);
     xxxpdfwind = 1;             // Turn on the portion of the line luminosity routine which creates pdfs
-    geo.f_wind = wind_luminosity (f1, f2);
+    geo.f_wind = wind_luminosity (f1, f2, MODE_OBSERVER_FRAME_TIME);
     xxxpdfwind = 0;             // Turn off the portion of the line luminosity routine which creates pdfs
   }
 
@@ -415,7 +417,7 @@ iwind = -1 	Don't generate any wind photons at all
     geo.f_kpkt = get_kpkt_f (); /* This returns the specific luminosity
                                    in the spectral band of interest */
 
-    matom_emiss_report ();      // Log the macro atom level emissivites
+    matom_emiss_report ();
   }
 
   geo.f_tot = geo.f_star + geo.f_disk + geo.f_bl + geo.f_wind + geo.f_kpkt + geo.f_matom + geo.f_agn;
@@ -440,7 +442,7 @@ iwind = -1 	Don't generate any wind photons at all
 
 /**********************************************************/
 /**
- * @brief    Logs information about total and band limited
+ * @brief    Log information about total and band limited
  * luminosities
  *
  * @return     Always returns 0
@@ -935,7 +937,7 @@ photo_gen_disk (p, weight, f1, f2, spectype, istart, nphot)
   double t, r, z, theta, phi;
   int nring;
   double north[3];
-//OLD  double v[3];
+
   if ((iend = istart + nphot) > NPHOT)
   {
     Error ("photo_gen_disk: iend %d > NPHOT %d\n", iend, NPHOT);
@@ -1260,7 +1262,7 @@ photon_checks (p, freqmin, freqmax, comment)
         Error ("photon_checks:   nphot  origin  freq     freqmin    freqmax\n");
         nlabel++;
       }
-      Error ("photon_checks: %id %5d %5d %10.4e %10.4e %10.4e freq or weight are not sane\n", nn, p[nn].origin, p[nn].nres, p[nn].freq,
+      Error ("photon_checks: %5d %5d %5d %10.4e %10.4e %10.4e freq or weight are not sane\n", nn, p[nn].origin, p[nn].nres, p[nn].freq,
              freqmin, freqmax);
       p[nn].freq = freqmax;
       nnn++;
@@ -1272,10 +1274,16 @@ photon_checks (p, freqmin, freqmax, comment)
         Error ("photon_checks:   nphot  origin  freq     freqmin    freqmax\n");
         nlabel++;
       }
-      Error ("photon_checks: %id %5d %5d %10.4e %10.4e %10.4e freq out of range\n", nn, p[nn].origin, p[nn].nres, p[nn].freq, freqmin,
+      Error ("photon_checks: %5d %5d %5d %10.4e %10.4e %10.4e freq out of range\n", nn, p[nn].origin, p[nn].nres, p[nn].freq, freqmin,
              freqmax);
       p[nn].freq = freqmax;
       nnn++;
+    }
+
+    if (length (p[nn].lmn) < 0.9999999 || length (p[nn].lmn) > 1.0000001)
+    {
+      Error ("photon_checks: %5d %10.3e %10.3e %10.3e %10.3e %10.3e %10.3e  origin %d length lmn out of range %10.6f\n",
+             nn, p[nn].x[0], p[nn].x[1], p[nn].x[2], p[nn].lmn[0], p[nn].lmn[1], p[nn].lmn[2], p[nn].origin, length (p[nn].lmn));
     }
 
     if (check_frame (&p[nn], F_OBSERVER, "photon_checks: all photons shouuld be in OBSERVER frame\n"))

@@ -135,7 +135,7 @@ xtemp_rad (w)
       {
         n = nstart + i;
         nplasma = w[n].nplasma;
-        if (plasmamain[nplasma].vol > 0.0)
+        if (wmain[n].inwind >= 0)
         {
           ntot = plasmamain[nplasma].ntot;
         }
@@ -172,7 +172,7 @@ xtemp_rad (w)
       for (i = py_wind_min; i < py_wind_max; i += py_wind_delta)
       {
         n = nstart + i * mdim + j;
-        if (w[n].vol > 0.0)
+        if (w[n].inwind >= 0)
         {
           nplasma = w[n].nplasma;
           x = plasmamain[nplasma].t_r;
@@ -198,7 +198,7 @@ xtemp_rad (w)
       {
         n = nstart + i * mdim + j;
         nplasma = w[n].nplasma;
-        if (plasmamain[nplasma].vol > 0.0)
+        if (wmain[n].inwind >= 0)
         {
           x = plasmamain[nplasma].t_e;
         }
@@ -223,7 +223,7 @@ xtemp_rad (w)
       {
         n = nstart + i * mdim + j;
         nplasma = w[n].nplasma;
-        if (plasmamain[nplasma].vol > 0.0)
+        if (wmain[nplasma].inwind >= 0)
         {
           ntot = plasmamain[nplasma].ntot;
         }

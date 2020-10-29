@@ -43,6 +43,10 @@
  * @bug It is not exactly clear why two routines total_line_emission
  * and lum_lines is needed, as lum_lines appears to be called
  * only from total_line_emission.  ksl - 180509
+ * 
+ * Total line emission in this function is calculated CMF. If called in
+ * the cooling routines then this is left in the CMF. If called in the photon
+ * generation routines, this is converted to the observer frame.
  *
  **********************************************************/
 
@@ -94,11 +98,13 @@ total_line_emission (one, f1, f2)
  * ### Notes ###
  * The individual line luminosities are stored in lin_ptr[n]->pow
  *
+ * This is a co-moving frame calculation.                            
+ *
  **********************************************************/
 
 double
 lum_lines (one, nmin, nmax)
-     WindPtr one;               /* WindPtr to a specific cell in the wind */
+     WindPtr one;
      int nmin, nmax;            /* The min and max index in lptr array for which the power is to be calculated */
 {
   int n;
@@ -128,7 +134,7 @@ lum_lines (one, nmin, nmax)
       z = exp (-H_OVER_K * lin_ptr[n]->freq / t_e);
 
 
-//Next lines required if want to use escape probabilities
+      //Next lines required if want to use escape probabilities
 
       q = 1. - scattering_fraction (lin_ptr[n], xplasma);
 
@@ -155,52 +161,15 @@ lum_lines (one, nmin, nmax)
       }
     }
     else
+    {
       lin_ptr[n]->pow = 0;
+    }
   }
 
 
   return (lum);
 }
 
-
-
-/*
-   two_level_atom(line_ptr,ne,te,w,tr,dd,d1,d2) calculates the ratio
-   n2/n1 and gives the individual densities for the states of a two level
-   atom.
-
-   Description:
-   In the two level approximation,
-
-   n2 / n1 = ( c12 + g2/g1 c*c / (2 h nu * nu * nu )  * A21 J12) /
-   (c21 + A21 + c*c / (2 h nu * nu * nu )  * A21 J21)
-
-   In the on-the-spot approx. we assume,.
-
-   J21= W  (2 h nu * nu * nu )  / (exp (h nu / k T(rad)) -1)
-
-   and this is what is calulated here
-
-   History:
-	98Aug	ksl	Coded and debugged
-	99jan	ksl	Tried to improve speed by assuring that it does not
-			calculate exactly the same atom twice in a row
-	00nov	ksl	Adopted a very simple radiated domininated model for
-			transitions from excited state to excited state.
-			This is essentially a modified LTE approach.  Currently
-			at least there is no collisional correction for either
-			level, although it would be easy to add for the excited
-			level.  The difficulty here is that one does not readily
-			have all of the level information at hand.
-	01dec	ksl	Modified calling scheme and added partionion functions
-	06may	ksl	57+ -- Modified to use plasma structue
-	07mar	ksl	58c -- Tried to address problems associated with our
-			inconsistent treatment of level populations for two
-			level atoms, This is at best a bandaide.
-	14jul	nsh	78 -- changed to allow the use of a computed model for
-			the mean intensity in a cell to calualate influence of radiation
-			on the upper state population of a two level atom.
- */
 
 
 struct lines *old_line_ptr;
@@ -251,7 +220,6 @@ two_level_atom (line_ptr, xplasma, d1, d2)
   double n1_over_ng;
   double n2_over_ng;
   double z;
-  double exp ();
   int gg;
   double xw;
   double ne, te, w, tr, dd;
@@ -259,9 +227,8 @@ two_level_atom (line_ptr, xplasma, d1, d2)
   double J;                     //Model of the specific intensity
 
 
-  //Check and exit if this routine is called for a macro atom, since this should never happen
 
-  if (line_ptr->macro_info == 1 && geo.rt_mode == RT_MODE_MACRO && geo.macro_simple == 0)
+  if (line_ptr->macro_info == TRUE && geo.rt_mode == RT_MODE_MACRO && geo.macro_simple == FALSE)
   {
     Error ("Calling two_level_atom for macro atom line. Abort.\n");
     Exit (0);
@@ -512,16 +479,6 @@ scattering_fraction (line_ptr, xplasma)
 }
 
 
-/* p_escape approximates the escape probability based on dvds
-
-   History:
-   98dec        ksl     Coded
-   99jan        ksl     Added code so that it shortcircuits if
-   asked to claculate the same escape probability
-
-	06may	ksl	57+ -- Modify for plasma structue
-  1411 JM -- changed to use the sobolev function to calculate tau.
- */
 
 struct lines *pe_line_ptr;
 double pe_ne, pe_te, pe_dd, pe_dvds, pe_w, pe_tr;
@@ -556,17 +513,16 @@ p_escape (line_ptr, xplasma)
   double w, tr;                 /* the radiative weight, and radiation tempeature */
   WindPtr one;
 
-//Populate variable from previous calling structure
   ne = xplasma->ne;
   te = xplasma->t_e;
-  tr = xplasma->t_r;            //JM1308 in pre 76b versions this was incorrectly set to xplasma->t_e
+  tr = xplasma->t_r;
   w = xplasma->w;
+
   dd = xplasma->density[line_ptr->nion];
 
   one = &wmain[xplasma->nwind];
   dvds = one->dvds_ave;
 
-// Band-aid to prevent divide by zero in calculation of tau below
   if (dvds <= 0.0)
   {
     Error ("Warning: p_escape: dvds <=0 \n");
@@ -575,11 +531,8 @@ p_escape (line_ptr, xplasma)
   if (pe_line_ptr != line_ptr || pe_ne != ne || pe_te != te || pe_dd != dd || pe_dvds != dvds || pe_w != w || pe_tr != tr)
   {
 
-    /* JM 1411 -- we used to have duplicated code here, but
-       now we call the sobolev function itself */
     tau = sobolev (one, one->x, dd, line_ptr, dvds);
 
-    /* JM 1408 -- moved calculation of p_escape to subroutine below */
     escape = p_escape_from_tau (tau);
 
 
@@ -604,14 +557,14 @@ p_escape (line_ptr, xplasma)
 /**********************************************************/
 /**
  * @brief      Given an optical depth estimate the escape
- * probility
+ * probability
  *
  * @param [in] double  tau   An optical depth
  * @return     The escape probability
  *
  * @details
  * p_escape_from_tau calculates the probability of escape
- *   given an actual tau. It simple returns the equation
+ *   given an actual tau. It simply returns the equation
  *
  *   (1. - exp (-tau)) / tau;
  *
@@ -622,7 +575,6 @@ p_escape (line_ptr, xplasma)
  *
  *
  * ### Notes ###
- *  1408 JM  Moved here to avoid code duplication
  *
  **********************************************************/
 
@@ -632,11 +584,10 @@ p_escape_from_tau (tau)
 {
   double escape;
 
-  /* TAU_MIN is defined in python.h
-     this is to stop numerical problems when tau is low */
+  /* TAU_MIN is defined in python.h */
+
   if (tau < TAU_MIN)
     escape = 1.;
-
   else if (tau < 10.0)
     escape = (1. - exp (-tau)) / tau;
 

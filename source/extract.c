@@ -69,11 +69,6 @@
  * ### Notes ###
  * 
  *
- * @bug This is also commented in the text, but there is a rather bizarre separation
- * for where the photon frequency is updated and where the weight is update. The former is
- * done in extract, while the latter is done in extract_one.  This is not an error precisely
- * but makes the code more confusing than it needs to be.
- *
  **********************************************************/
 
 int
@@ -83,7 +78,7 @@ extract (w, p, itype)
      int itype;
 {
   int n, mscat, mtopbot;
-  struct photon pp, p_in;
+  struct photon pp, p_in, p_dummy;
   int yep;
   double xdiff[3];
   double p_norm, tau_norm;
@@ -182,38 +177,25 @@ extract (w, p, itype)
 
 
 /* Create a photon pp to use here and in extract_one.  This assures we
- * have not modified p as part of extract.
- *
- * If it is a wind photon, it will have be in the observer frame in 
- * a different direction so we need to put it into the local frame
- * This needs to be done before we stuff the new direction in
+ * have not modified p as part of extract.  Also, allow for aberration
+ * of photons to assure that we are extracting at the correct angle
+ * in the observer frame
+ * ZFRAME
  */
 
-      stuff_phot (&p_in, &pp);
-      stuff_v (xxspec[n].lmn, pp.lmn);  /* Stuff new photon direction into pp */
-
-/* 
-
-Need to frequency shift the disk photons as well as the wind 
-photons.    
-
- */
-
-      if (itype == PTYPE_DISK)
+      if (rel_mode == REL_MODE_LINEAR)
       {
-        local_to_observer_frame_disk (&pp, &pp);
-
+        stuff_phot (&p_in, &pp);
+        stuff_v (xxspec[n].lmn, pp.lmn);        /* Stuff new photon direction into pp */
       }
-      if (itype == PTYPE_WIND)
-      {                         /* If the photon was scattered in the wind, 
-                                   the frequency also must be shifted */
-
-/* XFRAME  Doppler shift the photon  to new direction.  In what follows
-   we make the assumption which seems explicit in the old doppler routine that we 
-   are in the observe frame
- */
-        local_to_observer_frame (&pp, &pp);
-
+      else
+      {
+        stuff_phot (&p_in, &p_dummy);
+        p_dummy.frame = F_OBSERVER;
+        stuff_v (xxspec[n].lmn, p_dummy.lmn);   /* Stuff new photon direction into pp */
+        observer_to_local_frame (&p_dummy, &p_dummy);
+        stuff_phot (&p_in, &pp);
+        stuff_v (p_dummy.lmn, pp.lmn);
       }
 
       if (modes.save_extract_photons && 1545.0 < 2.997925e18 / pp.freq && 2.997925e18 / pp.freq < 1565.0)
@@ -222,20 +204,9 @@ photons.
       }
 
 
-      /* Now extract the photon */
-//OLD      if (modes.save_photons)
-//OLD      {
-//OLD        Diag ("BeforeExtract freq  %10.3e itype %d  nres %d\n", pp.freq, itype, pp.nres);
-//OLD        save_photons (&pp, "BeforeExtract");
-//OLD      }
-
 
       extract_one (w, &pp, itype, n);
 
-//OLD      if (modes.save_photons)
-//OLD      {
-//OLD        save_photons (&pp, "AfterExtract");
-//OLD      }
 
 
     }
@@ -307,13 +278,27 @@ extract_one (w, pp, itype, nspec)
   tau = 0;
   icell = 0;
 
+
+  if (itype == PTYPE_DISK)
+  {
+    local_to_observer_frame_disk (pp, pp);
+
+  }
+  if (itype == PTYPE_WIND)
+  {
+    local_to_observer_frame (pp, pp);
+
+  }
+
+  /* Now extract the photon */
+
 /* Preserve the starting position of the photon so one can use this to determine whether the
  * photon encountered the disk or star as it tried to exist the wind.
  */
 
   stuff_phot (pp, &pstart);
 
-/* Reweight the photons. Note that photons have already been frequency shifted prior 
+/* Re-weight the photons. Note that photons have already been frequency shifted prior
 to entering extract */
 
   if (itype == PTYPE_STAR || itype == PTYPE_BL)
@@ -342,8 +327,7 @@ needs to reweight
 
     if (geo.scatter_mode == SCATTER_MODE_THERMAL)
     {
-
-      dvds = dvwind_ds (pp);
+      dvds = dvwind_ds_cmf (pp);
       ishell = pp->grid;
       tau = sobolev (&w[ishell], pp->x, -1.0, lin_ptr[pp->nres], dvds);
       if (tau > 0.0)

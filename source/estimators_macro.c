@@ -1,6 +1,6 @@
 
 /***********************************************************/
-/** @file  estimators.c
+/** @file  estimators_macro.c
  * @author Stuart Sim, James Matthews
  * @date   January, 2018
  *
@@ -12,6 +12,12 @@
  *         <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.1256805.svg" 
  *         alt="DOI"></a>
  *         \endhtmlonly
+ *
+ * #Notes
+ * This file includes both the routines to accumulate the data 
+ * for creating the estimator during ionization cycles, but
+ * also the routine mormalize_macro_estimators, which does
+ * the normalization
  ***********************************************************/
 
 #include <stdio.h>
@@ -47,12 +53,16 @@ double temp_ext_rad;            //radiation temperature passed externally
  *
  * ### Notes ###
  * The estimators are not normalised by this routine.
- *        This routine also computes the total heating rate due
- *        to simple ions.  Therefore the routine needs to be called
- *        even for the simple non-macro atom case.
+ *
+ * This routine also computes the total heating rate due
+ * to simple ions.  Therefore the routine update_banded_esitmators is called
+ * even for the simple non-macro atom case.
  * 
  * The bound-free estimators are described in section 3.3.3.1 Matthews Phd Thesis.
  *
+ * bf_esimators_increment expects p
+ * to be a co-moving frame photon and ds to be a co-moving frame path length
+ * 
  **********************************************************/
 
 int
@@ -80,36 +90,26 @@ bf_estimators_increment (one, p, ds)
   mplasma = &macromain[xplasma->nplasma];
   ndom = one->ndom;
 
-
   freq_av = p->freq;
-  // the continuum neglect variation of frequency along path and
-  // take as a single "average" value.  
 
-  if (p->freq > xplasma->max_freq)      // check if photon frequency exceeds maximum frequency
+  if (p->freq > xplasma->max_freq)
     xplasma->max_freq = p->freq;
 
-
-  /* JM -- 1310 -- check if the user requires extra diagnostics and
-     has provided a file diag_cells.dat to store photons stats for cells they have specified
-   */
   if (modes.save_cell_stats && ncstat > 0)
   {
-    save_photon_stats (one, p, ds, p->w);       // save photon statistics (extra diagnostics)
+    save_photon_stats (one, p, ds, p->w);
   }
 
 
-
-  /* JM 1402 -- the banded versions of j, ave_freq etc. are now updated in update_banded_estimators,
-     which also updates the ionization parameters and scattered and direct contributions */
-
   update_banded_estimators (xplasma, p, ds, p->w, ndom);
+  update_flux_estimators (xplasma, p, ds, p->w, ndom);
+
 
   /* check that j and ave freq give sensible numbers */
   if (sane_check (xplasma->j) || sane_check (xplasma->ave_freq))
   {
     Error ("bf_estimators_increment:sane_check Problem with j %g or ave_freq %g\n", xplasma->j, xplasma->ave_freq);
   }
-
 
 
 
@@ -129,25 +129,11 @@ bf_estimators_increment (one, p, ds)
       llvl = 0;                 // shouldn't ever be used 
     }
 
-
-    /* JM130729 Bugfix 31: This if loop causes the else statement for simple ions to be 
-     * entered in macro atom mode- it appeared to be introduced sometime between 58 and 68.
-     *
-     * if (kap_bf[nn] > 0.0 && (freq_av > ft) && phot_top[n].macro_info == 1
-     *          && geo.macro_simple == 0)
-     */
     if (kap_bf[nn] > 0.0 && (freq_av > ft))     // does the photon cause bf heating?
     {
 
-      if (phot_top[n].macro_info == 1 && geo.macro_simple == 0) // it is a macro atom
+      if (phot_top[n].macro_info == TRUE && geo.macro_simple == FALSE)  // it is a macro atom
       {
-        /* quick check that we don't have a VFKY cross-section here */
-        if (ion[phot_top[n].nion].phot_info == 0)
-        {
-          Error ("bf_estimators_increment: Vfky cross-section in macro-atom section! Setting heating to 0 for this XS.\n");
-          density = 0.0;
-        }
-
 
         x = kap_bf[nn] / (density * zdom[ndom].fill);   //this is the cross section
 
@@ -182,16 +168,18 @@ bf_estimators_increment (one, p, ds)
 
         mplasma->alpha_st_e[config[llvl].bfu_indx_first + m] += exponential / ft;
 
-        /* Now record the contribution to the energy absorbed by macro atoms. */
-        /* JM1411 -- added filling factor - density enhancement cancels with zdom[ndom].fill */
+        /* Now record the contribution to the energy absorbed by macro atoms allowing
+           for the filling factor. */
+
         yy = y * den_config (xplasma, llvl) * zdom[ndom].fill;
 
         mplasma->matom_abs[phot_top[n].uplev] += abs_cont = yy * ft / freq_av;
 
         xplasma->kpkt_abs += yy - abs_cont;
 
-        /* the following is just a check that flags packets that appear to travel a 
+        /* Check for packets that appear to travelling  
            suspiciously large optical depth in the continuum */
+
         if ((yy / weight_of_packet) > 50)
         {
           Log ("bf_estimator_increment: A packet survived an optical depth of %g\n", yy / weight_of_packet);
@@ -205,7 +193,7 @@ bf_estimators_increment (one, p, ds)
            recombination is included here. (SS, Apr 04) */
         if (density > DENSITY_PHOT_MIN)
         {
-          x = sigma_phot (&phot_top[n], freq_av);       //this is the cross section
+          x = sigma_phot (&phot_top[n], freq_av);
           weight_of_packet = p->w;
           y = weight_of_packet * x * ds;
 
@@ -304,11 +292,6 @@ bf_estimators_increment (one, p, ds)
  *
  * ### Notes ###
  * The estimators are not normalised by this routine
- * For the moment, the increment to the estimator is taken to be
- * weight * (1 - exp(-tau))/ tau / dvds
- * This is slightly different from what I do in my code (not
- * accurate to v/c corrections). If calculations where accuracy to
- * order v/c is needed then this routine should be improved.
  *
  **********************************************************/
 
@@ -335,13 +318,9 @@ bb_estimators_increment (one, p, tau_sobolev, dvds, nn)
   mplasma = &macromain[xplasma->nplasma];
 
 
-  /* 04apr ksl: Start by checking that this was a macro-line */
-  /* There should now be a diversion in place before this routine is called
-     to identify macro/simple ions. But I'll leave the check here too - backup (SS, Apr04). */
-
   line_ptr = lin_ptr[nn];
 
-  if (line_ptr->macro_info == 0 || geo.macro_simple == 1)
+  if (line_ptr->macro_info == FALSE || geo.macro_simple == TRUE)
     return (-1);
 
   /* Start by identifying which estimator we want. Get lower level of
@@ -365,17 +344,14 @@ bb_estimators_increment (one, p, tau_sobolev, dvds, nn)
   }
 
 
-  /* Okay now know which estimator we wish to increment so do it. */
-
   weight_of_packet = p->w;
-  dvds = fabs (dvds);           //make sure that it is positive
-
+  dvds = fabs (dvds);
 
   if (tau_sobolev > 0.00001)
   {
     y = weight_of_packet * (1. - exp (-tau_sobolev)) / tau_sobolev / dvds;
   }
-  else                          //To avoid tau_sobolev = 0
+  else
   {
     y = weight_of_packet / dvds;
   }
@@ -432,7 +408,7 @@ mc_estimator_normalise (n)
      int n;
 
 {
-  double volume;
+  double invariant_volume_time;
   int i, j, nlev_upper;
   double stimfac, line_freq, stat_weight_ratio;
   double heat_contribution, lower_density, upper_density;
@@ -444,10 +420,18 @@ mc_estimator_normalise (n)
   xplasma = &plasmamain[one->nplasma];
   mplasma = &macromain[xplasma->nplasma];
 
-  /* All the estimators need the volume so get that first. */
-  /* JM 1507 - we use cell volume for all the estimators here */
 
-  volume = one->vol;
+  /* one->vol contains the CMF volume. This converts it to 
+     observer frame volume, or perhaps more correctly, it calculates the
+     Lorentz invariant quantity (Delta V Delta t). Because Delta t_obs == 1 
+     in the code, (Delta V Delta t) == (Delta V_obs * 1.0). 
+     Note, this is also equivalent to multiplying Delta V_cmf by Delta t_cmf,
+     which is Delta t_obs / gamma, i.e. 1.0/gamma. All other quantities that
+     have been incremented should have been done so with CMF values.
+   */
+
+  invariant_volume_time = one->vol / one->xgamma_cen;
+
 
   /* bf estimators. During the mc calculation the quantity stored
      was weight * cross-section * path-length / frequency.
@@ -472,9 +456,9 @@ mc_estimator_normalise (n)
     for (j = 0; j < config[i].n_bfu_jump; j++)
     {
 
-      mplasma->gamma_old[config[i].bfu_indx_first + j] = mplasma->gamma[config[i].bfu_indx_first + j] / PLANCK / volume;        //normalise
+      mplasma->gamma_old[config[i].bfu_indx_first + j] = mplasma->gamma[config[i].bfu_indx_first + j] / PLANCK / invariant_volume_time; //normalise
       mplasma->gamma[config[i].bfu_indx_first + j] = 0.0;       //re-initialise for next iteration
-      mplasma->gamma_e_old[config[i].bfu_indx_first + j] = mplasma->gamma_e[config[i].bfu_indx_first + j] / PLANCK / volume;    //normalise
+      mplasma->gamma_e_old[config[i].bfu_indx_first + j] = mplasma->gamma_e[config[i].bfu_indx_first + j] / PLANCK / invariant_volume_time;     //normalise
       mplasma->gamma_e[config[i].bfu_indx_first + j] = 0.0;     //re-initialise for next iteration
 
       /* For the stimulated recombination parts we need the the
@@ -485,11 +469,11 @@ mc_estimator_normalise (n)
       stat_weight_ratio = config[phot_top[config[i].bfu_jump[j]].uplev].g / config[i].g;
 
       mplasma->alpha_st_old[config[i].bfu_indx_first + j] =
-        mplasma->alpha_st[config[i].bfu_indx_first + j] * stimfac * stat_weight_ratio / PLANCK / volume;
+        mplasma->alpha_st[config[i].bfu_indx_first + j] * stimfac * stat_weight_ratio / PLANCK / invariant_volume_time;
       mplasma->alpha_st[config[i].bfu_indx_first + j] = 0.0;
 
       mplasma->alpha_st_e_old[config[i].bfu_indx_first + j] =
-        mplasma->alpha_st_e[config[i].bfu_indx_first + j] * stimfac * stat_weight_ratio / PLANCK / volume;
+        mplasma->alpha_st_e[config[i].bfu_indx_first + j] * stimfac * stat_weight_ratio / PLANCK / invariant_volume_time;
       mplasma->alpha_st_e[config[i].bfu_indx_first + j] = 0.0;
 
       /* For continuua whose edges lie beyond freqmin assume that gamma
@@ -561,7 +545,7 @@ mc_estimator_normalise (n)
 
       /* normalise jbar. Note that this uses the cell volume rather than the filled volume */
       mplasma->jbar_old[config[i].bbu_indx_first + j] =
-        mplasma->jbar[config[i].bbu_indx_first + j] * VLIGHT * stimfac / 4. / PI / volume / line_freq;
+        mplasma->jbar[config[i].bbu_indx_first + j] * VLIGHT * stimfac / 4. / PI / invariant_volume_time / line_freq;
 
       mplasma->jbar[config[i].bbu_indx_first + j] = 0.0;
     }
@@ -588,7 +572,7 @@ mc_estimator_normalise (n)
 
   /* Now that we have estimators, set the flag to use them for the level populations */
 
-  geo.macro_ioniz_mode = 1;
+  geo.macro_ioniz_mode = MACRO_IONIZ_MODE_ESTIMATORS;
 
   return (0);
 }
@@ -611,10 +595,12 @@ mc_estimator_normalise (n)
  *
  * ### Notes ###
  * 
- * KSL: This routine loops over nlte_levels, which in principle
+ * This routine loops over nlte_levels, which in principle
  * could include non-macro ions, but that should not matter since
  * since nbfu_jumps will be zero for these.
  *
+ * free bound emission in this function is calculated CMF. 
+ * 
  **********************************************************/
 
 double
@@ -636,9 +622,9 @@ total_fb_matoms (xplasma, t_e, f1, f2)
   t_e_store = xplasma->t_e;     //store the temperature - will put it back at the end
   xplasma->t_e = t_e;           //for use in calls to alpha_sp below
 
-  total = 0;                    // initialise
+  total = 0;
 
-  if (geo.macro_simple == 0)    //allow for "only-simple" calculations (SS May04)
+  if (geo.macro_simple == FALSE)        //allow for "only-simple" calculations (SS May04)
   {
     for (i = 0; i < nlte_levels; i++)
     {
@@ -691,6 +677,9 @@ total_fb_matoms (xplasma, t_e, f1, f2)
  * (due to collisions) for both macro atoms and simple ions. 
  *  It is used by the heating/cooling calculation to get the temperature.
  *
+ * Total bound-bound emission in this function is calculated CMF. If called in
+ * the cooling routines then this is left in the CMF. If called in the photon
+ * generation routines, this is converted to the observer frame.
  *
  **********************************************************/
 
@@ -709,7 +698,7 @@ total_bb_cooling (xplasma, t_e)
   for (i = 0; i < nlines; i++)
   {
     line_ptr = &line[i];
-    if (line_ptr->macro_info == 1 && geo.macro_simple == 0)
+    if (line_ptr->macro_info == TRUE && geo.macro_simple == FALSE)
     {                           //This is a line from a macro atom for which we know
       //the upper and lower level populations
       lower_density = den_config (xplasma, line_ptr->nconfigl);
@@ -774,7 +763,7 @@ macro_bb_heating (xplasma, t_e)
   for (i = 0; i < nlines; i++)
   {
     line_ptr = &line[i];
-    if (line_ptr->macro_info == 1 && geo.macro_simple == 0)
+    if (line_ptr->macro_info == TRUE && geo.macro_simple == FALSE)
     {                           //This is a line from a macro atom for which we know
       //the upper and lower level populations
       upper_density = den_config (xplasma, line_ptr->nconfigu);
@@ -852,7 +841,6 @@ macro_bf_heating (xplasma, t_e)
  * @param [out] PlasmaPtrxplasma 
  * @param [in] PhotPtr  p   the packet
  * @param [in] double  tau_sobolev   optical depth of line
- * @param [in] double  dvds   velocity gradient
  * @param [in] int  nn   the label for the line in question
  * @return  0 on success
  *
@@ -861,14 +849,21 @@ macro_bf_heating (xplasma, t_e)
  * resonance with the line and records the heating contribution 
  * from that line and packet
  *
+ * #Notes
+ *
+ * The heating contribution is modelled on the macro atom bb estimator 
+ * calculations for the radiative excitation rate. This (energy) excitation
+ * rate is multiplied by the destruction probability to get the heating. 
+ * The destruction probability is obtained following the discussion in KSL's notes
+ * on Python.
+ *
  **********************************************************/
 
 int
-bb_simple_heat (xplasma, p, tau_sobolev, dvds, nn)
+bb_simple_heat (xplasma, p, tau_sobolev, nn)
      PlasmaPtr xplasma;
      PhotPtr p;
      double tau_sobolev;
-     double dvds;
      int nn;
 
 {
@@ -877,20 +872,11 @@ bb_simple_heat (xplasma, p, tau_sobolev, dvds, nn)
   struct lines *line_ptr;
   double electron_temperature;
   double rad_rate, coll_rate, normalisation;
-  double d1, d2;                //densities of lower and upper level
-  double b12 ();
-
-  /* The heating contribution is modelled on the macro atom bb estimator 
-     calculations for the radiative excitation rate. This (energy) excitation
-     rate is multiplied by the destruction probability to get the heating. 
-     The destruction probability is obtained following the discussion in KSL's notes
-     on Python. */
 
 
   weight_of_packet = p->w;
   line_ptr = lin_ptr[nn];
   electron_temperature = xplasma->t_e;
-  two_level_atom (line_ptr, xplasma, &d1, &d2); //get level densities
 
   rad_rate = a21 (line_ptr) * p_escape (line_ptr, xplasma);
 
@@ -1207,13 +1193,12 @@ get_alpha_st (cont_ptr, xplasma)
   }
 
 
-//  alpha_st_value = qromb (alpha_st_integrand, fthresh, flast, 1e-4);
   alpha_st_value = num_int (alpha_st_integrand, fthresh, flast, 1e-4);
 
 
   /* The lines above evaluate the integral in alpha_sp. Now we just want to multiply 
      through by the appropriate constant. */
-  if (cont_ptr->macro_info == 1 && geo.macro_simple == 0)
+  if (cont_ptr->macro_info == 1 && geo.macro_simple == FALSE)
   {
     alpha_st_value = alpha_st_value * config[cont_ptr->nlev].g / config[cont_ptr->uplev].g * pow (xplasma->t_e, -1.5);
   }
@@ -1311,7 +1296,7 @@ get_alpha_st_e (cont_ptr, xplasma)
 
   /* The lines above evaluate the integral in alpha_sp. Now we just want to multiply 
      through by the appropriate constant. */
-  if (cont_ptr->macro_info == 1 && geo.macro_simple == 0)
+  if (cont_ptr->macro_info == TRUE && geo.macro_simple == FALSE)
   {
     alpha_st_e_value = alpha_st_e_value * config[cont_ptr->nlev].g / config[cont_ptr->uplev].g * pow (xplasma->t_e, -1.5);
   }

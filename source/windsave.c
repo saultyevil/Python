@@ -305,7 +305,7 @@ wind_read (filename)
 /**********************************************************/
 /** 
  * @brief      A driver routine that calls coordinate-system specific routines
- * that complete the descirption of the wind
+ * that complete the description of the wind
  *
  * @param [in] WindPtr w  The entire wind
  * @return     Always returns 0
@@ -315,6 +315,9 @@ wind_read (filename)
  * For the most point, the various routines that are called
  * just recalculate some of the various arrays used for 
  * finding the boundaries of an individual cell.
+ *
+ * These basically are just 1-d versions of the coordinate
+ * grids at the edge and mid-points of each grid cell
  *
  * ### Notes ###
  *
@@ -331,8 +334,6 @@ wind_complete (w)
      WindPtr w;
 {
   int ndom;
-
-  /* JM Loop over number of domains */
 
 
   for (ndom = 0; ndom < geo.ndomain; ndom++)

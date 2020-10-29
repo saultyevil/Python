@@ -155,6 +155,12 @@ parse_command_line (argc, argv)
         Log ("Using only full special relativity for Doppler shifts, etc.\n");
         j = i;
       }
+      else if (strcmp (argv[i], "-classic") == 0)
+      {
+        rel_mode = REL_MODE_LINEAR;
+        Log ("Using only old approach with linear Doppler shifts, etc.\n");
+        j = i;
+      }
       else if (strcmp (argv[i], "-xtest") == 0)
       {
         run_xtest = TRUE;

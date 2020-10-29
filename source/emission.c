@@ -19,14 +19,31 @@
 
 /**********************************************************/
 /**
- * @brief      calculate the luminosity of the entire
- * wind between freqencies f1 and f2
+ * @brief      calculate the energy radiated by the wind 
+ * wind between freqencies f1 and f2 either using a the co-moving
+ * frame time step or an observer frame time step
  *
- * @param [in out] double  f1   The minimum frequency 
- * @param [in out] double  f2   The maximum frequency
+ * @param [in] double  f1         The minimum frequency 
+ * @param [in] double  f2         The maximum frequency
+ * @param [in] int     mode       A switch indicating whether energy
+ *  is to be calculated in the observer (MODE_OBSERVER_TIME) or 
+ *  co-moving frame (MODE_CMF_TIME).
  * @return     The luminosity of the entire wind
  *
  * @details
+ *
+ * The name of the routine is something of a misnomer.  The
+ * routine calculates amount of energy radiated per unit time,
+ * from the emissivity of the plasma x its volume in the co-moving
+ * frame.  It does not account for the fact that these photons
+ * will be Doppler shifted as a result of the motion of the wind
+ * cells.
+ *
+ * In MODE_CMF_TIME, the time step for all cells is 1 second.
+ *
+ * In MODE_OBSERVER_FRAME_TIME, the time step is reduced by gamma
+ * to accoun for time dilation in the observer frame.
+ *
  * The routine simply calls total_emission for each wind cell with
  * a positive volume in the wind
  *
@@ -55,33 +72,43 @@
  **********************************************************/
 
 double
-wind_luminosity (f1, f2)
+wind_luminosity (f1, f2, mode)
      double f1, f2;             /* freqmin and freqmax */
+     int mode;
 {
-  double lum, lum_lines, lum_rr, lum_ff;
+  double lum, lum_lines, lum_rr, lum_ff, factor;
   int n;
   double x;
   int nplasma;
 
 
-  lum = lum_lines = lum_rr = lum_ff = 0.0;
+  lum = lum_lines = lum_rr = lum_ff = factor = 0.0;
   for (n = 0; n < NDIM2; n++)
   {
 
-    if (wmain[n].vol > 0.0)
+    if (wmain[n].inwind >= 0)
     {
       nplasma = wmain[n].nplasma;
-      lum += x = total_emission (&wmain[n], f1, f2);
-      lum_lines += plasmamain[nplasma].lum_lines;
-      lum_rr += plasmamain[nplasma].lum_rr;
-      lum_ff += plasmamain[nplasma].lum_ff;
+
+      if (mode == MODE_OBSERVER_FRAME_TIME)
+        factor = 1.0 / plasmamain[nplasma].xgamma;      /* this is dt_cmf */
+      else if (mode == MODE_CMF_TIME)
+        factor = 1.0;
+
+      lum += x = total_emission (&wmain[n], f1, f2) * factor;
+      lum_lines += plasmamain[nplasma].lum_lines * factor;
+      lum_rr += plasmamain[nplasma].lum_rr * factor;
+      lum_ff += plasmamain[nplasma].lum_ff * factor;
     }
   }
 
-
-  geo.lum_lines = lum_lines;
-  geo.lum_rr = lum_rr;
-  geo.lum_ff = lum_ff;
+  /* only copy to geo if we are really calculating luminosities */
+  if (mode == MODE_CMF_TIME)
+  {
+    geo.lum_lines = lum_lines;
+    geo.lum_rr = lum_rr;
+    geo.lum_ff = lum_ff;
+  }
 
   return (lum);
 }
@@ -143,9 +170,9 @@ total_emission (one, f1, f2)
   }
   else
   {
-    if (geo.rt_mode == RT_MODE_MACRO)   //Switch for macro atoms (SS)
+    if (geo.rt_mode == RT_MODE_MACRO)
     {
-      xplasma->lum_rr = total_fb_matoms (xplasma, t_e, f1, f2) + total_fb (one, t_e, f1, f2, FB_FULL, OUTER_SHELL);     //outer shellrecombinations
+      xplasma->lum_rr = (total_fb_matoms (xplasma, t_e, f1, f2) + total_fb (one, t_e, f1, f2, FB_FULL, OUTER_SHELL));   //outer shellrecombinations
 
       /*
        *The first term here is the fb cooling due to macro ions and the second gives
@@ -171,19 +198,14 @@ total_emission (one, f1, f2)
     {
       xplasma->lum_tot = xplasma->lum_lines = total_line_emission (one, f1, f2);
       xplasma->lum_tot += xplasma->lum_ff = total_free (one, t_e, f1, f2);
-      /* We compute the radiative recombination luminosirty - this is not the same as the rr cooling rate and
-         so is stored in a seperate variable */
+      /* We compute the radiative recombination luminosity - this is not the same as the rr cooling rate and
+         so is stored in a separate variable */
       xplasma->lum_tot += xplasma->lum_rr = total_fb (one, t_e, f1, f2, FB_FULL, OUTER_SHELL);  //outer shell recombinations
-
-
-
     }
   }
 
 
   return (xplasma->lum_tot);
-
-
 }
 
 
@@ -209,7 +231,7 @@ total_emission (one, f1, f2)
  *
  * The routine first generates a random number which is used to determine
  * in which wind cell  should be generated, and then  determines the
- * type of photon to generate.  Once this is doen the routine cycles thourhg
+ * type of photon to generate.  Once this is done the routine cycles through
  * the PlasmaCells generatating all of the photons for each cell at once.
  *
  *
@@ -223,6 +245,10 @@ total_emission (one, f1, f2)
  * instead of looking for wind cells with positive volume
  **********************************************************/
 
+#define FREE_FREE  0
+#define FREE_BOUND 1
+#define BOUND_BOUND 2
+
 int
 photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
      PhotPtr p;
@@ -232,14 +258,14 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
 {
   int n, nn, np;
   int photstop;
-  double xlum, xlumsum, lum;
-//OLD  double v[3];
+  double xlum, xlumsum, lum, dt_cmf;
   int icell, icell_old;
   int nplasma = 0;
   int nnscat;
   int ndom;
   int ptype[NPLASMA][3];        //Store for the types of photons we want, ff first, fb next, line third
 
+  dt_cmf = 0.0;
   for (n = 0; n < NPLASMA; n++)
   {
     for (nn = 0; nn < 3; nn++)
@@ -255,13 +281,13 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
 
   for (n = photstart; n < photstop; n++)
   {
-    /* locate the wind_cell in which the photon bundle originates.
-       Note: In photo_gen, both geo.f_wind and geo.lum_wind will have been determined.
-       geo.f_wind refers to the specific flux between freqmin and freqmax.  Note that
-       we make sure that xlum is not == 0 or to geo.f_wind. */
+    /* Locate the wind_cell in which the photon bundle originates, allowing for the 
+       fact that we want to create the correct number of photons using observer 
+       an obsever frame time step. geo.f_wind is the energy generated by the wind
+       in the desired band in the observer frame, wherease plaama_main[].lum_tot is
+       was calculated in the CMF. */
 
     xlum = random_number (0.0, 1.0) * geo.f_wind;
-
 
     xlumsum = 0;
     icell = 0;
@@ -269,11 +295,11 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
     {
 
 
-      if (wmain[icell].vol > 0.0)
+      if (wmain[icell].inwind >= 0)
       {
         nplasma = wmain[icell].nplasma;
-        /*increment the xlumsum by the lum_tot (the band limited luminosity in this cell */
-        xlumsum += plasmamain[nplasma].lum_tot;
+        dt_cmf = 1.0 / plasmamain[nplasma].xgamma;
+        xlumsum += plasmamain[nplasma].lum_tot * dt_cmf;
       }
       icell++;
     }
@@ -283,12 +309,12 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
 
     nplasma = wmain[icell].nplasma;
     ndom = wmain[icell].ndom;
-    plasmamain[nplasma].nrad += 1;      /* Increment the counter for the number of photons generated in the cell */
-
+    plasmamain[nplasma].nrad += 1;
 
 
     /*Determine the type of photon this photon will be and increment ptype, which stores the total number of
-     * each photon type to be made in each cell */
+     * each photon type to be made in each cell. We don't need to account for time
+     * dilation heere, because all processes are in the same cell*/
 
     lum = plasmamain[nplasma].lum_tot;
     xlum = lum * random_number (0.0, 1.0);
@@ -298,15 +324,15 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
     p[n].nnscat = 1;
     if ((xlumsum += plasmamain[nplasma].lum_ff) > xlum)
     {
-      ptype[nplasma][0]++;      /* a ff photon  */
+      ptype[nplasma][FREE_FREE]++;
     }
     else if ((xlumsum += plasmamain[nplasma].lum_rr) > xlum)
     {
-      ptype[nplasma][1]++;      /* a fb photon */
+      ptype[nplasma][FREE_BOUND]++;
     }
     else
     {
-      ptype[nplasma][2]++;      /* a line photon */
+      ptype[nplasma][BOUND_BOUND]++;
     }
   }
 
@@ -320,7 +346,7 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
   {
 
     photstart = photstop;       //initially set to photstart, afterwards we start the photon number from the end of the last cell
-    photstop = photstart + ptype[n][0] + ptype[n][1] + ptype[n][2];     //This is the number of photons in this cell
+    photstop = photstart + ptype[n][FREE_FREE] + ptype[n][FREE_BOUND] + ptype[n][BOUND_BOUND];  //This is the number of photons in this cell
 
     icell = plasmamain[n].nwind;
     ndom = wmain[icell].ndom;
@@ -328,7 +354,7 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
     for (np = photstart; np < photstop; np++)
     {
 
-      if (np < photstart + ptype[n][0])
+      if (np < photstart + ptype[n][FREE_FREE])
       {
         p[np].freq = one_ff (&wmain[icell], freqmin, freqmax);  /*Get the frequency of one ff photon */
         if (p[np].freq <= 0.0)
@@ -338,7 +364,7 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
           p[np].freq = 0.0;
         }
       }
-      else if (np < photstart + ptype[n][0] + ptype[n][1])
+      else if (np < photstart + ptype[n][FREE_FREE] + ptype[n][FREE_BOUND])
       {
         p[np].freq = one_fb (&wmain[icell], freqmin, freqmax);
       }
@@ -432,11 +458,12 @@ photo_gen_wind (p, weight, freqmin, freqmax, photstart, nphot)
  * @return     The frequency of the transition
  *
  * @details
- * The routine geneerates a random number and uses this to select
+ * The routine generates a random number and uses this to select
  * the transition that was excited
  *
  * ### Notes ###
  *
+ * 
  **********************************************************/
 
 double
@@ -461,6 +488,7 @@ one_line (one, nres)
     Error ("one_line: no lines %d %d\n", nline_min, nline_max);
     return (0);
   }
+
 
   xlum = xplasma->lum_lines * random_number (0.0, 1.0);
 
@@ -508,7 +536,9 @@ one_line (one, nres)
  * from the atomic data files.  If it is, then the gaunt factor determined
  * using data from Sutherland (1998).  If not, the gaunt factor is set
  * to 1.
- *
+ * 
+ * Total free free emission in this function is calculated CMF. 
+ * 
  **********************************************************/
 
 double
@@ -547,7 +577,7 @@ total_free (one, t_e, f1, f2)
   }
 
 
-  if (gaunt_n_gsqrd == 0)       //Maintain old behaviour because atomic data files do not include gaunt factor.
+  if (gaunt_n_gsqrd == 0)       //fallback soln if atomic data files do not include gaunt factor.
   {
     g_ff_h = g_ff_he = 1.0;
     if (nelements > 1)
@@ -564,15 +594,11 @@ total_free (one, t_e, f1, f2)
     sum = 0.0;
     for (nion = 0; nion < nions; nion++)
     {
-      if (ion[nion].istate != 1)        //The neutral ion does not contribute
+      if (ion[nion].istate != 1)        //neutral ions do not contribute
       {
         gsqrd = ((ion[nion].istate - 1) * (ion[nion].istate - 1) * RYD2ERGS) / (BOLTZMANN * t_e);
         gaunt = gaunt_ff (gsqrd);
         sum += xplasma->density[nion] * (ion[nion].istate - 1) * (ion[nion].istate - 1) * gaunt;
-      }
-      else
-      {
-        sum += 0.0;
       }
     }
     x = BREMS_CONSTANT * xplasma->ne * (sum) / H_OVER_K;
@@ -786,14 +812,6 @@ gaunt_ff (gsquared)
     return (1.0);
   }
 
-//OLD  for (i = 0; i < gaunt_n_gsqrd; i++)   /*first find the pair of parameter arrays that bracket our temperature */
-//OLD  {
-//OLD    if (gaunt_total[i].log_gsqrd <= log_g2 && gaunt_total[i + 1].log_gsqrd > log_g2)
-//OLD    {
-//OLD      index = i;                /* the array to use */
-//OLD      delta = log_g2 - gaunt_total[index].log_gsqrd;
-//OLD    }
-//OLD  }
 
   i = 0;
   while (gaunt_total[i].log_gsqrd < log_g2)
@@ -804,7 +822,7 @@ gaunt_ff (gsquared)
   index = i - 1;
   delta = log_g2 - gaunt_total[index].log_gsqrd;
 
-  /* The outherland interpolation data is a spline fit to the gaunt function. */
+  /* The Southerland interpolation data is a spline fit to the gaunt function. */
 
   gaunt = gaunt_total[index].gff + delta * (gaunt_total[index].s1 + delta * (gaunt_total[index].s2 + gaunt_total[index].s3));
   return (gaunt);

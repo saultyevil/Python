@@ -105,7 +105,7 @@ levels (xplasma, mode)
     if (ion[nion].nlte > 0)
       /* Extra if statement added to prevent changing levden of macro atom populations (SS, Apr04) */
     {
-      if (ion[nion].macro_info == 0 || geo.macro_ioniz_mode == 0)
+      if (ion[nion].macro_info == FALSE || geo.macro_ioniz_mode == MACRO_IONIZ_MODE_NO_ESTIMATORS)
       {                         //Then calculate levels for this ion 
 
         z = xplasma->partition[nion];

@@ -106,6 +106,9 @@ move_phot (pp, ds)
      PhotPtr pp;
      double ds;
 {
+  int ierr;
+
+  ierr = check_frame (pp, F_OBSERVER, "move_phot");
 
   pp->x[0] += pp->lmn[0] * ds;
   pp->x[1] += pp->lmn[1] * ds;
@@ -113,7 +116,7 @@ move_phot (pp, ds)
 
   pp->ds += ds;
   pp->path += fabs (ds);
-  return (0);
+  return (ierr);
 }
 
 
@@ -149,70 +152,6 @@ comp_phot (p1, p2)
 }
 
 
-
-
-//OLD /*******************************************************
-//OLD             Space Telescope Science Institute
-//OLD
-//OLD Synopsis:
-//OLD    ds_to_cone (cc, p) This is a new version of ds_to_cone introduced in order to
-//OLD    allow cylvar coordinates  Eventually it is intended to replace ds_to_windcone
-//OLD    completely, or at least the guts of ds_to_windcone.
-//OLD
-//OLD Returns:
-//OLD
-//OLD
-//OLD Description:
-//OLD
-//OLD
-//OLD Notes:
-//OLD
-//OLD As part of the conversion, the old ds_to_cone was renamed to ds_to_windcone
-//OLD
-//OLD
-//OLD
-//OLD   56d -- Cones have become more prominent in python with time.  Originally
-//OLD   they were used simply to define the inner and outer edges of the
-//OLD   wind, that is   to determine when a photon entered the wind.  The wind was/is
-//OLD   assumed to be a biconical flow, and therefore the most naturally was defined in
-//OLD   terms of a footpoint in the disk for the innermost/outermost stream line
-//OLD   and a slope.
-//OLD
-//OLD   It was expanced when rtheta coordanates were introduced
-//OLD   to handle find when one had hit the theta coordinate boundaries.  And in
-//OLD   56d we also want it to handle the case where the grid cells have variable
-//OLD   z coordinates.  Therefore one needs to be quite careful, Since ds_to_cone
-//OLD   is the ultimate name of the routine I would like to use, the first step
-//OLD   I took was to change the name of the old routine to ds_to_windcone.  This
-//OLD   should allow me to replace the old routine incrementally.
-//OLD
-//OLD   56d -- With python 56d the variable defining a cone were changed to be
-//OLD   the point on the z axis intercepted by the cone (extended) through
-//OLD   the disk, and the slope.
-//OLD
-//OLD   Our approach is as follows:
-//OLD
-//OLD   The cone is defined by  z=z_o + dz/drho *drho
-//OLD   The photon is defined by X=X_o + LMN s
-//OLD
-//OLD   Unless dz/drho = 0, this turns into a simple quadratic equation that must
-//OLD   be solved.  We work in the northen hemisphere only.
-//OLD
-//OLD   There are issues concerning what to do so one crosses the disk plane.  For
-//OLD         finding how far a photon can travel in a cell, we are *not* interested
-//OLD   in the possibility that the photon hits the cone on the other side of
-//OLD   the disk plane, but for a photon travelling out of the wind we are
-//OLD   very interested in this possibility.
-//OLD
-//OLD History:
-//OLD   05jul   ksl     Created so that cylvar coordinates could be incorporated
-//OLD                   into python.
-//OLD   06sep   ksl     57h -- Corrected an error discovered by SS in the setup of the
-//OLD                   quadratic for a cone.  Note that if this routing ever became
-//OLD                   a "heavy hitter" in terms of efficiency, there are a few
-//OLD                   changes that could speed it up a bit since the magnitude
-//OLD                   of lmn is always 1.
-//OLD */
 
 
 
@@ -344,26 +283,6 @@ both roots were imaginary */
 }
 
 
-
-
-//OLD /**************************************************************************
-//OLD
-//OLD
-//OLD   Synopsis:
-//OLD   This is more generalized routine to find the positive distance to
-//OLD           a sphere centered at x with radius r
-//OLD
-//OLD   Description:
-//OLD
-//OLD   Arguments:
-//OLD
-//OLD   Returns:
-//OLD
-//OLD   Notes:
-//OLD
-//OLD   History:
-//OLD
-//OLD  ************************************************************************/
 
 
 /**********************************************************/

@@ -9,4 +9,4 @@ The files relating to these examples can be found in the `examples/` section of 
 .. toctree::
    :glob:
 
-   examples/reverb
+   examples/reverb/reverb

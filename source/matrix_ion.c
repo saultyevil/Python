@@ -318,7 +318,7 @@ matrix_ion_populations (xplasma, mode)
     }
 
     /* Calculate level populations for macro-atoms */
-    if (geo.macro_ioniz_mode == 1)
+    if (geo.macro_ioniz_mode == MACRO_IONIZ_MODE_ESTIMATORS)
     {
       macro_pops (xplasma, xne);
     }
@@ -331,10 +331,10 @@ matrix_ion_populations (xplasma, mode)
 
     for (nn = 0; nn < nions; nn++)
     {
-      newden[nn] = 0.0;         // initialise the array element
+      newden[nn] = 0.0;
 
       /* if the ion is being treated by macro_pops then use the populations just computed */
-      if ((ion[nn].macro_info == 1) && (geo.macro_simple == 0) && (geo.macro_ioniz_mode == 1))
+      if ((ion[nn].macro_info == TRUE) && (geo.macro_simple == FALSE) && (geo.macro_ioniz_mode == MACRO_IONIZ_MODE_ESTIMATORS))
       {
         newden[nn] = xplasma->density[nn] / elem_dens[ion[nn].z];
       }
@@ -408,7 +408,7 @@ matrix_ion_populations (xplasma, mode)
   for (nn = 0; nn < nions; nn++)
   {
     /* If statement added here to suppress interference with macro populations */
-    if (ion[nn].macro_info == 0 || geo.macro_ioniz_mode == 0 || geo.macro_simple == 1)
+    if (ion[nn].macro_info == FALSE || geo.macro_ioniz_mode == MACRO_IONIZ_MODE_NO_ESTIMATORS || geo.macro_simple == TRUE)
     {
       xplasma->density[nn] = newden[nn] * elem_dens[ion[nn].z]; //We return to absolute densities here
     }

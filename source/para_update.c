@@ -387,7 +387,7 @@ gather_spectra_para (nspec_helper, nspecs)
     {
       redhelper[mpi_i * nspecs + mpi_j] = xxspec[mpi_j].f[mpi_i] / np_mpi_global;
 
-      if (geo.ioniz_or_extract) // this is True in ionization cycles only, when we also have a log_spec_tot file
+      if (geo.ioniz_or_extract == CYCLE_IONIZ)
         redhelper[mpi_i * nspecs + mpi_j + (NWAVE * nspecs)] = xxspec[mpi_j].lf[mpi_i] / np_mpi_global;
     }
   }
@@ -401,7 +401,7 @@ gather_spectra_para (nspec_helper, nspecs)
     {
       xxspec[mpi_j].f[mpi_i] = redhelper2[mpi_i * nspecs + mpi_j];
 
-      if (geo.ioniz_or_extract) // this is True in ionization cycles only, when we also have a log_spec_tot file
+      if (geo.ioniz_or_extract == CYCLE_IONIZ)
         xxspec[mpi_j].lf[mpi_i] = redhelper2[mpi_i * nspecs + mpi_j + (NWAVE * nspecs)];
     }
   }

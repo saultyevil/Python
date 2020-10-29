@@ -62,21 +62,21 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
      double rmin, rmax, m, mdot, freqmin, freqmax, *ftot;
      int ioniz_or_final;
 {
-  double t, tref, teff (), tdisk ();
-  double log_g, gref, geff (), gdisk ();
-  double dr, r;
+  double t, tref;
+  double log_g, gref;
+  double v, dr, r;
   double logdr, logrmin, logrmax, logr;
   double f, ltot;
   double q1;
   int nrings, i, icheck;
   int spectype;
   double emit, emittance_bb (), emittance_continuum ();
+  double factor;
 
   /* Calculate the reference temperature and luminosity of the disk */
   tref = tdisk (m, mdot, rmin);
   gref = gdisk (m, mdot, rmin);
 
-  q_test_count = 0;
   /* Now compute the apparent luminosity of the disk.  This is not actually used
      to determine how annulae are set up.  It is just used to populate geo.ltot.
      It can change if photons hitting the disk are allowed to raise the temperature
@@ -86,7 +86,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
   logrmin = log (rmin);
   logdr = (logrmax - logrmin) / STEPS;
 
-  for (nrings = 0; nrings < NRINGS; nrings++)   //Initialise the structure
+  for (nrings = 0; nrings < NRINGS; nrings++)
   {
     disk.nphot[nrings] = 0;
     disk.nphot[nrings] = 0;
@@ -139,9 +139,19 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
     dr = exp (logr + logdr) - r;
     t = teff (tref, (r + 0.5 * dr) / rmin);
     log_g = log10 (geff (gref, (r + 0.5 * dr) / rmin));
+    v = sqrt (GRAV * geo.mstar / r);
+    v /= VLIGHT;
+    if (rel_mode == REL_MODE_FULL)
+    {
+      factor = sqrt (1. - v * v);
+    }
+    else
+    {
+      factor = 1.0;
+    }
 
     if (spectype > -1)
-    {                           // emittance from a continuum model
+    {
       emit = emittance_continuum (spectype, freqmin, freqmax, t, log_g);
     }
     else
@@ -149,7 +159,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
       emit = emittance_bb (freqmin, freqmax, t);
 
     }
-    (*ftot) += emit * (2. * r + dr) * dr;
+    (*ftot) += emit * (2. * r + dr) * dr * factor;
   }
 
   (*ftot) *= q1;
@@ -180,9 +190,19 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
     dr = exp (logr + logdr) - r;
     t = teff (tref, (r + 0.5 * dr) / rmin);
     log_g = log10 (geff (gref, (r + 0.5 * dr) / rmin));
+    v = sqrt (GRAV * geo.mstar / r);
+    v /= VLIGHT;
+    if (rel_mode == REL_MODE_FULL)
+    {
+      factor = sqrt (1. - v * v);
+    }
+    else
+    {
+      factor = 1.0;
+    }
 
     if (spectype > -1)
-    {                           // continuum emittance
+    {
       emit = emittance_continuum (spectype, freqmin, freqmax, t, log_g);
     }
     else
@@ -190,7 +210,7 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
       emit = emittance_bb (freqmin, freqmax, t);
     }
 
-    f += q1 * emit * (2. * r + dr) * dr;
+    f += q1 * emit * (2. * r + dr) * dr * factor;
     i++;
     /* EPSILON to assure that roundoffs don't affect result of if statement */
     if (f / (*ftot) * (NRINGS - 1) >= nrings)
@@ -204,7 +224,6 @@ disk_init (rmin, rmax, m, mdot, freqmin, freqmax, ioniz_or_final, ftot)
       nrings++;
       if (nrings >= NRINGS)
       {
-//        Error_silent ("disk_init: Got to ftot %e at r %e < rmax %e. OK if freqs are high\n", f, r, rmax);             Not *really* an error, the error below deals with a *real* problem.
         break;
       }
     }
@@ -284,9 +303,6 @@ qdisk_init (rmin, rmax, m, mdot)
   dlog_r = (log_rmax - log_rmin) / (NRINGS - 1);
 
 
-
-
-
   for (nrings = 0; nrings < NRINGS; nrings++)
   {
     log_r = log_rmin + dlog_r * nrings;
@@ -317,10 +333,6 @@ qdisk_init (rmin, rmax, m, mdot)
     qdisk.ave_freq[nrings] = 0;
     qdisk.t_hit[nrings] = 0;
   }
-
-
-
-  /* Now calculate the temperature and gravity of the annulae */
 
   return (0);
 }
@@ -463,19 +475,6 @@ read_non_standard_disk_profile (tprofile)
            blmod.r[blmod.n_blpts - 1]);
     Log ("read_non_standard_disk_profile: Portions of the disk outside are treated as part of a steady state disk\n");
   }
-
-
-
-//OLD  result = fscanf (fptr, "%d\n", &dumint);
-//OLD  blmod.n_blpts = dumint;
-
-
-//OLD  for (n = 0; n < blmod.n_blpts; n++)
-//OLD  {
-//OLD    result = fscanf (fptr, "%g %g", &dumflt1, &dumflt2);
-//OLD    blmod.r[n] = dumflt1 * 1.e11;
-//OLD    blmod.t[n] = dumflt2 * 1.e3;
-//OLD  }
 
   fclose (fptr);
 

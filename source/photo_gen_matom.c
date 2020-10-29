@@ -88,7 +88,7 @@ get_kpkt_heating_f ()
 
     if (shock_kpkt_luminosity > 0)
     {
-      if (geo.ioniz_or_extract)
+      if (geo.ioniz_or_extract == CYCLE_IONIZ)
         plasmamain[n].kpkt_emiss = shock_kpkt_luminosity;
       else
         plasmamain[n].kpkt_abs += shock_kpkt_luminosity;
@@ -527,13 +527,17 @@ get_matom_f (mode)
  * @param [in] double  weight   the photon weight
  * @param [in] int  photstart   The first element of the photon stucure to be populated
  * @param [in] int  nphot   the number of photons to be generated
- * @return int nphot  When it finishes it should have generated nphot photons from k-packet elliminations.
+ * @return int nphot  The number of photon packets that were generated from k-packet elliminations.
  *
  * @details produces photon packets to account for creating of r-packets by k-packets in the spectrum calculation. 
  * It should only be used once the total energy emitted in this way in the wavelength range in question is well known
  * (calculated in the ionization cycles). This routine is closely related to photo_gen_wind from which much of the code 
  * has been copied.
  *
+ * Photons are generated at a position in the Observer frame.  
+ * The weight of the photon should is the weight expected in the local 
+ * frame since photon is first created in thea local 
+ * rest frame, and then Doppler shifted to the Observer frame
  **********************************************************/
 
 int
@@ -557,7 +561,7 @@ photo_gen_kpkt (p, weight, photstart, nphot)
   photstop = photstart + nphot;
   Log ("photo_gen_kpkt  creates nphot %5d photons from %5d to %5d, weight %8.4e \n", nphot, photstart, photstop, weight);
 
-  if (geo.ioniz_or_extract)
+  if (geo.ioniz_or_extract == CYCLE_IONIZ)
   {
     /* we are in the ionization cycles, so use all frequencies. kpkt_mode should allow all processes */
     fmin = xband.f1[0];
@@ -583,7 +587,7 @@ photo_gen_kpkt (p, weight, photstart, nphot)
     icell = 0;
     while (xlumsum < xlum)
     {
-      if (wmain[icell].vol > 0.0)
+      if (wmain[icell].inwind >= 0)
       {
         nplasma = wmain[icell].nplasma;
         xlumsum += plasmamain[nplasma].kpkt_emiss;
@@ -653,12 +657,8 @@ photo_gen_kpkt (p, weight, photstart, nphot)
 
     p[n].nnscat = nnscat;
 
-    /* The next two lines correct the frequency to first order, but do not result in
-       forward scattering of the distribution */
 
     ndom = wmain[icell].ndom;
-//OLD    vwind_xyz (ndom, &p[n], v);
-//OLD    p[n].freq /= (1. - dot (v, p[n].lmn) / VLIGHT);     //XFRAME
 
     /* Make an in-place transformation to the observer frame */
     if (local_to_observer_frame (&p[n], &p[n]))
@@ -729,13 +729,11 @@ photo_gen_matom (p, weight, photstart, nphot)
   struct photon pp;
   int nres;
   int n;
-//OLD  double v[3];
   double dot ();
   int emit_matom ();
   double test;
   int upper;
   int nnscat;
-  double dvwind_ds (), sobolev ();
   int nplasma;
   int ndom;
 
@@ -756,7 +754,7 @@ photo_gen_matom (p, weight, photstart, nphot)
     upper = 0;
     while (xlumsum < xlum)
     {
-      if (wmain[icell].vol > 0.0)
+      if (wmain[icell].inwind >= 0)
       {
         nplasma = wmain[icell].nplasma;
         xlumsum += macromain[nplasma].matom_emiss[upper];
@@ -850,8 +848,6 @@ photo_gen_matom (p, weight, photstart, nphot)
 
     ndom = wmain[icell].ndom;
 
-//OLD    vwind_xyz (ndom, &p[n], v);
-//OLD    p[n].freq /= (1. - dot (v, p[n].lmn) / VLIGHT);     //XFRAME
 
     /* Make an in-place transformation to the observer frame */
     if (local_to_observer_frame (&p[n], &p[n]))

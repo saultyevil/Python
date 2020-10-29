@@ -93,7 +93,6 @@ get_stellar_params ()
   rddoub ("Central_object.radius(cm)", &geo.rstar);
 
 
-//OLD  geo.r_agn = geo.rstar;        /* At present just set geo.r_agn to geo.rstar */
   geo.rstar_sq = geo.rstar * geo.rstar;
   if (geo.system_type != SYSTEM_TYPE_AGN && geo.system_type != SYSTEM_TYPE_BH)
   {
@@ -102,7 +101,6 @@ get_stellar_params ()
     get_spectype (geo.star_radiation, "Central_object.rad_type_to_make_wind(bb,models)", &geo.star_ion_spectype);
 
     if (geo.star_radiation)
-//OLD      geo.tstar_init = 40000;
       rddoub ("Central_object.temp", &geo.tstar_init);
   }
   else
@@ -384,7 +382,6 @@ get_bl_and_agn_params (lstar)
 
   else
   {
-//OLD    geo.r_agn = 0.0;
     geo.lum_agn = 0.0;
     geo.alpha_agn = 0.0;
     geo.const_agn = 0.0;

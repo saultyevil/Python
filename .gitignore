@@ -53,6 +53,7 @@ lib/pkgconfig/
 # sphinx stuff
 docs/sphinx/html/
 docs/sphinx/doctrees/
+docs/sphinx/venv/
 
 # doxygen stuff
 docs/doxygen/html/

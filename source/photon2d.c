@@ -407,24 +407,24 @@ int translate_in_wind_failure = 0;
  * @param [in, out] PhotPtr  p   A photon
  * @param [in] double  tau_scat   The depth at which the photon will scatter
  * @param [out] double *  tau   The tau of a resonance
- * @param [out] int *  nres   The resonaance which caused the photon to stop
+ * @param [out] int *  nres   The resonance which caused the photon to stop
  * @return     A status indicated whether the photon has stopped for a scattering
- * even of for some other teason
+ * even of for some other reason
  *
  * @details
  * It calculates and updates the final position of the photon p, the optical depth tau after
- * 	having translated the photon, and, if the photon is scattered, the number of the resonance
- * 	responsible for scattering (or absorbing) the photon bundle.
+ * having translated the photon, and, if the photon is scattered, the number of the resonance
+ * responsible for scattering (or absorbing) the photon bundle.
  *
- * 	These last two quantities are calculated in ds_calculate and simply passed back.
- *
- * 	translate_in_wind returns that status directly to the calling routine.
+ * In the simple atom case, the weight of the photon is also reduced as a result
+ * of continuum absorption, so that what is returned final weight of the photon
+ * in the observer frame..
  *
  * ### Notes ###
  *
  * In addition to moving the photon, the routine also updates some values
- * having to do with the radiation filed both in and out of macro atom
- * mode.
+ * having to do with the radiation field via calls to radiation (simple atoms)
+ * or update_bf_estimators (macro-atoms)
  *
  **********************************************************/
 int
@@ -436,13 +436,18 @@ translate_in_wind (w, p, tau_scat, tau, nres)
 
 
 {
+
   int n;
-  double smax, ds_current;
+  double smax, s, ds_current, ds_cmf;
   int istat;
   int nplasma;
+  int ndom, ndom_current;
+  int inwind;
+  int hit_disk;
 
   WindPtr one;
   PlasmaPtr xplasma;
+  struct photon phot_mid, phot_mid_cmf; // Photon at the midpt of its path in the cell
 
 
 /* First verify that the photon is in the grid, and if not
@@ -489,25 +494,32 @@ return and record an error */
 
 
 
-/* OK now we increment the radiation field in the cell, translate the photon and wrap
-   things up If the photon is going to scatter in this cell, radiation also reduces
-   the weight of the photon due to continuum absorption, e.g. free free */
+/* We now increment the radiation field in the cell, translate the photon and wrap
+   things up.  For simple atoms, the routine radiation also reduces
+   the weight of the photon due to continuum absorption, e.g. free free.
+   */
+
 
   if (geo.rt_mode == RT_MODE_MACRO)
-  {                             // Macro-method
+  {
     /* In the macro-method, b-f and other continuum processes do not reduce the photon
        weight, but are treated as as scattering processes.  Therefore most of what was in
-       subroutine radiation can be avoided.
+       subroutine radiation for the simple atom case can be avoided.
      */
 
     one = &w[p->grid];
     nplasma = one->nplasma;
     xplasma = &plasmamain[nplasma];
 
-    if (geo.ioniz_or_extract == 1)
+    /* Provide inputs to bf_estimators in the local frame  */
+    stuff_phot (p, &phot_mid);
+    move_phot (&phot_mid, 0.5 * ds_current);
+    observer_to_local_frame (&phot_mid, &phot_mid_cmf);
+    ds_cmf = observer_to_local_frame_ds (&phot_mid, ds_current);
+
+    if (geo.ioniz_or_extract == CYCLE_IONIZ)
     {
-      /* Increment the bound-free estimators for macro-atoms */
-      bf_estimators_increment (one, p, ds_current);
+      bf_estimators_increment (one, &phot_mid_cmf, ds_cmf);
     }
   }
   else

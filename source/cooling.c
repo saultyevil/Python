@@ -25,7 +25,7 @@
  * @return     The total amount of cooling in a plasma cell,
  *
  * @details
- * The routine calculates cooling of a wind cell, storing the results
+ * The routine calculates cooling of a wind cell in the CMF, storing the results
  * of various different processes in various parameters of the plasma
  * cell.
  *
@@ -33,6 +33,7 @@
  * @bug There appear to be redundant calls here to xtotal_emission (which
  * include calls to total_fb, and to total_fb in this routine.  This makes
  * it difficult to understand whether something is being counted twice.
+ *
  *
  **********************************************************/
 double
@@ -93,7 +94,7 @@ cooling (xxxplasma, t)
 /**********************************************************/
 /**
  * @brief      calculate the cooling of a single cell
- * 			due to free free, bound - boound and recombination
+ * 			due to free free, bound - bound and recombination
  * 			processes.
  *
  * @param [in out] WindPtr  one   A singel wind cell
@@ -107,15 +108,16 @@ cooling (xxxplasma, t)
  *
  * ### Notes ###
  *
- * It returns the total cooling, but also stores the luminosity due
- * to various types of emssion, e.g ff and  lines into the
- * Plasms cells. The fb cooling calculated here is *not* equal to
- * the fb lumniosity and so this value is stored in cool_rr.
+ * It returns the total cooling in the CMF, and also cooling due
+ * to various types of emission, e.g ff and  lines into the
+ * Plasma cells. The fb cooling calculated here is *not* equal to
+ * the fb luminosity and so this value is stored in cool_rr.
  *
  * @bug The call to this routine was changed when PlasmaPtrs
  * were introduced, but it appears that the various routines
  * that were called were not changed. This needs to be fixed for
  * consistency
+ *
  *
  **********************************************************/
 
@@ -365,7 +367,7 @@ wind_cooling ()
   for (n = 0; n < NDIM2; n++)
   {
 
-    if (wmain[n].vol > 0.0)
+    if (wmain[n].inwind >= 0)
     {
       nplasma = wmain[n].nplasma;
       cool += x = cooling (&plasmamain[nplasma], plasmamain[nplasma].t_e);

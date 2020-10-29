@@ -20,7 +20,8 @@
 /**********************************************************/
 /**
  * @brief      find the gradient velocity vector v, dv_ds for a photon
- * at a certain postion travelling in a certain direction
+ * at a certain position travelling in a certain direction in the cmf
+ * frame.
  *
  * @param [in] PhotPtr  p   A photon
  * @return     dvds    on successful completion
@@ -43,7 +44,7 @@
  **********************************************************/
 
 double
-dvwind_ds (p)
+dvwind_ds_cmf (p)
      PhotPtr p;
 {
   double v_grad[3][3];
@@ -78,12 +79,12 @@ dvwind_ds (p)
      For the moment, I've adopted an on the fly method for spherical coordinates.
      This should be improved by figuring out out how the velocity gradient
      tensor ought to be rotated in order to give the right answer for spherical
-     coordinates */
+     coordinates. */
 
   if (zdom[ndom].coord_type == SPHERICAL)
   {
     struct photon pnew;
-    double v1[3], v2[3], diff[3];
+    double v1[3], v2[3], dv[3], diff[3];
     double ds;
     /* choose a small distance which is dependent on the cell size */
     vsub (pp.x, wmain[pp.grid].x, diff);
@@ -100,7 +101,15 @@ dvwind_ds (p)
     model_velocity (ndom, pnew.x, v2);
 
     /* calculate the relevant gradient */
-    dvds = fabs (dot (v1, pp.lmn) - dot (v2, pp.lmn)) / ds;
+    if (rel_mode == REL_MODE_FULL)
+    {
+      observer_to_local_frame_velocity (v2, v1, dv);
+      dvds = length (dv) / ds;
+    }
+    else
+    {
+      dvds = fabs (dot (v1, pp.lmn) - dot (v2, pp.lmn)) / ds;
+    }
   }
 
   else                          // for non spherical coords we interpolate on v_grad
@@ -142,7 +151,7 @@ dvwind_ds (p)
 
   if (sane_check (dvds))
   {
-    Error ("dvwind_ds: sane_check %f\n", dvds);
+    Error ("dvwind_ds_cmf: sane_check %f\n", dvds);
   }
 
   return (dvds);

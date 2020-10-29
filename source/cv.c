@@ -156,7 +156,6 @@ logg (mass, rwd)
      double mass, rwd;
 {
   double gravity;
-//OLD  mass *= MSOL;   In python mass is stored in gam
   gravity = GRAV * mass / (rwd * rwd);
   gravity = log10 (gravity);
 

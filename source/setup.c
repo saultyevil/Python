@@ -632,14 +632,6 @@ init_ionization ()
   }
 
 
-
-  /*Normally, geo.partition_mode is set to -1, which means that partition functions are calculated to take
-     full advantage of the data file.  This means that in calculating the partition functions, the information
-     on levels and their multiplicities is taken into account.   */
-
-  geo.partition_mode = -1;      //?? Stuart, is there a reason not to move this earlier so it does not affect restart
-
-
   /* get_line_transfer_mode reads in the Line_transfer question from the user,
      then alters the variables geo.line_mode, geo.scatter_mode, geo.rt_mode and geo.macro_simple.
      This is fairly involved and so is a separate routine  */
@@ -723,11 +715,11 @@ init_ionization ()
   /* initialise the choice of handling for macro pops. */
   if (geo.run_type == RUN_TYPE_PREVIOUS)
   {
-    geo.macro_ioniz_mode = 1;   // Now that macro atom properties are available for restarts
+    geo.macro_ioniz_mode = MACRO_IONIZ_MODE_ESTIMATORS; // Now that macro atom properties are available for restarts
   }
   else
   {
-    geo.macro_ioniz_mode = 0;
+    geo.macro_ioniz_mode = MACRO_IONIZ_MODE_NO_ESTIMATORS;
   }
 
   return (0);
