@@ -33,6 +33,7 @@ int translate(WindPtr w, PhotPtr pp, double tau_scat, double *tau, int *nres);
 int translate_in_space(PhotPtr pp);
 double ds_to_wind(PhotPtr pp, int *ndom_current);
 int translate_in_wind(WindPtr w, PhotPtr p, double tau_scat, double *tau, int *nres);
+double smax_in_cell(PhotPtr p);
 double ds_in_cell(int ndom, PhotPtr p);
 /* photon_gen.c */
 int define_phot(PhotPtr p, double f1, double f2, long nphot_tot, int ioniz_or_final, int iwind, int freq_sampling);
@@ -126,7 +127,7 @@ int kbf_need(double fmin, double fmax);
 double sobolev(WindPtr one, double x[], double den_ion, struct lines *lptr, double dvds);
 int scatter(PhotPtr p, int *nres, int *nnscat);
 /* radiation.c */
-int radiation(PhotPtr p, double ds);
+double radiation(PhotPtr p, double ds);
 double kappa_ff(PlasmaPtr xplasma, double freq);
 double sigma_phot(struct topbase_phot *x_ptr, double freq);
 double den_config(PlasmaPtr xplasma, int nconf);
@@ -567,10 +568,6 @@ int is_input_line_synonym_for_question(char question[], char input_line[]);
 int walls(PhotPtr p, PhotPtr pold, double *normal);
 /* xtest.c */
 int xtest(void);
-/* derivative.c */
-double f(double x, void *params);
-int get_derivative(void);
-int xmodel_vgrad(double ds_fraction, int ndom, double x[], double v_grad[][3]);
 /* setup_reverb.c */
 int get_meta_params(void);
 /* setup_line_transfer.c */
@@ -599,6 +596,8 @@ double observer_to_local_frame_velocity(double *v_obs, double *v, double *v_cmf)
 double local_to_observer_frame_velocity(double *v_cmf, double *v, double *v_obs);
 int local_to_observer_frame_ruler_transform(double v[], double dx_cmf[], double dx_obs[]);
 int observer_to_local_frame_ruler_transform(double v[], double dx_obs[], double dx_cmf[]);
+/* tau_spectrum.c */
+void optical_depth_diagnostics(WindPtr w);
 /* py_wind_sub.c */
 int zoom(int direction);
 int overview(WindPtr w, char rootname[]);
