@@ -115,7 +115,7 @@ set(PYTHON_SOURCE
         source/trans_phot.c source/vvector.c source/walls.c source/wind.c
         source/wind2d.c source/wind_sum.c source/wind_updates2d.c
         source/wind_util.c source/windsave.c source/windsave2table_sub.c
-        source/xlog.c source/zeta.c source/tau_spectrum.c
+        source/xlog.c source/xtest.c source/zeta.c
 )
 
 set(PY_WIND_SOURCE

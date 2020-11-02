@@ -77,12 +77,11 @@ int
 binary_basics ()
 {
   double x;
-
-  void find_l1 ();
-  double roche2_width_max ();
   void *dummy_par = NULL;
-  double pow ();
 
+  /* Mark p_roche as being in the observer frame */
+
+  p_roche.frame = F_OBSERVER;
 
   /* Calculate a the separation of the primary and the secondary */
 
