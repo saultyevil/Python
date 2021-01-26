@@ -280,7 +280,7 @@ delay_dump (PhotPtr p, int np)
     int nplas = wmain[i].nplasma;
     int count = halpha_check[nplas].count;
     wind_n_to_ij(0, i, &ii, &jj);
-    fprintf(fptr, "%i %i %g %g %i %i\n", ii, jj, wmain[i].x[0], wmain[i].x[1], wmain[i].inwind, count);
+    fprintf(fptr, "%i %i %g %g %i %i\n", ii, jj, wmain[i].x[0], wmain[i].x[2], wmain[i].inwind, count);
   }
   fclose (fptr);
 
@@ -325,9 +325,12 @@ delay_dump_single (PhotPtr pp, int i_spec)
       return (1);
   }
 
-  int nplasma = wmain[pp->grid].nplasma;
-  halpha_check[nplasma].count += 1;
-  halpha_check[nplasma].nelem = pp->grid;
+  if (pp->nres == 430)
+  {
+    int nplasma = wmain[pp->grid].nplasma;
+    halpha_check[nplasma].count += 1;
+    halpha_check[nplasma].nelem = pp->grid;
+  }
 
   stuff_phot (pp, &delay_dump_bank[delay_dump_bank_curr]);      //Bank single photon in temp array
   delay_dump_spec[delay_dump_bank_curr] = i_spec;       //Record photon spectrum too
