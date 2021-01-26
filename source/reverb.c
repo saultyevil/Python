@@ -271,13 +271,16 @@ delay_dump (PhotPtr p, int np)
 
   Log ("NPLASMA %i\n", NPLASMA);
   char name[256];
-  sprintf(name, "h_lpha_count_%i.txt", rank_global);
+  sprintf(name, "h_alpha_count_%i.txt", rank_global);
   fptr = fopen (name, "w");
-  fprintf (fptr, "grid count x z\n");
-  for (i = 0; i < 2413; ++i)
+  fprintf (fptr, "i j x z inwind count\n");
+  for (i = 0; i < NDIM2; ++i)
   {
-    int grid = halpha_check[i].nelem;
-    fprintf (fptr, "%i %i %g %g\n", grid, halpha_check[i].count, wmain[grid].x[0], wmain[grid].x[2]);
+    int ii, jj;
+    int nplas = wmain[i].nplasma;
+    int count = halpha_check[nplas].count;
+    wind_n_to_ij(0, i, &ii, &jj);
+    fprintf(fptr, "%i %i %g %g %i %i\n", ii, jj, wmain[i].x[0], wmain[i].x[1], wmain[i].inwind, count);
   }
   fclose (fptr);
 
