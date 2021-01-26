@@ -211,6 +211,14 @@ delay_dump_combine (int i_ranks)
  * ###Notes###
  * 6/15	-	Written by SWM
 ***********************************************************/
+
+
+struct
+{
+  int count;
+  int nelem;
+} halpha_check[2413];
+
 int
 delay_dump (PhotPtr p, int np)
 {
@@ -260,6 +268,16 @@ delay_dump (PhotPtr p, int np)
     Error ("delay_dump: %d photons with <0 delay found! Increase path bin resolution to minimise this error.", subzero);
   }
   fclose (fptr);
+
+  fptr = fopen ("h_alpha_count.txt", "w");
+  fprintf (fptr, "grid count x z\n");
+  for (i = 0; i < 2413; ++i)
+  {
+    int grid = halpha_check[i].nelem;
+    fprintf (fptr, "%i %i %g %g\n", grid, halpha_check[i].count, wmain[grid].x[0], wmain[grid].x[2]);
+  }
+  fclose (fptr);
+
   return (0);
 }
 
@@ -300,6 +318,10 @@ delay_dump_single (PhotPtr pp, int i_spec)
     if (!bFound)
       return (1);
   }
+
+  int nplasma = wmain[pp->grid].nplasma;
+  halpha_check[nplasma].count += 1;
+  halpha_check[nplasma].nelem = pp->grid;
 
   stuff_phot (pp, &delay_dump_bank[delay_dump_bank_curr]);      //Bank single photon in temp array
   delay_dump_spec[delay_dump_bank_curr] = i_spec;       //Record photon spectrum too
