@@ -269,6 +269,7 @@ delay_dump (PhotPtr p, int np)
   }
   fclose (fptr);
 
+  Log ("NPLASMA %i\n", NPLASMA);
   fptr = fopen ("h_alpha_count.txt", "w");
   fprintf (fptr, "grid count x z\n");
   for (i = 0; i < 2413; ++i)
