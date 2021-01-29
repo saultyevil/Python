@@ -2386,8 +2386,10 @@ SCUPS    1.132e-01   2.708e-01   5.017e-01   8.519e-01   1.478e+00
           }
           if (match == 0)       //Fix for an error where a line match isn't found - this then causes the next two lines to be skipped
           {
-            fgets (aline, LINELENGTH, fptr);
-            fgets (aline, LINELENGTH, fptr);
+            if ((fgets (aline, LINELENGTH, fptr)) == NULL)
+              printf ("get_atomic_data: NULL return for fgets on line %i\n", __LINE__);
+            if ((fgets (aline, LINELENGTH, fptr)) == NULL)
+              printf ("get_atomic_data: NULL return for fgets on line %i\n", __LINE__);
             cstren_no_line++;
           }
           break;

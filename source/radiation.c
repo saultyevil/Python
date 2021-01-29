@@ -449,7 +449,7 @@ radiation (p, ds)
   if (kappa_tot > 0)
   {
 
-    // We use the cmf value of the energy aborbed since everything is supposed to be in CMF frame
+    // We use the cmf value of the energy absorbed since everything is supposed to be in CMF frame
 
     z = (energy_abs_cmf) / kappa_tot;
     xplasma->heat_ff += z * frac_ff;
@@ -493,6 +493,10 @@ radiation (p, ds)
         xplasma->inner_ioniz[n] += kappa_inner_ion[n] * q;      //This is the number of ionizations from this innershell cross section - at this point, inner_ioniz is ordered by frequency                
       }
     }
+  }
+  else
+  {
+    z = 0;  // reminder, z is the energy absorbed
   }
 
   z_obs = z * p_cmf.freq / p->freq;

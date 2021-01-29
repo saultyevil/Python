@@ -87,13 +87,16 @@ define_phot (p, f1, f2, nphot_tot, ioniz_or_final, iwind, freq_sampling)
   int iphot_start, nphot_rad, nphot_k;
   long nphot_tot_rad, nphot_tot_k;
 
+  /* initialize to avoid compiler warnings */
+  natural_weight = iphot_start = nphot_tot_k = nphot_k = 0;
+
   /* if we are generating nonradiative kpackets, then we need to subtract 
      off the fraction reserved for k-packets */
   if (geo.nonthermal && (geo.rt_mode == RT_MODE_MACRO) && (ioniz_or_final == 0))
   {
-    nphot_k = (geo.frac_extra_kpkts * NPHOT);
+    nphot_k = (int) (geo.frac_extra_kpkts * NPHOT);
     nphot_rad = NPHOT - nphot_k;
-    nphot_tot_k = (geo.frac_extra_kpkts * nphot_tot);
+    nphot_tot_k = (int) (geo.frac_extra_kpkts * nphot_tot);
     nphot_tot_rad = nphot_tot - nphot_tot_k;
   }
   else
@@ -369,7 +372,7 @@ calculates the boundaries of the various disk annulae depending on f1 and f2 */
   }
   if (geo.bl_radiation)
   {
-    bl_init (geo.lum_bl, geo.t_bl, f1, f2, ioniz_or_final, &geo.f_bl);
+    bl_init (geo.lum_bl, geo.t_bl, f1, f2, &geo.f_bl);
   }
   if (geo.agn_radiation)
   {
@@ -1157,22 +1160,10 @@ phot_gen_sum (filename, mode)
  **********************************************************/
 
 double
-bl_init (lum_bl, t_bl, freqmin, freqmax, ioniz_or_final, f)
+bl_init (lum_bl, t_bl, freqmin, freqmax, f)
      double lum_bl, t_bl, freqmin, freqmax, *f;
-     int ioniz_or_final;
 {
-  double q1;
-  double integ_planck_d ();
-  double alphamin, alphamax;
-
-  q1 = 2. * PI * (BOLTZMANN * BOLTZMANN * BOLTZMANN * BOLTZMANN) / (PLANCK * PLANCK * PLANCK * VLIGHT * VLIGHT);
-  alphamin = PLANCK * freqmin / (BOLTZMANN * t_bl);
-  alphamax = PLANCK * freqmax / (BOLTZMANN * t_bl);
-//  *f = q1 * integ_planck_d (alphamin, alphamax) * lum_bl / STEFAN_BOLTZMANN;
-
   *f = emittance_bb (freqmin, freqmax, t_bl) * lum_bl / (t_bl * t_bl * t_bl * t_bl * STEFAN_BOLTZMANN);
-
-
 
   return (lum_bl);
 }

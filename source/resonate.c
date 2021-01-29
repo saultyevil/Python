@@ -772,6 +772,8 @@ sobolev (one, x, den_ion, lptr, dvds)
   int ndom;
   PlasmaPtr xplasma;
 
+  levden_upper = 0;  // avoids compiler warning
+
   nplasma = one->nplasma;
   xplasma = &plasmamain[nplasma];
   ndom = wmain[plasmamain->nwind].ndom;

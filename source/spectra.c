@@ -321,7 +321,7 @@ spectrum_create (p, nangle, select_extract)
   int nphot, istat, j, k, k1, n;
   int nspec, spectype;
   double freqmin, freqmax, dfreq;
-  double lfreqmin, lfreqmax, ldfreq;
+  double ldfreq;
   double x1;
   int mscat, mtopbot;
   double delta;
@@ -336,10 +336,6 @@ spectrum_create (p, nangle, select_extract)
   freqmin = xxspec[SPEC_CREATED].freqmin;
   freqmax = xxspec[SPEC_CREATED].freqmax;
   dfreq = xxspec[SPEC_CREATED].dfreq;
-
-
-  lfreqmin = xxspec[SPEC_CREATED].lfreqmin;
-  lfreqmax = xxspec[SPEC_CREATED].lfreqmax;
   ldfreq = xxspec[SPEC_CREATED].ldfreq;
 
   nspec = nangle + MSPEC;

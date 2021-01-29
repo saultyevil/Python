@@ -250,7 +250,13 @@ parse_command_line (argc, argv)
 
     /* This completes the parsing of the command line */
 
-    /* Create a subdirectory to store diaganostic files */
+    /* Create a subdirectory to store diagnostic files */
+
+    /* todo: change size of diagfolder, root, etc. due to possible overflows
+     * files.root is 256 bytes and files.diagfolder is 256 bytes, this
+     * could create overflow errors when we write root to diag (if root is large
+     * enough), which C does nothing to stop...
+     */
 
     sprintf (files.diagfolder, "diag_%s/", files.root);
     mkdir (files.diagfolder, 0777);

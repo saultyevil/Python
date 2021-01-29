@@ -844,10 +844,6 @@ wind_div_v ()
   double x_zero[3];
   double div;
   int ndom;
-  double scaling;
-
-  scaling = 1e-3;               //The scaling factor applied to 'delta' the distance away from the central point that the div_v calcs are done
-
 
   for (icell = 0; icell < NDIM2; icell++)
   {
@@ -1213,7 +1209,8 @@ int
 check_grid ()
 {
   int ndom, n;
-  double l_sob, vth, lambda_t, nh;
+  // FUTURE USE? double l_sob;
+  double vth, lambda_t, nh;
   double delta_r, delta_x, delta_z, delta_vz, delta_vx;
   double v1[3], v2[3];
   WindPtr one;
@@ -1236,7 +1233,7 @@ check_grid ()
     vth = sqrt (1.5 * BOLTZMANN * xplasma->t_e / MPROT);
 
     /* sobolev length -- this could be used for a check but isn't yet */
-    l_sob = vth / one->dvds_ave;
+    // l_sob = vth / one->dvds_ave;
 
     /* get approximate cell extents */
     delta_z = 2.0 * (one->xcen[2] - one->x[2]);

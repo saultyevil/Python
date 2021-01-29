@@ -435,7 +435,6 @@ translate_in_wind (w, p, tau_scat, tau, nres)
   int istat;
   int nplasma;
   int ndom, ndom_current;
-  int inwind;
   int hit_disk;
 
   WindPtr one;
@@ -463,7 +462,6 @@ return and record an error */
   nplasma = one->nplasma;
   xplasma = &plasmamain[nplasma];
   ndom = one->ndom;
-  inwind = one->inwind;
 
 
 
@@ -612,7 +610,6 @@ ds_in_cell (ndom, p)
   int n;
   double smax;
 
-  WindPtr one;
 
 
 /* First verify that the photon is in the grid, and if not
@@ -626,10 +623,6 @@ return and record an error */
 //OLD   }
     return (n);
   }
-
-/* Assign the pointers for the cell containing the photon */
-
-  one = &wmain[n];              /* one is the grid cell where the photon is */
 
 /* Calculate the maximum distance the photon can travel in the cell */
 
