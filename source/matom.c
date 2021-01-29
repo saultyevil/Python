@@ -76,7 +76,7 @@ matom (p, nres, escape)
   struct lines *line_ptr;
   struct topbase_phot *cont_ptr;
   int uplvl, uplvl_old;
-  int icheck;
+//OLD  int icheck;
   double jprbs[2 * (NBBJUMPS + NBFJUMPS)];
   double eprbs[NBBJUMPS + NBFJUMPS];
   double pjnorm, penorm;
@@ -380,26 +380,26 @@ matom (p, nres, escape)
     }
 
     /* n now identifies the jump that occurs - now set the new level. */
-    icheck = 0;
+//OLD    icheck = 0;
     if (n < nbbd)
     {                           /* bb downwards jump */
       uplvl = line[config[uplvl].bbd_jump[n]].nconfigl;
-      icheck = 1;
+//OLD      icheck = 1;
     }
     else if (n < (nbbd + nbfd))
     {                           /* bf downwards jump */
       uplvl = phot_top[config[uplvl].bfd_jump[n - nbbd]].nlev;
-      icheck = 2;
+//OLD      icheck = 2;
     }
     else if (n < (nbbd + nbfd + nbbu))
     {                           /* bb upwards jump */
       uplvl = line[config[uplvl].bbu_jump[n - nbbd - nbfd]].nconfigu;
-      icheck = 3;
+//OLD      icheck = 3;
     }
     else if (n < (nbbd + nbfd + nbbu + nbfu))
     {                           /* bf upwards jump */
       uplvl = phot_top[config[uplvl].bfu_jump[n - nbbd - nbfd - nbbu]].uplev;
-      icheck = 4;
+//OLD      icheck = 4;
     }
     else
     {
@@ -698,6 +698,7 @@ alpha_sp_integrand (double freq, void *params)
   double integrand;
   double tt;
 
+  (void) params;
   fthresh = cont_ext_ptr->freq[0];
   tt = temp_ext;
 

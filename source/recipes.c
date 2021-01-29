@@ -167,7 +167,6 @@ zero_find (func, x_lo, x_hi, tol)
 {
   double result;
   double alpha = 0.0;
-  double r;
   const gsl_root_fsolver_type *T;
   gsl_root_fsolver *s;
   int iter = 0, max_iter = 100;

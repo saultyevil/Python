@@ -1210,7 +1210,7 @@ check_grid ()
 {
   int ndom, n;
   // FUTURE USE? double l_sob;
-  double vth, lambda_t, nh;
+  double lambda_t, nh;
   double delta_r, delta_x, delta_z, delta_vz, delta_vx;
   double v1[3], v2[3];
   WindPtr one;
@@ -1230,7 +1230,7 @@ check_grid ()
     nh = xplasma->rho * rho2nh;
 
     /* thermal speed */
-    vth = sqrt (1.5 * BOLTZMANN * xplasma->t_e / MPROT);
+    // double vth = sqrt (1.5 * BOLTZMANN * xplasma->t_e / MPROT);
 
     /* sobolev length -- this could be used for a check but isn't yet */
     // l_sob = vth / one->dvds_ave;
